@@ -1,8 +1,37 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ImageSize } from "../types";
 
-// Allow fallback to a hardcoded key or LocalStorage for easier deployment testing
-const apiKey = process.env.API_KEY || localStorage.getItem('GEMINI_API_KEY') || "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU";
+// --- API KEY CONFIGURATION ---
+// Add your API keys to this list to serve as a fallback when env vars are missing.
+// The app will randomly select a key from this list to distribute usage.
+const FALLBACK_KEYS = [
+  "YOUR_API_KEY_HERE", 
+  // Add more keys here, e.g.:
+  // "AIzaSy..."
+];
+
+const getApiKey = (): string => {
+  // 1. Check Environment Variable (Standard for production/local dev)
+  if (process.env.API_KEY) return process.env.API_KEY;
+
+  // 2. Check Local Storage (For manual override in browser console)
+  // Run: localStorage.setItem('GEMINI_API_KEY', 'your-key')
+  if (typeof window !== 'undefined') {
+    const localKey = localStorage.getItem('GEMINI_API_KEY');
+    if (localKey) return localKey;
+  }
+
+  // 3. Check Fallback List (Rotation)
+  const validKeys = FALLBACK_KEYS.filter(k => k !== "YOUR_API_KEY_HERE" && k.trim() !== "");
+  if (validKeys.length > 0) {
+    // Return a random key to distribute load
+    return validKeys[Math.floor(Math.random() * validKeys.length)];
+  }
+
+  return "YOUR_API_KEY_HERE";
+};
+
+const apiKey = getApiKey();
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -26,13 +55,15 @@ const processBase64Image = (base64String: string) => {
   };
 };
 
+
 // --- 1. Image Analysis & Caption Generation ---
 // Model: gemini-2.5-flash (Fast, multimodal, good for analysis)
 
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
-  if (!apiKey || apiKey === "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU") {
-      console.warn("API Key is missing or invalid.");
-      // throw new Error("API Key missing"); // Soften for UI handling if needed, but throwing is correct for logic
+  if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
+      console.warn("API Key is missing or invalid. Please check services/geminiService.ts or your environment variables.");
+      // We don't throw immediately to allow UI to show a specific error if needed, 
+      // but the API call below will likely fail if the key is invalid.
   }
 
   const { mimeType, data } = processBase64Image(base64Image);
@@ -157,9 +188,11 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
 
 // --- 4. Image Generation ---
 // Model: gemini-3-pro-image-preview (Nano banana pro for HQ generation)
+// Fallback: gemini-2.5-flash-image
 
 export const generateImageFromPrompt = async (prompt: string, size: ImageSize): Promise<string> => {
   try {
+    // Attempt 1: Try High-Quality Pro Model first
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
       contents: {
@@ -178,8 +211,47 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
         return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
-    throw new Error("No image generated.");
-  } catch (error) {
+    throw new Error("No image generated (Pro).");
+  } catch (error: any) {
+    // Check for Permission Denied (403) or Not Found (404) errors which might indicate
+    // the API key doesn't have access to the Pro model.
+    const isAccessError = 
+      error.status === 'PERMISSION_DENIED' || 
+      error.status === 403 || 
+      error.code === 403 || 
+      error.status === 'NOT_FOUND' || 
+      error.status === 404 ||
+      (error.message && error.message.includes('permission'));
+
+    if (isAccessError) {
+      console.warn("Pro model access denied or not found. Falling back to Gemini 2.5 Flash Image.");
+      try {
+        // Attempt 2: Fallback to Flash Image
+        // Note: Flash image does not support `imageSize` config, so we remove it.
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [{ text: prompt }],
+          },
+          config: {
+            imageConfig: {
+              aspectRatio: "1:1"
+            }
+          },
+        });
+
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData) {
+            return `data:image/png;base64,${part.inlineData.data}`;
+          }
+        }
+        throw new Error("No image generated (Flash Fallback).");
+      } catch (fallbackError) {
+        console.error("Fallback Image Gen Error:", fallbackError);
+        throw fallbackError;
+      }
+    }
+    
     console.error("Image Gen Error:", error);
     throw error;
   }
