@@ -27,7 +27,7 @@ const Generator: React.FC = () => {
   };
 
   return (
-    <div className="p-4 pb-24 space-y-6">
+    <div className="h-full overflow-y-auto hide-scrollbar p-4 pb-24 space-y-6">
       <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
         AI Artist
       </h1>
