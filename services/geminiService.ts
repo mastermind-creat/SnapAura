@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ImageSize } from "../types";
 
 // Allow fallback to a hardcoded key or LocalStorage for easier deployment testing
-const apiKey = process.env.API_KEY || localStorage.getItem('GEMINI_API_KEY') || "YOUR_API_KEY_HERE";
+const apiKey = process.env.API_KEY || localStorage.getItem('GEMINI_API_KEY') || "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU";
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -30,7 +30,7 @@ const processBase64Image = (base64String: string) => {
 // Model: gemini-2.5-flash (Fast, multimodal, good for analysis)
 
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
-  if (!apiKey || apiKey === "YOUR_API_KEY_HERE") {
+  if (!apiKey || apiKey === "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU") {
       console.warn("API Key is missing or invalid.");
       // throw new Error("API Key missing"); // Soften for UI handling if needed, but throwing is correct for logic
   }
