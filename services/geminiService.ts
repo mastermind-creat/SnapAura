@@ -5,7 +5,7 @@ import { ImageSize } from "../types";
 // Add your API keys to this list to serve as a fallback when env vars are missing.
 // The app will randomly select a key from this list to distribute usage.
 const FALLBACK_KEYS = [
-  "YOUR_API_KEY_HERE", 
+  "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU", 
   // Add more keys here, e.g.:
   // "AIzaSy..."
 ];
@@ -60,7 +60,7 @@ const processBase64Image = (base64String: string) => {
 // Model: gemini-2.5-flash (Fast, multimodal, good for analysis)
 
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
-  if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
+  if (!apiKey || apiKey.includes("AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU")) {
       console.warn("API Key is missing or invalid. Please check services/geminiService.ts or your environment variables.");
       // We don't throw immediately to allow UI to show a specific error if needed, 
       // but the API call below will likely fail if the key is invalid.
