@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
@@ -18,6 +18,7 @@ declare global {
 
 type FilterType = 'none' | 'bw' | 'warm' | 'vivid' | 'cool' | 'sepia';
 type CaptionStyle = 'modern' | 'neon' | 'polaroid' | 'bold';
+type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
 const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,9 +30,10 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   const [generatingCard, setGeneratingCard] = useState(false);
   
   // Design State
-  const [activeTab, setActiveTab] = useState<'analyze' | 'design'>('analyze');
+  const [activeTab, setActiveTab] = useState<'analyze' | 'design' | 'effects'>('analyze');
   const [activeFilter, setActiveFilter] = useState<FilterType>('none');
   const [captionStyle, setCaptionStyle] = useState<CaptionStyle>('modern');
+  const [activeEffect, setActiveEffect] = useState<EffectType>('none');
 
   // Helper to trigger confetti
   const fireConfetti = () => {
@@ -59,6 +61,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
         setSelectedCaption(null);
         setActiveFilter('none');
         setCaptionStyle('modern');
+        setActiveEffect('none');
         showToast("Image uploaded!", "success");
       };
       reader.readAsDataURL(file);
@@ -169,8 +172,31 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
         
         ctx.drawImage(img, padding, padding, img.width, img.height);
         ctx.restore();
+        
+        // 3. Apply Effect (Overlay) Logic roughly on canvas
+        if (activeEffect !== 'none') {
+            ctx.save();
+            ctx.globalCompositeOperation = 'overlay';
+            if (activeEffect === 'vignette') {
+                const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/4, canvas.width/2, canvas.height/2, canvas.width);
+                grad.addColorStop(0, 'rgba(0,0,0,0)');
+                grad.addColorStop(1, 'rgba(0,0,0,0.8)');
+                ctx.fillStyle = grad;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+            }
+            if (activeEffect === 'leak1') {
+                const grad = ctx.createLinearGradient(0,0, canvas.width/2, canvas.height);
+                grad.addColorStop(0, 'rgba(255,100,0,0.4)');
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+            }
+            // Grain requires pattern, skipped for simplicity in canvas export but visible in UI
+            ctx.restore();
+        }
 
-        // 3. Draw Caption
+        // 4. Draw Caption
         if (selectedCaption) {
             const fontSize = Math.max(canvas.width * 0.05, 24);
             ctx.font = `bold ${fontSize}px Inter, sans-serif`;
@@ -393,6 +419,13 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                     style={{ filter: getFilterCss(activeFilter) }}
                 />
                 
+                {/* FX Overlays */}
+                {activeEffect === 'grain' && <div className="absolute inset-0 pointer-events-none grain-overlay opacity-30 mix-blend-overlay"></div>}
+                {activeEffect === 'vignette' && <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle,transparent_50%,rgba(0,0,0,0.8)_100%)]"></div>}
+                {activeEffect === 'leak1' && <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-orange-500/20 to-transparent mix-blend-screen"></div>}
+                {activeEffect === 'leak2' && <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-purple-500/20 via-transparent to-pink-500/20 mix-blend-screen"></div>}
+                {activeEffect === 'dust' && <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/dust.png')]"></div>}
+
                 {/* Social Preview Overlay Styles */}
                 {selectedCaption && (
                     <div className="absolute inset-0 pointer-events-none transition-all duration-300">
@@ -457,7 +490,13 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                 onClick={() => setActiveTab('design')}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'design' ? 'bg-secondary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
             >
-                <Sliders size={14} /> Design Tools
+                <Sliders size={14} /> Design
+            </button>
+            <button 
+                onClick={() => setActiveTab('effects')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'effects' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            >
+                <Film size={14} /> Effects
             </button>
         </div>
 
@@ -612,6 +651,44 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                      {generatingCard ? <RefreshCw className="animate-spin" /> : <Download />} Download Image
                  </button>
              </div>
+        )}
+
+        {/* --- EFFECTS MODE --- */}
+        {activeTab === 'effects' && (
+            <div className="space-y-6 animate-fade-in-up">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                   <Film size={14} /> Overlays & FX
+                </h3>
+                <div className="grid grid-cols-3 gap-3">
+                    {[
+                        { id: 'none', label: 'None' },
+                        { id: 'vignette', label: 'Vignette' },
+                        { id: 'grain', label: 'Film Grain' },
+                        { id: 'leak1', label: 'Light Leak 1' },
+                        { id: 'leak2', label: 'Light Leak 2' },
+                        { id: 'dust', label: 'Dust' },
+                    ].map((effect) => (
+                        <button
+                            key={effect.id}
+                            onClick={() => setActiveEffect(effect.id as EffectType)}
+                            className={`p-4 rounded-xl border text-xs font-bold transition-all active:scale-95 flex flex-col items-center justify-center gap-2 ${
+                                activeEffect === effect.id 
+                                ? 'bg-blue-500 text-white border-blue-400' 
+                                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
+                            }`}
+                        >
+                            <span className="capitalize">{effect.label}</span>
+                        </button>
+                    ))}
+                </div>
+                
+                 <button
+                    onClick={handleDownloadComposite}
+                    className="w-full py-4 bg-white text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
+                 >
+                     {generatingCard ? <RefreshCw className="animate-spin" /> : <Download />} Download With FX
+                 </button>
+            </div>
         )}
 
         {/* Selected Caption Floating Toolbelt (Only in Analysis Mode) */}

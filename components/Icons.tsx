@@ -34,7 +34,21 @@ import {
   RefreshCcw,
   Type,
   Layers,
-  Sliders
+  Sliders,
+  Info,
+  Shield,
+  Minimize,
+  Maximize,
+  Stamp,
+  Smile,
+  Grid,
+  Calendar,
+  Save,
+  Archive,
+  Film,
+  Gamepad,
+  ImagePlus,
+  Scissors
 } from 'lucide-react';
 
 export { 
@@ -72,5 +86,19 @@ export {
   RefreshCcw,
   Type,
   Layers,
-  Sliders
+  Sliders,
+  Info,
+  Shield,
+  Minimize,
+  Maximize,
+  Stamp,
+  Smile,
+  Grid,
+  Calendar,
+  Save,
+  Archive,
+  Film,
+  Gamepad,
+  ImagePlus,
+  Scissors
 };
