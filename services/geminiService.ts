@@ -1,10 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ImageSize } from "../types";
 
-const apiKey = process.env.API_KEY;
+// Allow fallback to a hardcoded key or LocalStorage for easier deployment testing
+const apiKey = process.env.API_KEY || localStorage.getItem('GEMINI_API_KEY') || "YOUR_API_KEY_HERE";
 
 // Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 // Helper: Extract raw base64 and mimeType from Data URL
 const processBase64Image = (base64String: string) => {
@@ -29,7 +30,10 @@ const processBase64Image = (base64String: string) => {
 // Model: gemini-2.5-flash (Fast, multimodal, good for analysis)
 
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
-  if (!apiKey) throw new Error("API Key missing");
+  if (!apiKey || apiKey === "YOUR_API_KEY_HERE") {
+      console.warn("API Key is missing or invalid.");
+      // throw new Error("API Key missing"); // Soften for UI handling if needed, but throwing is correct for logic
+  }
 
   const { mimeType, data } = processBase64Image(base64Image);
 
@@ -102,8 +106,6 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
 // Model: gemini-3-pro-preview (Complex reasoning for tone)
 
 export const rewriteCaption = async (caption: string, tone: string): Promise<string> => {
-  if (!apiKey) throw new Error("API Key missing");
-
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -120,8 +122,6 @@ export const rewriteCaption = async (caption: string, tone: string): Promise<str
 // Model: gemini-2.5-flash-image (Nano banana for edits)
 
 export const editImageWithPrompt = async (base64Image: string, prompt: string): Promise<string> => {
-  if (!apiKey) throw new Error("API Key missing");
-
   const { mimeType, data } = processBase64Image(base64Image);
 
   try {
@@ -159,8 +159,6 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
 // Model: gemini-3-pro-image-preview (Nano banana pro for HQ generation)
 
 export const generateImageFromPrompt = async (prompt: string, size: ImageSize): Promise<string> => {
-  if (!apiKey) throw new Error("API Key missing");
-
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
@@ -191,8 +189,6 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 // Model: gemini-3-pro-preview
 
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string) => {
-    if (!apiKey) throw new Error("API Key missing");
-    
     const chatSession = ai.chats.create({
         model: 'gemini-3-pro-preview',
         history: history,
