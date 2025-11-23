@@ -16,7 +16,10 @@ import {
   Trash2,
   Rocket,
   Palette,
-  Brain
+  Brain,
+  CheckCircle,
+  AlertCircle,
+  X
 } from 'lucide-react';
 
 export { 
@@ -36,5 +39,8 @@ export {
   Trash2,
   Rocket,
   Palette,
-  Brain
+  Brain,
+  CheckCircle,
+  AlertCircle,
+  X
 };

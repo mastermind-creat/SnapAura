@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
+import { showToast } from './Toast';
 
 interface StudioProps {
   image: string | null;
@@ -21,6 +22,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   const [selectedCaption, setSelectedCaption] = useState<string | null>(null);
   const [rewriting, setRewriting] = useState(false);
   const [autoEnhancing, setAutoEnhancing] = useState(false);
+  const [generatingCard, setGeneratingCard] = useState(false);
 
   // Helper to trigger confetti
   const fireConfetti = () => {
@@ -34,6 +36,10 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
     }
   };
 
+  const triggerHaptic = () => {
+    if (navigator.vibrate) navigator.vibrate(50);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -42,6 +48,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
         setImage(reader.result as string);
         setAnalysisResult(null); // Reset analysis
         setSelectedCaption(null);
+        showToast("Image uploaded!", "success");
       };
       reader.readAsDataURL(file);
     }
@@ -49,13 +56,15 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
 
   const handleAnalyze = async () => {
     if (!image) return;
+    triggerHaptic();
     setIsAnalyzing(true);
     try {
       const result = await analyzeImageAndGenerateCaptions(image);
       setAnalysisResult(result);
       fireConfetti();
+      showToast("Vibes analyzed successfully!", "success");
     } catch (err) {
-      alert("Failed to analyze image. Please try again.");
+      showToast("Failed to analyze image. Try again.", "error");
     } finally {
       setIsAnalyzing(false);
     }
@@ -63,13 +72,16 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
 
   const handleAutoEnhance = async () => {
     if (!image) return;
+    triggerHaptic();
     setAutoEnhancing(true);
+    showToast("Enhancing image...", "info");
     try {
         const enhanced = await editImageWithPrompt(image, "Enhance this photo to be high quality, professional lighting, clear details, and aesthetic color grading. Keep the original subject intact.");
         setImage(enhanced);
         fireConfetti();
+        showToast("Enhancement complete!", "success");
     } catch(err) {
-        alert("Enhancement failed.");
+        showToast("Enhancement failed.", "error");
     } finally {
         setAutoEnhancing(false);
     }
@@ -77,10 +89,12 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
 
   const handleRewrite = async (tone: string) => {
     if (!selectedCaption) return;
+    triggerHaptic();
     setRewriting(true);
     try {
       const newCaption = await rewriteCaption(selectedCaption, tone);
       setSelectedCaption(newCaption);
+      showToast(`Rewritten as ${tone}`, "success");
     } catch (err) {
       console.error(err);
     } finally {
@@ -89,12 +103,14 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   };
 
   const handleCopy = (text: string) => {
+    triggerHaptic();
     navigator.clipboard.writeText(text);
-    // Visual feedback could be added here
+    showToast("Copied to clipboard!", "success");
   };
 
   const handleShare = async () => {
     if (!image) return;
+    triggerHaptic();
     
     try {
       const blob = await (await fetch(image)).blob();
@@ -109,7 +125,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
       if (navigator.share && navigator.canShare(shareData)) {
         await navigator.share(shareData);
       } else {
-        alert("Sharing not supported on this browser/device. Image downloaded.");
+        showToast("Sharing not supported, downloading instead.", "info");
         const a = document.createElement('a');
         a.href = image;
         a.download = 'snapaura-edit.png';
@@ -117,6 +133,99 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
       }
     } catch (e) {
       console.error("Share failed", e);
+      showToast("Could not share.", "error");
+    }
+  };
+
+  // Generate a shareable card with image + caption burned in
+  const handleDownloadCard = async () => {
+    if (!image || !selectedCaption) return;
+    triggerHaptic();
+    setGeneratingCard(true);
+
+    try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const img = new Image();
+        img.src = image;
+        await new Promise((resolve) => { img.onload = resolve; });
+
+        // Set high res
+        canvas.width = 1080;
+        canvas.height = 1350; // 4:5 Aspect Ratio for Insta
+
+        // Draw Image (Cover)
+        // Calculate aspect ratio to cover
+        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+        const x = (canvas.width / 2) - (img.width / 2) * scale;
+        const y = (canvas.height / 2) - (img.height / 2) * scale;
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+        // Gradient Overlay
+        const gradient = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(0.7, 'rgba(0,0,0,0.7)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.9)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Watermark
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.font = 'bold 24px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('SnapAura AI', canvas.width - 40, 50);
+
+        // Draw Caption
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 48px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 10;
+        
+        // Word Wrap
+        const words = selectedCaption.split(' ');
+        let line = '';
+        const lines = [];
+        const maxWidth = canvas.width - 100;
+
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                lines.push(line);
+                line = words[n] + ' ';
+            } else {
+                line = testLine;
+            }
+        }
+        lines.push(line);
+
+        // Render Lines
+        const lineHeight = 60;
+        const totalTextHeight = lines.length * lineHeight;
+        let startY = canvas.height - 150 - totalTextHeight;
+
+        lines.forEach((l) => {
+            ctx.fillText(l, canvas.width / 2, startY);
+            startY += lineHeight;
+        });
+
+        // Convert to data URL and download
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'snapaura-post.png';
+        a.click();
+        
+        showToast("Post card downloaded!", "success");
+    } catch (err) {
+        console.error(err);
+        showToast("Failed to generate card.", "error");
+    } finally {
+        setGeneratingCard(false);
     }
   };
 
@@ -156,7 +265,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
 
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="group relative inline-flex items-center justify-center gap-3 bg-white text-black px-8 py-4 rounded-full font-bold text-lg shadow-xl shadow-white/10 hover:scale-105 transition-all duration-300 w-full"
+            className="group relative inline-flex items-center justify-center gap-3 bg-white text-black px-8 py-4 rounded-full font-bold text-lg shadow-xl shadow-white/10 hover:scale-105 active:scale-95 transition-all duration-300 w-full"
           >
             <Upload size={24} className="group-hover:-translate-y-1 transition-transform" />
             <span>Start Creating</span>
@@ -190,7 +299,6 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   }
 
   // STUDIO VIEW
-  // NOTE: pb-32 added to account for bottom nav and floating caption tools
   return (
     <div className="h-full overflow-y-auto hide-scrollbar scroll-smooth">
       <div className="p-4 pb-48 space-y-6 animate-fade-in-up max-w-lg mx-auto">
@@ -203,14 +311,14 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
           <div className="flex gap-2">
              <button 
                  onClick={handleShare}
-                 className="text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                 className="text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
                  title="Share Image"
              >
                  <Share2 size={18} />
              </button>
              <button 
                  onClick={() => setImage('')} 
-                 className="text-gray-400 hover:text-white text-xs font-medium bg-white/5 px-3 py-1.5 rounded-full transition-colors flex items-center"
+                 className="text-gray-400 hover:text-white text-xs font-medium bg-white/5 px-3 py-1.5 rounded-full transition-colors flex items-center active:scale-95"
              >
                  New
              </button>
@@ -226,7 +334,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                 
                 {/* Social Preview Overlay */}
                 {selectedCaption && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-end p-6">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-end p-6 pointer-events-none">
                         <p className="text-white font-medium text-lg text-center drop-shadow-md leading-relaxed animate-fade-in-up">
                             {selectedCaption}
                         </p>
@@ -242,7 +350,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                  <button 
                     onClick={handleAutoEnhance}
                     disabled={autoEnhancing}
-                    className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center gap-2 border border-white/10"
+                    className="bg-black/50 hover:bg-black/70 text-white p-3 rounded-full backdrop-blur-md transition-all flex items-center gap-2 border border-white/10 active:scale-90"
                 >
                     <Zap size={20} className={`text-yellow-400 ${autoEnhancing ? "animate-spin" : ""}`} fill={autoEnhancing ? "currentColor" : "none"} />
                 </button>
@@ -255,7 +363,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
               <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
-              className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:scale-[1.02] transition-transform shadow-lg shadow-primary/20"
+              className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
               >
               {isAnalyzing ? (
                   <><RefreshCw className="animate-spin" /> Analyzing Vibes...</>
@@ -277,7 +385,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                   <h3 className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
                       <Sparkles size={14} /> Vibe Check
                   </h3>
-                  <button onClick={() => handleCopy(analysisResult.analysis)} className="text-gray-500 hover:text-white transition-colors">
+                  <button onClick={() => handleCopy(analysisResult.analysis)} className="text-gray-500 hover:text-white transition-colors active:scale-90">
                       <Copy size={14} />
                   </button>
               </div>
@@ -288,7 +396,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
             <div className="glass-panel p-5 rounded-2xl relative">
                <div className="flex justify-between items-start mb-3">
                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Trending Tags</h3>
-                   <button onClick={() => handleCopy(analysisResult.hashtags.join(' '))} className="text-gray-500 hover:text-white transition-colors">
+                   <button onClick={() => handleCopy(analysisResult.hashtags.join(' '))} className="text-gray-500 hover:text-white transition-colors active:scale-90">
                       <Copy size={14} />
                   </button>
                </div>
@@ -310,7 +418,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                       {cat.options.map((opt: string, oIdx: number) => (
                         <div 
                           key={oIdx}
-                          onClick={() => setSelectedCaption(opt)}
+                          onClick={() => { triggerHaptic(); setSelectedCaption(opt); }}
                           className={`flex-shrink-0 w-72 p-4 rounded-2xl cursor-pointer transition-all border relative overflow-hidden group active:scale-95 duration-200 ${
                             selectedCaption === opt 
                               ? 'bg-secondary/20 border-secondary shadow-lg shadow-secondary/10' 
@@ -332,12 +440,12 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
               <div className="fixed bottom-[80px] left-4 right-4 glass-panel p-4 rounded-2xl border border-white/20 shadow-2xl z-50 animate-fade-in-up backdrop-blur-xl bg-black/80">
                   <div className="flex justify-between items-start mb-4">
                       <p className="text-sm font-medium text-white pr-4 leading-relaxed max-h-20 overflow-y-auto">"{selectedCaption}"</p>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleCopy(selectedCaption)} className="text-gray-400 hover:text-white bg-white/10 p-2 rounded-lg transition-colors" title="Copy Text">
-                            <Copy size={16} />
+                      <div className="flex gap-2 shrink-0">
+                         <button onClick={handleDownloadCard} disabled={generatingCard} className="text-gray-400 hover:text-green-400 bg-white/10 p-2 rounded-lg transition-colors active:scale-90" title="Save Post Card">
+                            {generatingCard ? <RefreshCw className="animate-spin" size={16} /> : <Download size={16} />}
                         </button>
-                         <button onClick={handleShare} className="text-gray-400 hover:text-secondary bg-white/10 p-2 rounded-lg transition-colors" title="Share">
-                            <Share2 size={16} />
+                        <button onClick={() => handleCopy(selectedCaption)} className="text-gray-400 hover:text-white bg-white/10 p-2 rounded-lg transition-colors active:scale-90" title="Copy Text">
+                            <Copy size={16} />
                         </button>
                       </div>
                   </div>
@@ -350,7 +458,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                                   key={tone}
                                   onClick={() => handleRewrite(tone)}
                                   disabled={rewriting}
-                                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/20 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-all border border-white/5 hover:border-white/20"
+                                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/20 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-all border border-white/5 hover:border-white/20 active:scale-95"
                               >
                                   {tone}
                               </button>

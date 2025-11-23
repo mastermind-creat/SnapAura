@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ImageIcon, Download, RefreshCw } from './Icons';
 import { generateImageFromPrompt } from '../services/geminiService';
 import { ImageSize } from '../types';
+import { showToast } from './Toast';
 
 const Generator: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -11,12 +12,15 @@ const Generator: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!prompt) return;
+    if (navigator.vibrate) navigator.vibrate(50);
     setIsGenerating(true);
+    showToast("Starting generation...", "info");
     try {
       const result = await generateImageFromPrompt(prompt, size);
       setGeneratedImage(result);
+      showToast("Image generated!", "success");
     } catch (error) {
-      alert("Generation failed. The prompt might be blocked or the API is busy.");
+      showToast("Generation failed. Try again.", "error");
     } finally {
       setIsGenerating(false);
     }
@@ -57,7 +61,7 @@ const Generator: React.FC = () => {
             <button
                 onClick={handleGenerate}
                 disabled={!prompt || isGenerating}
-                className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-2 rounded-xl font-medium disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-green-500/20"
+                className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-2 rounded-xl font-medium disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-green-500/20 active:scale-95 transition-all"
             >
                 {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : 'Create'}
             </button>
@@ -71,7 +75,8 @@ const Generator: React.FC = () => {
                 <a 
                     href={generatedImage} 
                     download={`snapaura-gen-${Date.now()}.png`}
-                    className="absolute bottom-4 right-4 bg-black/60 p-2 rounded-full text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors"
+                    className="absolute bottom-4 right-4 bg-black/60 p-2 rounded-full text-white backdrop-blur-md hover:bg-white hover:text-black transition-colors active:scale-90"
+                    onClick={() => showToast("Downloading...", "success")}
                 >
                     <Download size={20} />
                 </a>
