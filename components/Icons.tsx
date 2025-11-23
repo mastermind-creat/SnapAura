@@ -31,7 +31,10 @@ import {
   Coins,
   DollarSign,
   Activity,
-  RefreshCcw
+  RefreshCcw,
+  Type,
+  Layers,
+  Sliders
 } from 'lucide-react';
 
 export { 
@@ -66,5 +69,8 @@ export {
   Coins,
   DollarSign,
   Activity,
-  RefreshCcw
+  RefreshCcw,
+  Type,
+  Layers,
+  Sliders
 };
