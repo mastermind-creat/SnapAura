@@ -4,7 +4,8 @@ import Studio from './components/Studio';
 import Editor from './components/Editor';
 import Generator from './components/Generator';
 import Chat from './components/Chat';
-import ToastContainer from './components/Toast'; // New import
+import Toolkit from './components/Toolkit';
+import ToastContainer from './components/Toast';
 import { Tab } from './types';
 
 const App: React.FC = () => {
@@ -40,6 +41,10 @@ const App: React.FC = () => {
 
         {activeTab === Tab.CHAT && (
           <Chat />
+        )}
+
+        {activeTab === Tab.TOOLKIT && (
+          <Toolkit />
         )}
       </main>
 

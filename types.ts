@@ -3,6 +3,7 @@ export enum Tab {
   EDIT = 'EDIT',
   GENERATE = 'GENERATE',
   CHAT = 'CHAT',
+  TOOLKIT = 'TOOLKIT',
   PROFILE = 'PROFILE'
 }
 

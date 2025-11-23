@@ -19,7 +19,11 @@ import {
   Brain,
   CheckCircle,
   AlertCircle,
-  X
+  X,
+  Briefcase,
+  Link,
+  QrCode,
+  ArrowLeft
 } from 'lucide-react';
 
 export { 
@@ -42,5 +46,9 @@ export {
   Brain,
   CheckCircle,
   AlertCircle,
-  X
+  X,
+  Briefcase,
+  Link,
+  QrCode,
+  ArrowLeft
 };

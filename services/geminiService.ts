@@ -272,3 +272,19 @@ export const sendChatMessage = async (history: {role: string, parts: {text: stri
     const result = await chatSession.sendMessage({ message: newMessage });
     return result.text;
 }
+
+// --- 6. Toolkit Features ---
+// Model: gemini-2.5-flash (Fast)
+
+export const generateSocialBio = async (info: string): Promise<string> => {
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Write 3 different short, punchy, and aesthetic social media bios (max 150 chars each) for a person who describes themselves as: "${info}". Use emojis. Return strictly just the 3 bios separated by '||'.`
+        });
+        return response.text || "";
+    } catch (e) {
+        console.error(e);
+        return "Could not generate bio.";
+    }
+}

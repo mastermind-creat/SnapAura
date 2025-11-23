@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tab } from '../types';
-import { Camera, Sparkles, MessageCircle, ImageIcon } from './Icons';
+import { Camera, Sparkles, MessageCircle, ImageIcon, Briefcase } from './Icons';
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -12,7 +12,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
     { id: Tab.HOME, icon: Camera, label: 'Studio' },
     { id: Tab.EDIT, icon: Sparkles, label: 'Edit' },
     { id: Tab.GENERATE, icon: ImageIcon, label: 'Create' },
-    { id: Tab.CHAT, icon: MessageCircle, label: 'Ask AI' },
+    { id: Tab.CHAT, icon: MessageCircle, label: 'Chat' },
+    { id: Tab.TOOLKIT, icon: Briefcase, label: 'Tools' },
   ];
 
   return (
@@ -22,12 +23,12 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center space-y-1 transition-colors duration-200 ${
+            className={`flex flex-col items-center space-y-1 transition-colors duration-200 w-12 ${
               activeTab === item.id ? 'text-secondary' : 'text-gray-400 hover:text-white'
             }`}
           >
-            <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+            <span className="text-[9px] font-medium tracking-wide">{item.label}</span>
           </button>
         ))}
       </div>
