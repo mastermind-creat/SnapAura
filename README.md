@@ -1,6 +1,6 @@
 # SnapAura AI 📸✨
 
-**SnapAura AI** is a premium, Progressive Web App (PWA) designed for the modern social media era. It leverages the latest **Google Gemini Models** to transform how users create, edit, and caption their content. 
+**SnapAura AI** is a premium, Progressive Web App (PWA) designed for the modern social media era. It leverages the latest **Google Gemini Models** to transform how users create, edit, and caption their content, while providing a suite of essential creator tools.
 
 Built with **React**, **Tailwind CSS**, and **Glassmorphism UI**, it offers a stunning, app-native experience on both mobile and desktop.
 
@@ -12,10 +12,10 @@ Built with **React**, **Tailwind CSS**, and **Glassmorphism UI**, it offers a st
 The command center for your photos.
 *   **Vibe Analysis:** Uses **Gemini 2.5 Flash** to analyze the mood, lighting, and aesthetics of your uploaded photo.
 *   **Smart Captions:** Generates 10+ captions across categories like *Flirty, Savage, Aesthetic, Kenyan Slang, and Poetic*.
-*   **Hashtag Generator:** Auto-generates trending tags based on visual content.
-*   **Social Preview:** Visualize exactly how your post will look with an Instagram-style overlay.
+*   **Design Mode:** Apply instant photo filters (B&W, Vivid, Sepia) and typography styles (Modern, Neon, Polaroid, Bold).
+*   **Effects Layer:** Add vintage overlays like Film Grain, Light Leaks, Dust, and Vignettes.
 *   **Post Card Generator:** "Burns" the caption onto the image with a stylish gradient for instant Story sharing.
-*   **Auto-Enhance:** One-click photo improvement using Generative AI.
+*   **Social Preview:** Visualize exactly how your post will look with an Instagram-style overlay.
 
 ### 2. 🪄 Magic Editor
 Modify reality with text prompts.
@@ -28,16 +28,29 @@ Text-to-Image generation studio.
 *   **High-Fidelity Generation:** Uses **Gemini 3 Pro Image Preview** for stunning 1K, 2K, and 4K results.
 *   **Fallback Mechanism:** Automatically degrades to *Flash Image* if the user lacks Pro permissions, ensuring reliability.
 
-### 4. 💬 AI Assistant
-*   **Chatbot:** A helpful creative assistant powered by **Gemini 3 Pro Preview**. Ask for photography tips, app navigation, or creative ideas.
+### 4. 💬 Chat & Connectivity
+*   **AI Assistant:** A helpful creative assistant powered by **Gemini 3 Pro Preview**. Ask for photography tips, app navigation, or creative ideas.
+*   **🛡️ Secure P2P Chat:** A serverless, browser-to-browser encrypted chat system using **WebRTC**. Users can create secure rooms via Session IDs to chat privately without any backend storage.
 
 ### 5. 🧰 Creator Toolkit
-Essential utilities for social growth and financial tracking.
-*   **📈 Crypto Market:** Real-time cryptocurrency price analysis and trend tracking using **Search Grounding**.
-*   **💱 Currency Exchange:** Real-time fiat currency conversion with current exchange rates.
-*   **🔗 Link Shortener:** Instantly shorten long URLs for bio links.
-*   **📱 QR Generator:** Create custom QR codes for websites or text.
+A comprehensive utility hub for creators.
+
+**Essentials:**
+*   **📈 Crypto Market:** Real-time cryptocurrency price analysis, trend graphs, and trading signals using **Search Grounding**.
+*   **💱 Currency Exchange:** Real-time fiat currency conversion with detailed market context.
+*   **🔗 Link Shortener:** Instantly shorten long URLs.
+*   **📱 QR Generator:** Create custom QR codes.
+
+**Photo Utilities:**
+*   **😂 Meme Maker:** Add top and bottom text to your images instantly.
+*   **🎨 Palette Extractor:** Extract dominant colors and hex codes from any image.
+*   **ℹ️ Metadata Viewer:** Inspect EXIF data (Camera model, settings, dimensions).
+
+**Social:**
 *   **✨ Bio Writer:** AI-generated social media bios based on your personality keywords.
+
+**Fun:**
+*   **🧩 Puzzle Game:** An interactive drag-and-drop slide puzzle using custom or uploaded images.
 
 ---
 
@@ -46,9 +59,10 @@ Essential utilities for social growth and financial tracking.
 *   **Frontend:** React 19, TypeScript, Vite
 *   **Styling:** Tailwind CSS (Custom animations, Glassmorphism utility classes)
 *   **AI Core:** Google GenAI SDK (`@google/genai`)
+*   **Real-time:** WebRTC (Data Channels)
 *   **Icons:** Lucide React
-*   **PWA:** Web Manifest, Service Worker ready, iOS/Android meta tags
-*   **Utilities:** Canvas Confetti, Native Web Share API, LocalStorage
+*   **PWA:** Web Manifest, Service Worker ready, iOS/Android meta tags, Install Prompts
+*   **Libraries:** `exif-js` (Metadata), `canvas-confetti` (Animations)
 
 ---
 
@@ -60,7 +74,7 @@ Essential utilities for social growth and financial tracking.
 | **Caption Rewrite** | `gemini-3-pro-preview` | Complex reasoning for tone shifting |
 | **Magic Editor** | `gemini-2.5-flash-image` | "Nano Banana" model for fast image manipulation |
 | **Image Gen (HQ)** | `gemini-3-pro-image-preview` | "Nano Banana Pro" for 4K generation |
-| **Chat** | `gemini-3-pro-preview` | High-intelligence conversational agent |
+| **Chat Assistant** | `gemini-3-pro-preview` | High-intelligence conversational agent |
 | **Toolkit (Bio)** | `gemini-2.5-flash` | Fast text generation |
 | **Financial Tools** | `gemini-2.5-flash` | Uses **Google Search Grounding** for real-time data |
 
