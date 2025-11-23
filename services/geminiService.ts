@@ -22,13 +22,13 @@ const getApiKey = (): string => {
   }
 
   // 3. Check Fallback List (Rotation)
-  const validKeys = FALLBACK_KEYS.filter(k => k !== "YOUR_API_KEY_HERE" && k.trim() !== "");
+  const validKeys = FALLBACK_KEYS.filter(k => k !== "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU" && k.trim() !== "");
   if (validKeys.length > 0) {
     // Return a random key to distribute load
     return validKeys[Math.floor(Math.random() * validKeys.length)];
   }
 
-  return "YOUR_API_KEY_HERE";
+  return "AIzaSyApq2zG8IlEyMbeN0jkjq8aepOhDTEhiYU";
 };
 
 const apiKey = getApiKey();
