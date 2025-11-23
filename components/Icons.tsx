@@ -48,7 +48,11 @@ import {
   Film,
   Gamepad,
   ImagePlus,
-  Scissors
+  Scissors,
+  Users,
+  Link2,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 
 export { 
@@ -100,5 +104,9 @@ export {
   Film,
   Gamepad,
   ImagePlus,
-  Scissors
+  Scissors,
+  Users,
+  Link2,
+  ShieldCheck,
+  Smartphone
 };

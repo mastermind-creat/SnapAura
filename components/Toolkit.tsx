@@ -222,7 +222,7 @@ const Toolkit: React.FC = () => {
   const initPuzzle = () => {
       // Create solvable state (any swap state is solvable in this mode)
       setPuzzleTiles([...Array(9).keys()].sort(() => Math.random() - 0.5));
-      setPuzzleWin(false);
+      setPuzzleWin(false); // Fix: Explicitly reset win state
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -565,8 +565,6 @@ const Toolkit: React.FC = () => {
                                          top: `-${Math.floor(tileIndex / 3) * 100}%`
                                      }}
                                    />
-                                   {/* Hint Number Overlay (optional, for debug or easy mode, kept hidden for aesthetic) */}
-                                   {/* <span className="absolute top-0 left-0 bg-black/50 text-white text-[8px] p-0.5">{tileIndex}</span> */}
                                </div>
                            ))}
                        </div>
@@ -577,7 +575,7 @@ const Toolkit: React.FC = () => {
                    <div className="p-6 bg-green-500/20 border border-green-500 rounded-2xl text-center animate-bounce shadow-lg shadow-green-500/20 backdrop-blur-md">
                        <p className="text-green-400 font-black text-2xl mb-1">🎉 Puzzle Solved! 🎉</p>
                        <p className="text-white text-sm opacity-80">You have a sharp eye!</p>
-                       <button onClick={() => setUtilImage(null)} className="mt-3 bg-white text-black px-4 py-2 rounded-full text-xs font-bold hover:scale-105 transition-transform">Play Again</button>
+                       <button onClick={() => { setUtilImage(null); setPuzzleWin(false); }} className="mt-3 bg-white text-black px-4 py-2 rounded-full text-xs font-bold hover:scale-105 transition-transform">Play Again</button>
                    </div>
                )}
                {utilImage && !puzzleWin && (
