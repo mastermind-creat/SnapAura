@@ -288,3 +288,30 @@ export const generateSocialBio = async (info: string): Promise<string> => {
         return "Could not generate bio.";
     }
 }
+
+// --- 7. Financial Analysis (Crypto/Currency) ---
+// Model: gemini-2.5-flash with Google Search Grounding
+export const getFinancialAnalysis = async (query: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: query,
+      config: {
+        tools: [{ googleSearch: {} }], // Enable real-time search
+      },
+    });
+
+    // Extract search sources from grounding metadata
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
+      ?.map((chunk: any) => chunk.web)
+      .filter((web: any) => web) || [];
+
+    return {
+      text: response.text || "I couldn't retrieve that information right now.",
+      sources: sources
+    };
+  } catch (error) {
+    console.error("Financial Analysis Error:", error);
+    throw error;
+  }
+};

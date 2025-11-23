@@ -23,7 +23,14 @@ import {
   Briefcase,
   Link,
   QrCode,
-  ArrowLeft
+  ArrowLeft,
+  ArrowRight,
+  Bitcoin,
+  TrendingUp,
+  Banknote,
+  Coins,
+  DollarSign,
+  Activity
 } from 'lucide-react';
 
 export { 
@@ -50,5 +57,12 @@ export {
   Briefcase,
   Link,
   QrCode,
-  ArrowLeft
+  ArrowLeft,
+  ArrowRight,
+  Bitcoin,
+  TrendingUp,
+  Banknote,
+  Coins,
+  DollarSign,
+  Activity
 };
