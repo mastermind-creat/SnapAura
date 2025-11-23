@@ -30,7 +30,8 @@ import {
   Banknote,
   Coins,
   DollarSign,
-  Activity
+  Activity,
+  RefreshCcw
 } from 'lucide-react';
 
 export { 
@@ -64,5 +65,6 @@ export {
   Banknote,
   Coins,
   DollarSign,
-  Activity
+  Activity,
+  RefreshCcw
 };

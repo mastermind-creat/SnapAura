@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw } from './Icons';
 import { generateSocialBio, getFinancialAnalysis } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -32,11 +33,17 @@ const Toolkit: React.FC = () => {
   } | null>(null);
 
   // Currency
-  const [financialResult, setFinancialResult] = useState<{text: string, sources: any[]} | null>(null);
+  const [financialResult, setFinancialResult] = useState<{
+      result: string;
+      rate: string;
+      details: string;
+      sources: any[];
+  } | null>(null);
+  
   const [isAnalyzingFinance, setIsAnalyzingFinance] = useState(false);
   
   // Specific inputs for Currency
-  const [amount, setAmount] = useState('100');
+  const [amount, setAmount] = useState('1');
   const [fromCurr, setFromCurr] = useState('USD');
   const [toCurr, setToCurr] = useState('KES');
 
@@ -54,6 +61,37 @@ const Toolkit: React.FC = () => {
     "Litecoin (LTC)",
     "Chainlink (LINK)"
   ];
+
+  const CURRENCIES = [
+    { code: 'USD', name: 'US Dollar' },
+    { code: 'EUR', name: 'Euro' },
+    { code: 'GBP', name: 'British Pound' },
+    { code: 'KES', name: 'Kenyan Shilling' },
+    { code: 'JPY', name: 'Japanese Yen' },
+    { code: 'CNY', name: 'Chinese Yuan' },
+    { code: 'INR', name: 'Indian Rupee' },
+    { code: 'CAD', name: 'Canadian Dollar' },
+    { code: 'AUD', name: 'Australian Dollar' },
+    { code: 'ZAR', name: 'South African Rand' },
+    { code: 'NGN', name: 'Nigerian Naira' },
+    { code: 'AED', name: 'UAE Dirham' },
+    { code: 'GHS', name: 'Ghanaian Cedi' },
+    { code: 'UGX', name: 'Ugandan Shilling' },
+    { code: 'TZS', name: 'Tanzanian Shilling' },
+    { code: 'RWF', name: 'Rwandan Franc' },
+    { code: 'EGP', name: 'Egyptian Pound' },
+    { code: 'CHF', name: 'Swiss Franc' },
+    { code: 'SEK', name: 'Swedish Krona' },
+    { code: 'NZD', name: 'New Zealand Dollar' },
+    { code: 'SGD', name: 'Singapore Dollar' },
+    { code: 'HKD', name: 'Hong Kong Dollar' },
+    { code: 'KRW', name: 'South Korean Won' },
+    { code: 'MXN', name: 'Mexican Peso' },
+    { code: 'BRL', name: 'Brazilian Real' },
+    { code: 'RUB', name: 'Russian Ruble' },
+    { code: 'TRY', name: 'Turkish Lira' },
+    { code: 'SAR', name: 'Saudi Riyal' }
+  ].sort((a, b) => a.code.localeCompare(b.code));
 
   const handleShorten = async () => {
     if (!longUrl) return;
@@ -156,14 +194,39 @@ const Toolkit: React.FC = () => {
       setIsAnalyzingFinance(true);
       setFinancialResult(null);
       try {
-          const result = await getFinancialAnalysis(`Convert ${amount} ${fromCurr} to ${toCurr}. Provide the exact current exchange rate and the total value. Also briefly mention if ${fromCurr} is getting stronger or weaker.`);
-          setFinancialResult(result);
+          const prompt = `
+            Convert ${amount} ${fromCurr} to ${toCurr} using the latest real-time exchange rate.
+            Format your response exactly like this:
+            RESULT: [Total Converted Amount]
+            RATE: 1 ${fromCurr} = [Exchange Rate] ${toCurr}
+            DETAILS: [Brief summary of the currency pair trend and factors affecting it]
+          `;
+
+          const rawResult = await getFinancialAnalysis(prompt);
+          
+          const text = rawResult.text;
+          const resultMatch = text.match(/RESULT:\s*(.+)/i);
+          const rateMatch = text.match(/RATE:\s*(.+)/i);
+          const detailsMatch = text.match(/DETAILS:\s*([\s\S]*)/i);
+
+          setFinancialResult({
+              result: resultMatch ? resultMatch[1].trim() : "Check details",
+              rate: rateMatch ? rateMatch[1].trim() : "",
+              details: detailsMatch ? detailsMatch[1].trim() : text,
+              sources: rawResult.sources
+          });
+
           showToast("Conversion complete!", "success");
       } catch (e) {
           showToast("Failed to convert.", "error");
       } finally {
           setIsAnalyzingFinance(false);
       }
+  };
+
+  const handleSwapCurrencies = () => {
+    setFromCurr(toCurr);
+    setToCurr(fromCurr);
   };
 
   const handleCopy = (text: string) => {
@@ -413,40 +476,72 @@ const Toolkit: React.FC = () => {
               <div className="flex items-center gap-2">
                   <div className="flex-1">
                       <label className="text-xs font-bold uppercase text-gray-400 block mb-1">From</label>
-                      <input 
+                      <select 
                         value={fromCurr}
-                        onChange={(e) => setFromCurr(e.target.value.toUpperCase())}
-                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-green-500 transition-colors uppercase"
-                        maxLength={3}
-                     />
+                        onChange={(e) => setFromCurr(e.target.value)}
+                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-green-500 transition-colors appearance-none cursor-pointer hover:bg-white/5"
+                      >
+                         {CURRENCIES.map(c => (
+                             <option key={c.code} value={c.code} className="bg-gray-900 text-white">
+                                 {c.code} - {c.name}
+                             </option>
+                         ))}
+                      </select>
                   </div>
-                  <div className="pt-5 text-gray-400">
-                      <ArrowRight size={20} />
+                  <div className="pt-5 text-gray-400 cursor-pointer hover:text-white transition-colors" onClick={handleSwapCurrencies}>
+                      <RefreshCcw size={20} />
                   </div>
                   <div className="flex-1">
                       <label className="text-xs font-bold uppercase text-gray-400 block mb-1">To</label>
-                      <input 
+                      <select 
                         value={toCurr}
-                        onChange={(e) => setToCurr(e.target.value.toUpperCase())}
-                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-green-500 transition-colors uppercase"
-                        maxLength={3}
-                     />
+                        onChange={(e) => setToCurr(e.target.value)}
+                        className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-green-500 transition-colors appearance-none cursor-pointer hover:bg-white/5"
+                      >
+                         {CURRENCIES.map(c => (
+                             <option key={c.code} value={c.code} className="bg-gray-900 text-white">
+                                 {c.code} - {c.name}
+                             </option>
+                         ))}
+                      </select>
                   </div>
               </div>
 
               <button 
                 onClick={handleCurrencyConvert}
                 disabled={!amount || !fromCurr || !toCurr || isAnalyzingFinance}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 active:scale-95 transition-all"
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 active:scale-95 transition-all shadow-lg shadow-green-500/20"
               >
                  {isAnalyzingFinance ? <RefreshCw className="animate-spin" /> : <DollarSign />} Convert
               </button>
 
               {financialResult && (
-                  <div className="mt-4 space-y-4">
-                      <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                           <p className="text-sm leading-relaxed text-gray-200 whitespace-pre-line">{financialResult.text}</p>
+                  <div className="mt-4 space-y-4 animate-fade-in-up">
+                      {/* Result Card */}
+                      <div className="glass-panel p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/20 blur-[40px] rounded-full"></div>
+                          
+                          <p className="text-xs text-gray-400 font-bold uppercase mb-1">Converted Amount</p>
+                          <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+                              {financialResult.result}
+                          </h1>
+                          
+                          {financialResult.rate && (
+                              <div className="inline-block bg-white/10 px-3 py-1 rounded-lg">
+                                <p className="text-xs text-green-300 font-mono">
+                                    Rate: {financialResult.rate}
+                                </p>
+                              </div>
+                          )}
                       </div>
+
+                      {/* Analysis Text */}
+                      <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                           <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase">Market Context</h3>
+                           <p className="text-sm leading-relaxed text-gray-300 whitespace-pre-line">{financialResult.details}</p>
+                      </div>
+
+                      {/* Sources */}
                       {financialResult.sources.length > 0 && (
                           <div className="flex flex-col gap-2">
                               <span className="text-xs text-gray-500 uppercase font-bold">Data Sources</span>
