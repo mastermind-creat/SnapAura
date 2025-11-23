@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
+import { Logo } from './Logo';
 
 interface StudioProps {
   image: string | null;
@@ -246,7 +247,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
              <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary blur-xl opacity-50 rounded-full animate-pulse-slow"></div>
                 <div className="bg-black/40 p-4 rounded-2xl border border-white/10 backdrop-blur-md relative">
-                   <Camera size={48} className="text-white" />
+                   <Logo size={64} />
                 </div>
                 <Sparkles className="absolute -top-2 -right-2 text-yellow-400 animate-bounce" size={24} />
              </div>
