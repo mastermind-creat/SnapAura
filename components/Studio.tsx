@@ -22,6 +22,7 @@ type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
 const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false); // New State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [selectedCaption, setSelectedCaption] = useState<string | null>(null);
@@ -54,6 +55,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsUploading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -63,6 +65,8 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
         setCaptionStyle('modern');
         setActiveEffect('none');
         showToast("Image uploaded!", "success");
+        // Add slight delay to finish animation smoothly
+        setTimeout(() => setIsUploading(false), 800);
       };
       reader.readAsDataURL(file);
     }
@@ -286,9 +290,6 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
       }
       lines.push(line);
 
-      // Adjust Y to center the block of text if needed, or just draw up from bottom
-      // Here we treat Y as the baseline of the last line or bottom area
-      // Let's treat Y as the bottom-most point
       let startY = y - ((lines.length - 1) * lineHeight);
 
       lines.forEach((l) => {
@@ -367,6 +368,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
             ))}
         </div>
 
+        {/* Hidden Input */}
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -374,6 +376,18 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
           accept="image/*" 
           className="hidden" 
         />
+        
+        {/* Upload Loading Overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in-up">
+              <div className="relative mb-4">
+                  <div className="absolute inset-0 bg-primary/50 blur-xl rounded-full animate-pulse"></div>
+                  <RefreshCw className="animate-spin text-white relative z-10" size={48} />
+              </div>
+              <p className="text-white font-bold text-lg">Loading Studio...</p>
+              <p className="text-gray-400 text-sm">Preparing visuals</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -723,15 +737,6 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                 </div>
             </div>
         )}
-        
-        {/* Hidden file input */}
-        <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept="image/*" 
-            className="hidden" 
-          />
       </div>
     </div>
   );

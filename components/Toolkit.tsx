@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette } from './Icons';
-import { generateSocialBio, getFinancialAnalysis } from '../services/geminiService';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload } from './Icons';
+import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 
 // Define tool types for better state management
@@ -8,6 +8,7 @@ type ToolType = 'menu' | 'shortener' | 'qr' | 'bio' | 'crypto' | 'currency' | 'm
 
 const Toolkit: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>('menu');
+  const [isUploading, setIsUploading] = useState(false);
 
   // --- SOCIAL TOOLS STATE ---
   const [longUrl, setLongUrl] = useState('');
@@ -44,14 +45,32 @@ const Toolkit: React.FC = () => {
   // Puzzle
   const [puzzleTiles, setPuzzleTiles] = useState<number[]>([]);
   const [puzzleWin, setPuzzleWin] = useState(false);
+  const [draggedTileIndex, setDraggedTileIndex] = useState<number | null>(null);
 
   const COINS = ["Bitcoin (BTC)", "Ethereum (ETH)", "Solana (SOL)", "Binance Coin (BNB)", "Ripple (XRP)", "Cardano (ADA)", "Dogecoin (DOGE)"];
-  const CURRENCIES = [{code: 'USD', name: 'US Dollar'}, {code: 'EUR', name: 'Euro'}, {code: 'KES', name: 'Kenyan Shilling'}, {code: 'GBP', name: 'Pound'}];
+  const CURRENCIES = [
+    {code: 'USD', name: 'US Dollar'}, 
+    {code: 'EUR', name: 'Euro'}, 
+    {code: 'KES', name: 'Kenyan Shilling'}, 
+    {code: 'GBP', name: 'British Pound'},
+    {code: 'JPY', name: 'Japanese Yen'},
+    {code: 'CAD', name: 'Canadian Dollar'},
+    {code: 'AUD', name: 'Australian Dollar'},
+    {code: 'NGN', name: 'Nigerian Naira'},
+    {code: 'ZAR', name: 'South African Rand'}
+  ];
 
-  // Helper: Load Image for Utils
+  const PUZZLE_PRESETS = [
+      { name: "Neon City", url: "https://images.unsplash.com/photo-1515630278258-407f66498911?w=500&h=500&fit=crop" },
+      { name: "Nature", url: "https://images.unsplash.com/photo-1501854140884-074bf86ee91c?w=500&h=500&fit=crop" },
+      { name: "Abstract", url: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&h=500&fit=crop" }
+  ];
+
+  // Helper: Load Image for Utils with Loading Effect
   const handleUtilImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+          setIsUploading(true);
           // EXIF Logic
           if (activeTool === 'meta') {
             // @ts-ignore
@@ -78,22 +97,39 @@ const Toolkit: React.FC = () => {
               setUtilImage(reader.result as string);
               if (activeTool === 'palette') extractPalette(reader.result as string);
               if (activeTool === 'puzzle') initPuzzle();
+              
+              // Simulate a short processing delay for effect
+              setTimeout(() => setIsUploading(false), 800);
           };
           reader.readAsDataURL(file);
       }
   };
 
+  const handlePresetSelect = (url: string) => {
+      setIsUploading(true);
+      setUtilImage(url);
+      setTimeout(() => {
+          setIsUploading(false);
+          initPuzzle();
+      }, 500);
+  };
+
   // --- SOCIAL HANDLERS ---
   const handleShorten = async () => {
+      if(!longUrl) return;
       setIsShortening(true);
       setTimeout(() => {
           setShortUrl(`snapaura.lnk/${Math.random().toString(36).substring(7)}`);
           setIsShortening(false);
+          showToast("Link shortened!", "success");
       }, 1000);
   };
 
   const handleGenerateQR = () => {
-      if(qrText) setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`);
+      if(qrText) {
+          setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`);
+          showToast("QR Code generated", "success");
+      }
   };
 
   const handleGenerateBio = async () => {
@@ -105,22 +141,32 @@ const Toolkit: React.FC = () => {
       } finally { setIsWritingBio(false); }
   };
 
-  // --- FINANCIAL HANDLERS ---
-  // (Simplified for brevity as they rely on existing service logic which is unchanged)
+  // --- FINANCIAL HANDLERS (UPDATED) ---
   const handleCryptoAnalysis = async () => {
       setIsAnalyzingFinance(true);
+      setCryptoResult(null);
       try {
-          const res = await getFinancialAnalysis(`Analyze ${selectedCoin} price and trend.`);
-          setCryptoResult({ price: "Check Source", trend: [1,2,3], signal: "HOLD", details: res.text, sources: res.sources });
-      } finally { setIsAnalyzingFinance(false); }
+          const data = await getCryptoData(selectedCoin);
+          setCryptoResult(data);
+          showToast(`Data loaded for ${selectedCoin}`, "success");
+      } catch (err) {
+          showToast("Failed to fetch crypto data", "error");
+      } finally { 
+          setIsAnalyzingFinance(false); 
+      }
   };
   
   const handleCurrencyConvert = async () => {
       setIsAnalyzingFinance(true);
+      setFinancialResult(null);
        try {
-          const res = await getFinancialAnalysis(`Convert ${amount} ${fromCurr} to ${toCurr}.`);
-          setFinancialResult({ result: "See details", details: res.text, sources: res.sources });
-      } finally { setIsAnalyzingFinance(false); }
+          const data = await getCurrencyData(amount, fromCurr, toCurr);
+          setFinancialResult(data);
+      } catch(err) {
+          showToast("Conversion failed", "error");
+      } finally { 
+          setIsAnalyzingFinance(false); 
+      }
   };
 
   // --- PHOTO UTILS LOGIC ---
@@ -168,22 +214,55 @@ const Toolkit: React.FC = () => {
               ctx.fillText(memeBottom.toUpperCase(), canvas.width/2, canvas.height*0.9);
           }
           setMemeCanvasUrl(canvas.toDataURL());
+          showToast("Meme rendered!", "success");
       }
   };
 
   // --- PUZZLE LOGIC ---
   const initPuzzle = () => {
-      setPuzzleTiles([0,1,2,3,4,5,6,7,8].sort(() => Math.random() - 0.5));
+      // Create solvable state (any swap state is solvable in this mode)
+      setPuzzleTiles([...Array(9).keys()].sort(() => Math.random() - 0.5));
       setPuzzleWin(false);
   };
-  const handleTileClick = (index: number) => {
-      // Simple swap logic for demo (not strictly sliding rule for ease of play)
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+      setDraggedTileIndex(index);
+      e.dataTransfer.effectAllowed = "move";
+      // Transparent drag image
+      const img = new Image();
+      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+      e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+      e.preventDefault();
+      if (draggedTileIndex === null) return;
+      if (draggedTileIndex === targetIndex) return;
+
       const newTiles = [...puzzleTiles];
-      const emptyIndex = newTiles.indexOf(8); // Assume 8 is empty/last
-      const clickedIndex = index;
-      // Swap
-      [newTiles[emptyIndex], newTiles[clickedIndex]] = [newTiles[clickedIndex], newTiles[emptyIndex]];
+      // Swap elements
+      const temp = newTiles[draggedTileIndex];
+      newTiles[draggedTileIndex] = newTiles[targetIndex];
+      newTiles[targetIndex] = temp;
+
       setPuzzleTiles(newTiles);
+      setDraggedTileIndex(null);
+
+      // Check Win
+      const isSorted = newTiles.every((val, i) => val === i);
+      if (isSorted) {
+          setPuzzleWin(true);
+          showToast("Puzzle Solved!", "success");
+          if (window.confetti) window.confetti();
+      } else {
+          // Haptic feedback for successful swap
+          if (navigator.vibrate) navigator.vibrate(20);
+      }
   };
 
   const renderMenu = () => (
@@ -215,9 +294,10 @@ const Toolkit: React.FC = () => {
         {/* Section: Social */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Social Growth</h3>
-            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5" onClick={() => setActiveTool('bio')}>
+            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all" onClick={() => setActiveTool('bio')}>
                 <div className="bg-pink-500/20 p-3 rounded-full text-pink-400"><Sparkles size={20} /></div>
-                <div><h4 className="font-bold">AI Bio Writer</h4><p className="text-xs text-gray-400">Perfect your profile</p></div>
+                <div><h4 className="font-bold text-white">AI Bio Writer</h4><p className="text-xs text-gray-400">Perfect your profile</p></div>
+                <ArrowRight className="ml-auto text-gray-500" size={16} />
             </div>
         </div>
     </div>
@@ -225,38 +305,161 @@ const Toolkit: React.FC = () => {
 
   return (
     <div className="h-full overflow-y-auto hide-scrollbar p-4 pb-24 space-y-6">
+      
+      {/* Upload Loading Overlay */}
+      {isUploading && (
+          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in-up">
+              <div className="relative mb-4">
+                  <div className="absolute inset-0 bg-primary/50 blur-xl rounded-full animate-pulse"></div>
+                  <RefreshCw className="animate-spin text-white relative z-10" size={48} />
+              </div>
+              <p className="text-white font-bold text-lg">Scanning Image...</p>
+              <p className="text-gray-400 text-sm">Extracting pixel data</p>
+          </div>
+      )}
+
+      {/* Header */}
       <div className="flex items-center gap-3 sticky top-0 bg-[#0f0f11]/80 backdrop-blur-md py-2 z-20">
         {activeTool !== 'menu' && (
-            <button onClick={() => setActiveTool('menu')} className="p-2 bg-white/5 rounded-full hover:bg-white/10">
-                <ArrowLeft size={20} />
+            <button onClick={() => setActiveTool('menu')} className="p-2 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 transition-all">
+                <ArrowLeft size={20} className="text-white" />
             </button>
         )}
         <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent flex items-center gap-2">
-            <Briefcase className="text-white" /> Toolkit
+            <Briefcase className="text-teal-500" /> Toolkit
         </h1>
       </div>
 
       {activeTool === 'menu' && renderMenu()}
 
+      {/* --- CRYPTO TOOL --- */}
+      {activeTool === 'crypto' && (
+          <div className="space-y-4 animate-fade-in-up">
+              <div className="glass-panel p-4 rounded-xl space-y-4 border-t-4 border-orange-500">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Select Asset</label>
+                  <select 
+                    value={selectedCoin} 
+                    onChange={e => setSelectedCoin(e.target.value)}
+                    className="w-full bg-black/30 text-white p-3 rounded-xl border border-white/10 focus:border-orange-500 outline-none appearance-none"
+                  >
+                      {COINS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  
+                  <button 
+                    onClick={handleCryptoAnalysis} 
+                    disabled={isAnalyzingFinance}
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 py-3 rounded-xl font-bold text-white shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex justify-center items-center gap-2"
+                  >
+                      {isAnalyzingFinance ? <RefreshCw className="animate-spin" /> : <Activity />}
+                      Analyze Market
+                  </button>
+              </div>
+
+              {cryptoResult && (
+                  <div className="glass-panel p-5 rounded-2xl animate-fade-in-up space-y-4">
+                      <div className="flex justify-between items-end">
+                          <div>
+                              <p className="text-xs text-gray-400">Current Price</p>
+                              <h2 className="text-3xl font-black text-white">{cryptoResult.price}</h2>
+                          </div>
+                          <div className={`px-3 py-1 rounded-lg text-sm font-bold ${cryptoResult.change?.includes('+') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                              {cryptoResult.change}
+                          </div>
+                      </div>
+
+                      {/* SVG Mini Chart */}
+                      {cryptoResult.trend && (
+                        <div className="h-24 w-full flex items-end gap-1 border-b border-white/5 pb-2">
+                            {cryptoResult.trend.map((val: number, i: number) => (
+                                <div key={i} className="flex-1 bg-orange-500/50 hover:bg-orange-400 transition-all rounded-t-sm" style={{height: `${val}%`}}></div>
+                            ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4">
+                          <div className={`flex-1 p-3 rounded-xl text-center font-black text-xl border ${
+                              cryptoResult.signal === 'BUY' ? 'bg-green-500/20 border-green-500 text-green-400' : 
+                              cryptoResult.signal === 'SELL' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-gray-500/20 border-gray-500 text-gray-300'
+                          }`}>
+                              {cryptoResult.signal}
+                          </div>
+                          <p className="flex-[2] text-xs text-gray-300 leading-relaxed">{cryptoResult.analysis}</p>
+                      </div>
+                  </div>
+              )}
+          </div>
+      )}
+
+      {/* --- CURRENCY TOOL --- */}
+      {activeTool === 'currency' && (
+          <div className="space-y-4 animate-fade-in-up">
+              <div className="glass-panel p-4 rounded-xl space-y-4 border-t-4 border-green-500">
+                   <div className="flex gap-2">
+                       <input 
+                          type="number" 
+                          value={amount} 
+                          onChange={e => setAmount(e.target.value)} 
+                          className="w-1/3 bg-black/30 p-3 rounded-xl text-white font-bold text-center border border-white/10"
+                       />
+                       <select value={fromCurr} onChange={e => setFromCurr(e.target.value)} className="w-1/3 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10">
+                           {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                       </select>
+                       <div className="flex items-center text-gray-400"><ArrowRight size={16}/></div>
+                       <select value={toCurr} onChange={e => setToCurr(e.target.value)} className="w-1/3 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10">
+                           {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                       </select>
+                   </div>
+                   
+                   <button 
+                      onClick={handleCurrencyConvert}
+                      disabled={isAnalyzingFinance}
+                      className="w-full bg-gradient-to-r from-green-500 to-teal-500 py-3 rounded-xl font-bold text-white shadow-lg shadow-green-500/20 active:scale-95 transition-all flex justify-center items-center gap-2"
+                   >
+                       {isAnalyzingFinance ? <RefreshCw className="animate-spin" /> : <RefreshCcw />}
+                       Convert Now
+                   </button>
+              </div>
+
+              {financialResult && (
+                  <div className="glass-panel p-6 rounded-2xl animate-fade-in-up text-center space-y-3">
+                      <p className="text-xs text-gray-400 uppercase tracking-widest">Conversion Result</p>
+                      <h2 className="text-3xl font-black text-white">{financialResult.result}</h2>
+                      <div className="inline-block bg-white/5 px-3 py-1 rounded-full text-xs text-green-300 border border-white/10">
+                          {financialResult.rate}
+                      </div>
+                      <p className="text-xs text-gray-400 pt-2 border-t border-white/10">{financialResult.details}</p>
+                  </div>
+              )}
+          </div>
+      )}
+
       {/* --- MEME MAKER --- */}
       {activeTool === 'meme' && (
           <div className="space-y-4 animate-fade-in-up">
               {!utilImage ? (
-                  <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5">
-                      <ImagePlus size={32} className="text-gray-400 mb-2"/>
-                      <p className="text-sm text-gray-400">Tap to upload base image</p>
+                  <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5 transition-all active:scale-95">
+                      <ImagePlus size={48} className="text-gray-500 mb-2"/>
+                      <p className="text-sm font-bold text-gray-300">Tap to upload base image</p>
                   </div>
               ) : (
                   <div className="space-y-4">
                       <div className="glass-panel p-4 rounded-xl">
-                          <img src={memeCanvasUrl || utilImage} className="w-full rounded-lg mb-4" />
+                          <img src={memeCanvasUrl || utilImage} className="w-full rounded-lg mb-4" alt="Meme Base" />
                           <div className="flex flex-col gap-2">
-                              <input placeholder="TOP TEXT" value={memeTop} onChange={e => setMemeTop(e.target.value)} className="bg-black/30 p-2 rounded text-white text-center" />
-                              <input placeholder="BOTTOM TEXT" value={memeBottom} onChange={e => setMemeBottom(e.target.value)} className="bg-black/30 p-2 rounded text-white text-center" />
-                              <button onClick={renderMeme} className="bg-primary p-3 rounded-xl font-bold mt-2">Render Meme</button>
+                              <input placeholder="TOP TEXT" value={memeTop} onChange={e => setMemeTop(e.target.value)} className="bg-black/30 p-3 rounded-lg text-white text-center font-bold border border-white/10 focus:border-red-500 outline-none" />
+                              <input placeholder="BOTTOM TEXT" value={memeBottom} onChange={e => setMemeBottom(e.target.value)} className="bg-black/30 p-3 rounded-lg text-white text-center font-bold border border-white/10 focus:border-red-500 outline-none" />
+                              <button onClick={renderMeme} className="bg-gradient-to-r from-red-500 to-pink-500 text-white p-3 rounded-xl font-bold mt-2 shadow-lg active:scale-95 transition-all">
+                                  Render Meme
+                              </button>
                           </div>
                       </div>
-                      {memeCanvasUrl && <a href={memeCanvasUrl} download="meme.png" className="block text-center bg-white text-black py-3 rounded-xl font-bold">Download Meme</a>}
+                      {memeCanvasUrl && (
+                        <div className="flex justify-center">
+                            <a href={memeCanvasUrl} download="snapaura-meme.png" className="bg-white text-black py-3 px-8 rounded-full font-bold shadow-xl hover:scale-105 transition-all flex items-center gap-2">
+                                <DownloadIcon /> Download Meme
+                            </a>
+                        </div>
+                      )}
                   </div>
               )}
           </div>
@@ -266,17 +469,19 @@ const Toolkit: React.FC = () => {
       {activeTool === 'palette' && (
           <div className="space-y-4 animate-fade-in-up">
                {!utilImage ? (
-                   <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5">
-                      <Palette size={32} className="text-gray-400 mb-2"/>
-                      <p className="text-sm text-gray-400">Tap to upload image</p>
+                   <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5 transition-all active:scale-95">
+                      <Palette size={48} className="text-pink-400 mb-2"/>
+                      <p className="text-sm font-bold text-gray-300">Tap to upload image</p>
                   </div>
                ) : (
                    <div>
-                       <img src={utilImage} className="w-full h-48 object-cover rounded-xl mb-4" />
+                       <img src={utilImage} className="w-full h-48 object-cover rounded-xl mb-4 shadow-lg" alt="Palette Source" />
                        <div className="grid grid-cols-3 gap-3">
                            {extractedColors.map((col, i) => (
-                               <div key={i} className="h-20 rounded-xl flex items-end p-2" style={{backgroundColor: col}}>
-                                   <span className="text-[10px] bg-black/50 text-white px-1 rounded">{col}</span>
+                               <div key={i} className="h-24 rounded-xl flex items-end p-2 relative group cursor-pointer shadow-lg" style={{backgroundColor: col}} onClick={() => {navigator.clipboard.writeText(col); showToast("Color copied!", "success")}}>
+                                   <div className="bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded text-[10px] w-full text-center">
+                                       {col}
+                                   </div>
                                </div>
                            ))}
                        </div>
@@ -289,81 +494,146 @@ const Toolkit: React.FC = () => {
       {activeTool === 'meta' && (
           <div className="space-y-4 animate-fade-in-up">
               {!utilImage ? (
-                  <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5">
-                      <Info size={32} className="text-gray-400 mb-2"/>
-                      <p className="text-sm text-gray-400">Tap to inspect EXIF Data</p>
+                  <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5 transition-all active:scale-95">
+                      <Info size={48} className="text-yellow-400 mb-2"/>
+                      <p className="text-sm font-bold text-gray-300">Tap to inspect EXIF Data</p>
                   </div>
               ) : (
                   <div className="glass-panel p-4 rounded-xl space-y-2">
-                      <h3 className="font-bold border-b border-white/10 pb-2 mb-2">Image Data</h3>
-                      {imageMeta ? Object.entries(imageMeta).map(([k,v]) => (
-                          <div key={k} className="flex justify-between text-sm">
-                              <span className="text-gray-400 capitalize">{k}</span>
-                              <span className="text-white truncate max-w-[50%]">{String(v)}</span>
-                          </div>
-                      )) : <p>Reading data...</p>}
+                      <h3 className="font-bold border-b border-white/10 pb-2 mb-2 flex items-center gap-2">
+                          <Info size={16} className="text-yellow-400"/> Image Data
+                      </h3>
+                      {imageMeta ? Object.entries(imageMeta).map(([k,v]) => {
+                          if (typeof v !== 'string' && typeof v !== 'number') return null;
+                          return (
+                            <div key={k} className="flex justify-between text-sm py-1 border-b border-white/5 last:border-0">
+                                <span className="text-gray-400 capitalize">{k}</span>
+                                <span className="text-white truncate max-w-[50%] font-mono">{String(v)}</span>
+                            </div>
+                          )
+                      }) : <p className="text-gray-400 italic">Reading data...</p>}
                   </div>
               )}
           </div>
       )}
 
-      {/* --- PUZZLE GAME --- */}
+      {/* --- PUZZLE GAME (Drag & Drop Swap) --- */}
       {activeTool === 'puzzle' && (
           <div className="space-y-4 animate-fade-in-up">
                {!utilImage ? (
-                   <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5">
-                      <Gamepad size={32} className="text-gray-400 mb-2"/>
-                      <p className="text-sm text-gray-400">Upload Image to Play</p>
+                   <div className="space-y-4">
+                       <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-40 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5 transition-all active:scale-95">
+                          <Gamepad size={40} className="text-white mb-2"/>
+                          <p className="text-sm font-bold text-gray-300">Upload Your Own Image</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 px-1">
+                          <div className="h-[1px] bg-white/10 flex-1"></div>
+                          <span className="text-xs text-gray-500 uppercase font-bold">Or Pick a Vibe</span>
+                          <div className="h-[1px] bg-white/10 flex-1"></div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                          {PUZZLE_PRESETS.map((p, i) => (
+                              <button key={i} onClick={() => handlePresetSelect(p.url)} className="relative aspect-square rounded-xl overflow-hidden group border border-white/10 active:scale-95 transition-all">
+                                  <img src={p.url} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" alt={p.name} />
+                                  <div className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-[10px] text-white font-bold text-center backdrop-blur-sm">{p.name}</div>
+                              </button>
+                          ))}
+                      </div>
                   </div>
                ) : (
-                   <div className="grid grid-cols-3 gap-1 aspect-square bg-black border border-white/20 p-1">
-                       {puzzleTiles.map((tileIndex, i) => (
-                           <div 
-                             key={i} 
-                             onClick={() => handleTileClick(i)}
-                             className="relative overflow-hidden bg-gray-800 cursor-pointer transition-all active:scale-95"
-                             style={{ opacity: tileIndex === 8 ? 0.1 : 1 }}
-                           >
+                   <>
+                    <p className="text-center text-xs text-gray-400 mb-2">Drag and drop tiles to swap them!</p>
+                    <div className="border-4 border-white/10 rounded-xl overflow-hidden shadow-2xl mx-auto w-full max-w-[320px]">
+                       <div className="grid grid-cols-3 gap-1 aspect-square bg-black p-1">
+                           {puzzleTiles.map((tileIndex, i) => (
                                <div 
-                                 className="absolute w-[300%] h-[300%]"
-                                 style={{
-                                     backgroundImage: `url(${utilImage})`,
-                                     backgroundSize: '100% 100%',
-                                     left: `-${(tileIndex % 3) * 100}%`,
-                                     top: `-${Math.floor(tileIndex / 3) * 100}%`
-                                 }}
-                               />
-                           </div>
-                       ))}
+                                 key={i} 
+                                 draggable
+                                 onDragStart={(e) => handleDragStart(e, i)}
+                                 onDragOver={handleDragOver}
+                                 onDrop={(e) => handleDrop(e, i)}
+                                 className={`relative overflow-hidden bg-gray-800 cursor-move transition-all ${draggedTileIndex === i ? 'opacity-50 scale-90' : 'opacity-100 hover:brightness-110'}`}
+                               >
+                                   <div 
+                                     className="absolute w-[300%] h-[300%]"
+                                     style={{
+                                         backgroundImage: `url(${utilImage})`,
+                                         backgroundSize: '100% 100%',
+                                         left: `-${(tileIndex % 3) * 100}%`,
+                                         top: `-${Math.floor(tileIndex / 3) * 100}%`
+                                     }}
+                                   />
+                                   {/* Hint Number Overlay (optional, for debug or easy mode, kept hidden for aesthetic) */}
+                                   {/* <span className="absolute top-0 left-0 bg-black/50 text-white text-[8px] p-0.5">{tileIndex}</span> */}
+                               </div>
+                           ))}
+                       </div>
+                    </div>
+                   </>
+               )}
+               {puzzleWin && (
+                   <div className="p-6 bg-green-500/20 border border-green-500 rounded-2xl text-center animate-bounce shadow-lg shadow-green-500/20 backdrop-blur-md">
+                       <p className="text-green-400 font-black text-2xl mb-1">🎉 Puzzle Solved! 🎉</p>
+                       <p className="text-white text-sm opacity-80">You have a sharp eye!</p>
+                       <button onClick={() => setUtilImage(null)} className="mt-3 bg-white text-black px-4 py-2 rounded-full text-xs font-bold hover:scale-105 transition-transform">Play Again</button>
                    </div>
                )}
-               {puzzleWin && <p className="text-center text-green-400 font-bold">Solved! 🎉</p>}
+               {utilImage && !puzzleWin && (
+                   <div className="flex justify-center">
+                        <button onClick={() => setUtilImage(null)} className="text-xs text-red-400 font-bold border border-red-500/30 px-3 py-1.5 rounded-full hover:bg-red-500/10">Quit Puzzle</button>
+                   </div>
+               )}
           </div>
       )}
 
-      {/* --- EXISTING TOOLS (Shortener, Bio, Crypto, Currency) --- */}
-      {/* Kept minimal for brevity, assume similar logic to previous implementation but wrapped in Tool check */}
+      {/* --- SHORTENER --- */}
       {activeTool === 'shortener' && (
-         <div className="glass-panel p-6 rounded-2xl space-y-4 animate-fade-in-up">
-             <input value={longUrl} onChange={e => setLongUrl(e.target.value)} placeholder="URL..." className="w-full bg-black/30 p-3 rounded-xl border border-white/10" />
-             <button onClick={handleShorten} className="w-full bg-blue-500 py-3 rounded-xl font-bold">{isShortening ? '...' : 'Shorten'}</button>
-             {shortUrl && <div className="bg-white/10 p-3 rounded-xl flex justify-between"><span>{shortUrl}</span><Copy size={16} /></div>}
+         <div className="glass-panel p-6 rounded-2xl space-y-4 animate-fade-in-up border-t-4 border-blue-500">
+             <input value={longUrl} onChange={e => setLongUrl(e.target.value)} placeholder="Paste long URL here..." className="w-full bg-black/30 p-4 rounded-xl border border-white/10 text-white" />
+             <button onClick={handleShorten} className="w-full bg-blue-500 hover:bg-blue-600 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all">
+                 {isShortening ? <RefreshCw className="animate-spin inline mr-2"/> : <Link className="inline mr-2"/>} Shorten Link
+             </button>
+             {shortUrl && (
+                 <div className="bg-white/10 p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-white/20" onClick={() => {navigator.clipboard.writeText(shortUrl); showToast("Copied!", "success")}}>
+                     <span className="font-mono text-blue-300">{shortUrl}</span>
+                     <Copy size={16} />
+                 </div>
+             )}
          </div>
       )}
       
+      {/* --- BIO WRITER --- */}
       {activeTool === 'bio' && (
-        <div className="glass-panel p-6 rounded-2xl space-y-4 animate-fade-in-up">
-            <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} placeholder="About you..." className="w-full bg-black/30 p-3 rounded-xl h-24" />
-            <button onClick={handleGenerateBio} className="w-full bg-pink-500 py-3 rounded-xl font-bold">{isWritingBio ? '...' : 'Generate'}</button>
-            <div className="space-y-2">{bios.map((b,i) => <div key={i} className="bg-white/5 p-3 rounded-xl text-sm">{b}</div>)}</div>
+        <div className="glass-panel p-6 rounded-2xl space-y-4 animate-fade-in-up border-t-4 border-pink-500">
+            <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} placeholder="Describe yourself (e.g. Photographer, Coffee Lover, Tech Enthusiast)..." className="w-full bg-black/30 p-4 rounded-xl h-32 border border-white/10 text-white resize-none" />
+            <button onClick={handleGenerateBio} className="w-full bg-pink-500 hover:bg-pink-600 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all">
+                {isWritingBio ? <RefreshCw className="animate-spin inline mr-2"/> : <Sparkles className="inline mr-2"/>} Generate Bios
+            </button>
+            <div className="space-y-3">
+                {bios.map((b,i) => (
+                    <div key={i} className="bg-white/5 p-4 rounded-xl text-sm relative group cursor-pointer hover:bg-white/10 transition-all border border-white/5" onClick={() => {navigator.clipboard.writeText(b); showToast("Copied Bio", "success")}}>
+                        <p>{b}</p>
+                        <Copy size={14} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400" />
+                    </div>
+                ))}
+            </div>
         </div>
       )}
       
+      {/* --- QR GEN --- */}
       {activeTool === 'qr' && (
-          <div className="glass-panel p-6 rounded-2xl space-y-4 animate-fade-in-up">
-              <input value={qrText} onChange={e => setQrText(e.target.value)} placeholder="Text..." className="w-full bg-black/30 p-3 rounded-xl" />
-              <button onClick={handleGenerateQR} className="w-full bg-purple-500 py-3 rounded-xl font-bold">Generate QR</button>
-              {qrUrl && <img src={qrUrl} className="w-full rounded-xl" />}
+          <div className="glass-panel p-6 rounded-2xl space-y-4 animate-fade-in-up border-t-4 border-purple-500">
+              <input value={qrText} onChange={e => setQrText(e.target.value)} placeholder="Enter text or URL..." className="w-full bg-black/30 p-4 rounded-xl border border-white/10 text-white" />
+              <button onClick={handleGenerateQR} className="w-full bg-purple-500 hover:bg-purple-600 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all">
+                  Generate QR
+              </button>
+              {qrUrl && (
+                  <div className="bg-white p-4 rounded-xl shadow-inner flex justify-center">
+                      <img src={qrUrl} className="w-64 h-64 rounded-lg" alt="QR Code" />
+                  </div>
+              )}
           </div>
       )}
 
@@ -374,10 +644,17 @@ const Toolkit: React.FC = () => {
 };
 
 const MenuCard = ({icon: Icon, color, bg, title, onClick}: any) => (
-    <div onClick={onClick} className="glass-panel p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-all active:scale-95 text-center aspect-square">
-        <div className={`${bg} p-2.5 rounded-full ${color}`}><Icon size={20} /></div>
-        <span className="text-xs font-bold text-gray-300">{title}</span>
+    <div onClick={onClick} className="glass-panel p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/10 transition-all active:scale-95 text-center aspect-square border border-white/5 shadow-lg group">
+        <div className={`${bg} p-4 rounded-full ${color} group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,0,0,0.3)]`}>
+            <Icon size={28} strokeWidth={2.5} />
+        </div>
+        <span className="text-sm font-bold text-gray-200 group-hover:text-white">{title}</span>
     </div>
+);
+
+// Simple Download Icon Component
+const DownloadIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
 );
 
 export default Toolkit;

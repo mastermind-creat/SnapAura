@@ -55,6 +55,31 @@ const processBase64Image = (base64String: string) => {
   };
 };
 
+// Helper: Clean and parse JSON from text that might contain markdown or preamble
+const cleanAndParseJSON = (text: string) => {
+  try {
+    // 1. Attempt to find the JSON object within the text (between first { and last })
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const jsonCandidate = text.substring(firstBrace, lastBrace + 1);
+        try {
+            return JSON.parse(jsonCandidate);
+        } catch (innerError) {
+            // If extracting braces failed, fall through to regex cleanup
+        }
+    }
+
+    // 2. Fallback: Remove markdown code blocks and trim
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("JSON Parse Error on text:", text);
+    throw new Error("Failed to parse JSON response from AI");
+  }
+};
+
 
 // --- 1. Image Analysis & Caption Generation ---
 // Model: gemini-2.5-flash (Fast, multimodal, good for analysis)
@@ -62,8 +87,6 @@ const processBase64Image = (base64String: string) => {
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
   if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
       console.warn("API Key is missing or invalid. Please check services/geminiService.ts or your environment variables.");
-      // We don't throw immediately to allow UI to show a specific error if needed, 
-      // but the API call below will likely fail if the key is invalid.
   }
 
   const { mimeType, data } = processBase64Image(base64Image);
@@ -213,8 +236,6 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
     }
     throw new Error("No image generated (Pro).");
   } catch (error: any) {
-    // Check for Permission Denied (403) or Not Found (404) errors which might indicate
-    // the API key doesn't have access to the Pro model.
     const isAccessError = 
       error.status === 'PERMISSION_DENIED' || 
       error.status === 403 || 
@@ -227,7 +248,6 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
       console.warn("Pro model access denied or not found. Falling back to Gemini 2.5 Flash Image.");
       try {
         // Attempt 2: Fallback to Flash Image
-        // Note: Flash image does not support `imageSize` config, so we remove it.
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
           contents: {
@@ -291,27 +311,69 @@ export const generateSocialBio = async (info: string): Promise<string> => {
 
 // --- 7. Financial Analysis (Crypto/Currency) ---
 // Model: gemini-2.5-flash with Google Search Grounding
-export const getFinancialAnalysis = async (query: string) => {
+
+export const getCryptoData = async (coin: string) => {
+  const prompt = `
+    Find the current price, 24h change, and market trend for ${coin} as of right now (real-time).
+    Also provide a brief trading analysis and a signal (BUY, SELL, or HOLD).
+    Generate 7 estimate data points representing the last 7 days price trend normalized between 0 and 100 for a graph.
+    
+    Return strict JSON format (do not include markdown code blocks like \`\`\`json):
+    {
+      "price": "string (e.g. $65,000)",
+      "change": "string (e.g. +2.5%)",
+      "trend": [number, number, ...],
+      "signal": "BUY" | "SELL" | "HOLD",
+      "analysis": "short analysis string"
+    }
+  `;
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: query,
+      contents: prompt,
       config: {
-        tools: [{ googleSearch: {} }], // Enable real-time search
+        tools: [{ googleSearch: {} }],
+        // responseMimeType cannot be used with googleSearch
       },
     });
 
-    // Extract search sources from grounding metadata
-    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
-      ?.map((chunk: any) => chunk.web)
-      .filter((web: any) => web) || [];
+    const text = response.text;
+    if (!text) throw new Error("No data returned");
+    return cleanAndParseJSON(text);
 
-    return {
-      text: response.text || "I couldn't retrieve that information right now.",
-      sources: sources
-    };
   } catch (error) {
-    console.error("Financial Analysis Error:", error);
+    console.error("Crypto Data Error:", error);
+    throw error;
+  }
+};
+
+export const getCurrencyData = async (amount: string, from: string, to: string) => {
+  const prompt = `
+    Convert ${amount} ${from} to ${to} using the latest exchange rates.
+    Return strict JSON format (do not include markdown code blocks like \`\`\`json):
+    {
+      "result": "string (formatted result e.g. KES 15,000)",
+      "rate": "string (e.g. 1 USD = 130 KES)",
+      "details": "Brief market context or recent fluctuation note"
+    }
+  `;
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        // responseMimeType cannot be used with googleSearch
+      },
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No data returned");
+    return cleanAndParseJSON(text);
+  } catch (error) {
+    console.error("Currency Data Error:", error);
     throw error;
   }
 };
