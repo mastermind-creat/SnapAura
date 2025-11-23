@@ -1,0 +1,8 @@
+{
+  "name": "SnapAura AI",
+  "description": "A premium AI-powered photo editor, caption generator, and creative studio.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

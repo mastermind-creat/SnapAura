@@ -1,0 +1,40 @@
+import React from 'react';
+import { 
+  Camera, 
+  Sparkles, 
+  MessageCircle, 
+  User, 
+  Upload, 
+  Wand2, 
+  Download, 
+  Share2, 
+  Copy, 
+  RefreshCw,
+  Send,
+  Image as ImageIcon,
+  Zap,
+  Trash2,
+  Rocket,
+  Palette,
+  Brain
+} from 'lucide-react';
+
+export { 
+  Camera, 
+  Sparkles, 
+  MessageCircle, 
+  User, 
+  Upload, 
+  Wand2, 
+  Download, 
+  Share2, 
+  Copy, 
+  RefreshCw, 
+  Send,
+  ImageIcon,
+  Zap,
+  Trash2,
+  Rocket,
+  Palette,
+  Brain
+};
