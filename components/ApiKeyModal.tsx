@@ -1,0 +1,181 @@
+import React, { useState, useEffect } from 'react';
+import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste } from './Icons';
+import { Logo } from './Logo';
+import { showToast } from './Toast';
+
+interface ApiKeyModalProps {
+  isVisible: boolean;
+  onClose: () => void;
+  canClose: boolean;
+}
+
+const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose }) => {
+  const [key, setKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+
+  // Load existing key on mount if available
+  useEffect(() => {
+    const stored = localStorage.getItem('GEMINI_API_KEY');
+    if (stored) setKey(stored);
+  }, [isVisible]);
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setKey(text);
+    } catch (err) {
+      showToast("Failed to paste. Please type manually.", "error");
+    }
+  };
+
+  const handleSave = () => {
+    if (!key.trim()) {
+      showToast("Please enter an API key", "error");
+      return;
+    }
+
+    if (!key.startsWith("AIza")) {
+      showToast("Invalid Key format. Should start with 'AIza'", "error");
+      return;
+    }
+
+    setIsValidating(true);
+    
+    // Simulate validation delay for effect
+    setTimeout(() => {
+      localStorage.setItem('GEMINI_API_KEY', key.trim());
+      setIsValidating(false);
+      showToast("API Key secured locally!", "success");
+      onClose();
+    }, 800);
+  };
+
+  const handleDelete = () => {
+    localStorage.removeItem('GEMINI_API_KEY');
+    setKey('');
+    showToast("API Key removed from device", "info");
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+      {/* Dimmed Background */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-fade-in-up"></div>
+
+      {/* Modal Content */}
+      <div className="relative w-full max-w-sm bg-[#1a1a20] border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up ring-1 ring-white/5">
+        
+        {/* Glow Effects */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-50"></div>
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-[80px]"></div>
+
+        {/* Header */}
+        <div className="flex flex-col items-center text-center space-y-4 mb-6 relative z-10">
+          <div className="bg-white/5 p-4 rounded-2xl border border-white/10 shadow-lg">
+            <Logo size={48} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white">SnapAura Intelligence</h2>
+            <p className="text-sm text-gray-400 mt-1">Connect your Google Gemini API Key to unlock AI features.</p>
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="space-y-4 relative z-10">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">
+               <Key size={12} /> API Key
+            </label>
+            <div className="relative group">
+              <input 
+                type={showKey ? "text" : "password"} 
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full bg-black/40 border border-white/10 rounded-xl pl-4 pr-24 py-3.5 text-white placeholder-gray-600 focus:border-primary focus:outline-none transition-all font-mono text-sm"
+              />
+              
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {key.length === 0 && (
+                  <button 
+                    onClick={handlePaste}
+                    className="p-1.5 text-gray-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-lg"
+                    title="Paste"
+                  >
+                    <ClipboardPaste size={16} />
+                  </button>
+                )}
+                
+                {key.length > 0 && (
+                   <button 
+                    onClick={() => setShowKey(!showKey)}
+                    className="p-1.5 text-gray-500 hover:text-white transition-colors"
+                  >
+                    {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Privacy Note */}
+          <div className="flex gap-3 bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl items-start">
+             <ShieldCheck className="text-blue-400 shrink-0 mt-0.5" size={16} />
+             <p className="text-[10px] text-blue-200 leading-relaxed">
+               Your key is stored <strong>securely on your device</strong> (LocalStorage). It is never sent to our servers.
+             </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-2 space-y-3">
+             <button 
+                onClick={handleSave}
+                disabled={isValidating}
+                className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+             >
+                {isValidating ? (
+                  <>Verifying...</>
+                ) : (
+                  <><Save size={18} /> Save & Connect</>
+                )}
+             </button>
+
+             {canClose && key && (
+                 <button 
+                   onClick={handleDelete}
+                   className="w-full py-3 text-xs font-bold text-red-400 hover:text-red-300 flex items-center justify-center gap-2 hover:bg-red-500/10 rounded-xl transition-colors"
+                 >
+                   <Trash2 size={14} /> Remove Key
+                 </button>
+             )}
+
+             {canClose && (
+                <button 
+                  onClick={onClose} 
+                  className="w-full text-xs text-gray-500 hover:text-white transition-colors"
+                >
+                  Close Settings
+                </button>
+             )}
+          </div>
+
+          {/* Helper Link */}
+          <div className="text-center pt-2">
+            <a 
+              href="https://aistudio.google.com/app/apikey" 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors border-b border-transparent hover:border-primary"
+            >
+              Get a key from Google AI Studio <ExternalLink size={10} />
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ApiKeyModal;

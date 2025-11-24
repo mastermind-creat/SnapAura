@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon, Settings } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
@@ -7,7 +7,7 @@ import { Logo } from './Logo';
 interface StudioProps {
   image: string | null;
   setImage: (img: string) => void;
-  onLogout: () => void;
+  onOpenSettings: () => void;
 }
 
 // Global definition for confetti
@@ -21,7 +21,7 @@ type FilterType = 'none' | 'bw' | 'warm' | 'vivid' | 'cool' | 'sepia';
 type CaptionStyle = 'modern' | 'neon' | 'polaroid' | 'bold';
 type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
-const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
+const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -317,10 +317,10 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
     return (
       <div className="relative h-full flex flex-col items-center overflow-hidden bg-[#0f0f11]">
         
-        {/* LOGOUT BUTTON - Absolute Top */}
+        {/* SETTINGS BUTTON - Absolute Top */}
         <div className="absolute top-6 right-6 z-50">
-           <button onClick={onLogout} className="text-gray-400 hover:text-white p-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all">
-               <LogOut size={20} />
+           <button onClick={onOpenSettings} className="text-gray-400 hover:text-white p-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95 shadow-lg">
+               <Settings size={20} />
            </button>
         </div>
 
@@ -507,11 +507,11 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
                  New
              </button>
              <button 
-                 onClick={onLogout}
-                 className="text-red-400 hover:text-red-300 p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
-                 title="Logout"
+                 onClick={onOpenSettings}
+                 className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                 title="Settings"
              >
-                 <LogOut size={18} />
+                 <Settings size={18} />
              </button>
           </div>
         </div>

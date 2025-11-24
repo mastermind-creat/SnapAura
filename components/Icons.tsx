@@ -59,7 +59,13 @@ import {
   Chrome,
   Facebook,
   Twitter,
-  Globe
+  Globe,
+  Key,
+  Settings,
+  Eye,
+  EyeOff,
+  ClipboardPaste,
+  ExternalLink
 } from 'lucide-react';
 
 export { 
@@ -122,5 +128,11 @@ export {
   Chrome,
   Facebook,
   Twitter,
-  Globe
+  Globe,
+  Key,
+  Settings,
+  Eye,
+  EyeOff,
+  ClipboardPaste,
+  ExternalLink
 };

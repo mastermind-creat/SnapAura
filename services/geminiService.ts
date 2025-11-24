@@ -2,50 +2,45 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { ImageSize } from "../types";
 
 // --- API KEY CONFIGURATION ---
-// Add your API keys to this list to serve as a fallback when env vars are missing.
-// The app will randomly select a key from this list to distribute usage.
 const FALLBACK_KEYS = [
   "YOUR_API_KEY_HERE", 
-  // Add more keys here, e.g.:
-  // "AIzaSy..."
 ];
 
 const getApiKey = (): string => {
-  // 1. Check Environment Variable (Standard for production/local dev)
-  // We use a try-catch and type check because direct access to 'process' causes a crash in some browser bundlers (Vite)
+  // 1. Check Local Storage (Highest Priority - User provided)
+  if (typeof window !== 'undefined') {
+    const localKey = localStorage.getItem('GEMINI_API_KEY');
+    if (localKey && localKey.trim() !== "") return localKey;
+  }
+
+  // 2. Check Environment Variable (Production/Dev fallback)
   try {
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
       return process.env.API_KEY;
     }
   } catch (e) {
-    // Ignore ReferenceError if process is not defined
-  }
-
-  // 2. Check Local Storage (For manual override in browser console)
-  // Run: localStorage.setItem('GEMINI_API_KEY', 'your-key')
-  if (typeof window !== 'undefined') {
-    const localKey = localStorage.getItem('GEMINI_API_KEY');
-    if (localKey) return localKey;
+    // Ignore ReferenceError
   }
 
   // 3. Check Fallback List (Rotation)
   const validKeys = FALLBACK_KEYS.filter(k => k !== "YOUR_API_KEY_HERE" && k.trim() !== "");
   if (validKeys.length > 0) {
-    // Return a random key to distribute load
     return validKeys[Math.floor(Math.random() * validKeys.length)];
   }
 
   return "YOUR_API_KEY_HERE";
 };
 
-const apiKey = getApiKey();
-
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: apiKey });
+// DYNAMIC CLIENT GENERATOR
+// We must generate the client on every request to ensure we use the latest key
+// if the user updates it in LocalStorage during the session.
+const getAiClient = () => {
+    const key = getApiKey();
+    return new GoogleGenAI({ apiKey: key });
+}
 
 // Helper: Extract raw base64 and mimeType from Data URL
 const processBase64Image = (base64String: string) => {
-  // Check if it matches data:image/xyz;base64, pattern
   const match = base64String.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
   
   if (match) {
@@ -55,17 +50,14 @@ const processBase64Image = (base64String: string) => {
     };
   }
   
-  // Fallback if no header found (assume raw png)
   return {
     mimeType: 'image/png',
     data: base64String
   };
 };
 
-// Helper: Clean and parse JSON from text that might contain markdown or preamble
 const cleanAndParseJSON = (text: string) => {
   try {
-    // 1. Attempt to find the JSON object within the text (between first { and last })
     const firstBrace = text.indexOf('{');
     const lastBrace = text.lastIndexOf('}');
 
@@ -73,12 +65,9 @@ const cleanAndParseJSON = (text: string) => {
         const jsonCandidate = text.substring(firstBrace, lastBrace + 1);
         try {
             return JSON.parse(jsonCandidate);
-        } catch (innerError) {
-            // If extracting braces failed, fall through to regex cleanup
-        }
+        } catch (innerError) {}
     }
 
-    // 2. Fallback: Remove markdown code blocks and trim
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
@@ -89,13 +78,8 @@ const cleanAndParseJSON = (text: string) => {
 
 
 // --- 1. Image Analysis & Caption Generation ---
-// Model: gemini-2.5-flash (Fast, multimodal, good for analysis)
-
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
-  if (!apiKey || apiKey.includes("YOUR_API_KEY")) {
-      console.warn("API Key is missing or invalid. Please check services/geminiService.ts or your environment variables.");
-  }
-
+  const ai = getAiClient();
   const { mimeType, data } = processBase64Image(base64Image);
 
   const prompt = `
@@ -110,7 +94,6 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
     - Kenyan Slang
     
     Also generate a list of 15 optimized hashtags.
-    
     Return the response strictly as JSON.
   `;
 
@@ -119,12 +102,7 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
       model: 'gemini-2.5-flash',
       contents: {
         parts: [
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: data
-            }
-          },
+          { inlineData: { mimeType: mimeType, data: data } },
           { text: prompt }
         ]
       },
@@ -164,9 +142,8 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
 };
 
 // --- 2. Caption Rewriting ---
-// Model: gemini-3-pro-preview (Complex reasoning for tone)
-
 export const rewriteCaption = async (caption: string, tone: string): Promise<string> => {
+  const ai = getAiClient();
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -180,9 +157,8 @@ export const rewriteCaption = async (caption: string, tone: string): Promise<str
 };
 
 // --- 3. Image Editing ---
-// Model: gemini-2.5-flash-image (Nano banana for edits)
-
 export const editImageWithPrompt = async (base64Image: string, prompt: string): Promise<string> => {
+  const ai = getAiClient();
   const { mimeType, data } = processBase64Image(base64Image);
 
   try {
@@ -190,20 +166,12 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
       model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
-          {
-            inlineData: {
-              data: data,
-              mimeType: mimeType, 
-            },
-          },
-          {
-            text: prompt,
-          },
+          { inlineData: { data: data, mimeType: mimeType } },
+          { text: prompt },
         ],
       },
     });
 
-    // Iterate parts to find the image
     for (const part of response.candidates?.[0]?.content?.parts || []) {
         if (part.inlineData) {
             return `data:image/png;base64,${part.inlineData.data}`;
@@ -217,22 +185,14 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
 };
 
 // --- 4. Image Generation ---
-// Model: gemini-3-pro-image-preview (Nano banana pro for HQ generation)
-// Fallback: gemini-2.5-flash-image
-
 export const generateImageFromPrompt = async (prompt: string, size: ImageSize): Promise<string> => {
+  const ai = getAiClient();
   try {
-    // Attempt 1: Try High-Quality Pro Model first
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
-      contents: {
-        parts: [{ text: prompt }],
-      },
+      contents: { parts: [{ text: prompt }] },
       config: {
-        imageConfig: {
-          imageSize: size as any, 
-          aspectRatio: "1:1"
-        }
+        imageConfig: { imageSize: size as any, aspectRatio: "1:1" }
       },
     });
 
@@ -254,17 +214,10 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
     if (isAccessError) {
       console.warn("Pro model access denied or not found. Falling back to Gemini 2.5 Flash Image.");
       try {
-        // Attempt 2: Fallback to Flash Image
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
-          contents: {
-            parts: [{ text: prompt }],
-          },
-          config: {
-            imageConfig: {
-              aspectRatio: "1:1"
-            }
-          },
+          contents: { parts: [{ text: prompt }] },
+          config: { imageConfig: { aspectRatio: "1:1" } },
         });
 
         for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -285,9 +238,8 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 };
 
 // --- 5. Chatbot ---
-// Model: gemini-3-pro-preview
-
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string) => {
+    const ai = getAiClient();
     const chatSession = ai.chats.create({
         model: 'gemini-3-pro-preview',
         history: history,
@@ -301,9 +253,8 @@ export const sendChatMessage = async (history: {role: string, parts: {text: stri
 }
 
 // --- 6. Toolkit Features ---
-// Model: gemini-2.5-flash (Fast)
-
 export const generateSocialBio = async (info: string): Promise<string> => {
+    const ai = getAiClient();
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -316,16 +267,15 @@ export const generateSocialBio = async (info: string): Promise<string> => {
     }
 }
 
-// --- 7. Financial Analysis (Crypto/Currency) ---
-// Model: gemini-2.5-flash with Google Search Grounding
-
+// --- 7. Financial Analysis ---
 export const getCryptoData = async (coin: string) => {
+  const ai = getAiClient();
   const prompt = `
     Find the current price, 24h change, and market trend for ${coin} as of right now (real-time).
     Also provide a brief trading analysis and a signal (BUY, SELL, or HOLD).
     Generate 7 estimate data points representing the last 7 days price trend normalized between 0 and 100 for a graph.
     
-    Return strict JSON format (do not include markdown code blocks like \`\`\`json):
+    Return strict JSON format:
     {
       "price": "string (e.g. $65,000)",
       "change": "string (e.g. +2.5%)",
@@ -339,16 +289,12 @@ export const getCryptoData = async (coin: string) => {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        // responseMimeType cannot be used with googleSearch
-      },
+      config: { tools: [{ googleSearch: {} }] },
     });
 
     const text = response.text;
     if (!text) throw new Error("No data returned");
     return cleanAndParseJSON(text);
-
   } catch (error) {
     console.error("Crypto Data Error:", error);
     throw error;
@@ -356,9 +302,10 @@ export const getCryptoData = async (coin: string) => {
 };
 
 export const getCurrencyData = async (amount: string, from: string, to: string) => {
+  const ai = getAiClient();
   const prompt = `
     Convert ${amount} ${from} to ${to} using the latest exchange rates.
-    Return strict JSON format (do not include markdown code blocks like \`\`\`json):
+    Return strict JSON format:
     {
       "result": "string (formatted result e.g. KES 15,000)",
       "rate": "string (e.g. 1 USD = 130 KES)",
@@ -370,10 +317,7 @@ export const getCurrencyData = async (amount: string, from: string, to: string) 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        // responseMimeType cannot be used with googleSearch
-      },
+      config: { tools: [{ googleSearch: {} }] },
     });
 
     const text = response.text;

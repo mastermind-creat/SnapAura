@@ -7,20 +7,38 @@ import Chat from './components/Chat';
 import Toolkit from './components/Toolkit';
 import Auth from './components/Auth';
 import ToastContainer from './components/Toast';
+import ApiKeyModal from './components/ApiKeyModal';
 import { Tab } from './types';
 import { Smartphone, Download } from './components/Icons';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
-  // Centralized image state. 
-  // Upload in Home, move to Edit to modify it.
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+
+  // API Key State
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [isKeyRequired, setIsKeyRequired] = useState(false);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // Check for API Key on mount
+  useEffect(() => {
+    const checkApiKey = () => {
+      // 1. Check LocalStorage
+      const localKey = localStorage.getItem('GEMINI_API_KEY');
+      // 2. Check Env (fallback, though in browser strictly rely on local or injected env)
+      const envKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
+
+      if ((!localKey || localKey.trim() === '') && (!envKey || envKey.trim() === '')) {
+        setIsKeyRequired(true);
+        setShowKeyModal(true);
+      }
+    };
+    checkApiKey();
+  }, []);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -51,9 +69,9 @@ const App: React.FC = () => {
       setActiveTab(Tab.HOME);
   };
 
-  const handleLogout = () => {
-      setIsAuthenticated(false);
-      setCurrentImage(null);
+  const handleOpenSettings = () => {
+      setIsKeyRequired(false); // Can close if opening via settings
+      setShowKeyModal(true);
   };
 
   return (
@@ -61,6 +79,13 @@ const App: React.FC = () => {
       
       {/* Toast System */}
       <ToastContainer />
+      
+      {/* API Key Modal */}
+      <ApiKeyModal 
+        isVisible={showKeyModal} 
+        onClose={() => setShowKeyModal(false)}
+        canClose={!isKeyRequired} 
+      />
 
       {/* Background Decoration */}
       <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
@@ -74,7 +99,11 @@ const App: React.FC = () => {
         ) : (
             <>
                 {activeTab === Tab.HOME && (
-                  <Studio image={currentImage} setImage={setCurrentImage} onLogout={handleLogout} />
+                  <Studio 
+                    image={currentImage} 
+                    setImage={setCurrentImage} 
+                    onOpenSettings={handleOpenSettings}
+                  />
                 )}
                 
                 {activeTab === Tab.EDIT && (
