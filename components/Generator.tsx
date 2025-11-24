@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, RefreshCw } from './Icons';
+import { ImageIcon, Download, RefreshCw, Settings } from './Icons';
 import { generateImageFromPrompt } from '../services/geminiService';
 import { ImageSize } from '../types';
 import { showToast } from './Toast';
 
-const Generator: React.FC = () => {
+interface GeneratorProps {
+  onOpenSettings: () => void;
+}
+
+const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState<ImageSize>(ImageSize.S_1K);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -28,10 +32,21 @@ const Generator: React.FC = () => {
 
   return (
     <div className="h-full overflow-y-auto hide-scrollbar p-4 pb-24 space-y-6">
-      <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-        AI Artist
-      </h1>
-      <p className="text-gray-400 text-sm">Powered by Gemini 3 Pro Image</p>
+      <div className="flex justify-between items-start">
+        <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                AI Artist
+            </h1>
+            <p className="text-gray-400 text-sm">Powered by Gemini 3 Pro Image</p>
+        </div>
+        <button 
+             onClick={onOpenSettings}
+             className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+             title="Settings"
+         >
+             <Settings size={20} />
+         </button>
+      </div>
 
       <div className="glass-panel p-4 rounded-xl space-y-4">
         <textarea

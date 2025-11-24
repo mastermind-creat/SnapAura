@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Wand2, Download, RefreshCw, Zap, Sparkles } from './Icons';
+import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 
 interface EditorProps {
   image: string | null;
   setImage: (img: string) => void;
+  onOpenSettings: () => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ image, setImage }) => {
+const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -76,7 +77,16 @@ const Editor: React.FC<EditorProps> = ({ image, setImage }) => {
 
   if (!image) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+      <div className="h-full flex flex-col items-center justify-center p-8 text-center relative">
+        <div className="absolute top-4 right-4">
+             <button 
+                 onClick={onOpenSettings}
+                 className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                 title="Settings"
+             >
+                 <Settings size={20} />
+             </button>
+        </div>
         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 animate-float">
             <Wand2 size={32} className="text-gray-500" />
         </div>
@@ -92,6 +102,13 @@ const Editor: React.FC<EditorProps> = ({ image, setImage }) => {
          <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Wand2 className="text-primary" /> Magic Editor
          </h1>
+         <button 
+             onClick={onOpenSettings}
+             className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+             title="Settings"
+         >
+             <Settings size={20} />
+         </button>
       </div>
       
       {/* Image Preview */}

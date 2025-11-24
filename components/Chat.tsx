@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw } from './Icons';
+import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -11,7 +11,11 @@ interface Message {
 type ChatMode = 'ai' | 'p2p';
 type P2PState = 'idle' | 'creating' | 'waiting_for_answer' | 'joining' | 'connected';
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  onOpenSettings: () => void;
+}
+
+const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const [mode, setMode] = useState<ChatMode>('ai');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -178,9 +182,18 @@ const Chat: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* HEADER & TABS */}
       <div className="p-4 border-b border-white/10 bg-black/20 backdrop-blur-md sticky top-0 z-10 space-y-3">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-           SnapAura Chat
-        </h1>
+        <div className="flex justify-between items-center">
+            <h1 className="text-xl font-bold flex items-center gap-2">
+            SnapAura Chat
+            </h1>
+            <button 
+                onClick={onOpenSettings}
+                className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                title="Settings"
+            >
+                <Settings size={20} />
+            </button>
+        </div>
         <div className="flex bg-white/5 rounded-lg p-1">
             <button 
                 onClick={() => setMode('ai')}

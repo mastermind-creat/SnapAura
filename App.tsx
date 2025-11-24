@@ -107,19 +107,23 @@ const App: React.FC = () => {
                 )}
                 
                 {activeTab === Tab.EDIT && (
-                  <Editor image={currentImage} setImage={setCurrentImage} />
+                  <Editor 
+                    image={currentImage} 
+                    setImage={setCurrentImage} 
+                    onOpenSettings={handleOpenSettings}
+                  />
                 )}
 
                 {activeTab === Tab.GENERATE && (
-                  <Generator />
+                  <Generator onOpenSettings={handleOpenSettings} />
                 )}
 
                 {activeTab === Tab.CHAT && (
-                  <Chat />
+                  <Chat onOpenSettings={handleOpenSettings} />
                 )}
 
                 {activeTab === Tab.TOOLKIT && (
-                  <Toolkit />
+                  <Toolkit onOpenSettings={handleOpenSettings} />
                 )}
             </>
         )}

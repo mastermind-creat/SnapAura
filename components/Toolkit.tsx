@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 
 // Define tool types for better state management
 type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle';
 
-const Toolkit: React.FC = () => {
+interface ToolkitProps {
+  onOpenSettings: () => void;
+}
+
+const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
   const [activeTool, setActiveTool] = useState<ToolType>('menu');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -386,6 +390,15 @@ const Toolkit: React.FC = () => {
         <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent flex items-center gap-2">
             <Briefcase className="text-teal-500" /> Toolkit
         </h1>
+        <div className="ml-auto">
+             <button 
+                 onClick={onOpenSettings}
+                 className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                 title="Settings"
+             >
+                 <Settings size={20} />
+             </button>
+        </div>
       </div>
 
       {activeTool === 'menu' && renderMenu()}
