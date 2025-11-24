@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste } from './Icons';
+import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X } from './Icons';
 import { Logo } from './Logo';
 import { showToast } from './Toast';
 
@@ -57,6 +57,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
     showToast("API Key removed from device", "info");
   };
 
+  const handleSkip = () => {
+      showToast("AI features will be disabled.", "info");
+      onClose();
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -67,6 +72,15 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
       {/* Modal Content */}
       <div className="relative w-full max-w-sm bg-[#1a1a20] border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up ring-1 ring-white/5">
         
+        {/* Close Button (Top Right) */}
+        <button 
+            onClick={handleSkip}
+            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full z-20"
+            title="Close"
+        >
+            <X size={20} />
+        </button>
+
         {/* Glow Effects */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-50"></div>
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-[80px]"></div>
@@ -142,7 +156,8 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
                 )}
              </button>
 
-             {canClose && key && (
+             {/* Delete Option (only if key exists) */}
+             {key && (
                  <button 
                    onClick={handleDelete}
                    className="w-full py-3 text-xs font-bold text-red-400 hover:text-red-300 flex items-center justify-center gap-2 hover:bg-red-500/10 rounded-xl transition-colors"
@@ -151,14 +166,13 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
                  </button>
              )}
 
-             {canClose && (
-                <button 
-                  onClick={onClose} 
-                  className="w-full text-xs text-gray-500 hover:text-white transition-colors"
-                >
-                  Close Settings
-                </button>
-             )}
+             {/* Explicit Skip Option */}
+             <button 
+                onClick={handleSkip} 
+                className="w-full text-xs text-gray-500 hover:text-white transition-colors py-2"
+             >
+                Continue without API Key
+             </button>
           </div>
 
           {/* Helper Link */}
