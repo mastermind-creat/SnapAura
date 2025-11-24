@@ -12,7 +12,14 @@ const FALLBACK_KEYS = [
 
 const getApiKey = (): string => {
   // 1. Check Environment Variable (Standard for production/local dev)
-  if (process.env.API_KEY) return process.env.API_KEY;
+  // We use a try-catch and type check because direct access to 'process' causes a crash in some browser bundlers (Vite)
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore ReferenceError if process is not defined
+  }
 
   // 2. Check Local Storage (For manual override in browser console)
   // Run: localStorage.setItem('GEMINI_API_KEY', 'your-key')
