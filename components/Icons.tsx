@@ -58,7 +58,8 @@ import {
   ShieldAlert,
   Chrome,
   Facebook,
-  Twitter
+  Twitter,
+  Globe
 } from 'lucide-react';
 
 export { 
@@ -75,7 +76,7 @@ export {
   Send,
   ImageIcon,
   Zap,
-  Trash2,
+  Trash2, 
   Rocket,
   Palette,
   Brain,
@@ -120,5 +121,6 @@ export {
   ShieldAlert,
   Chrome,
   Facebook,
-  Twitter
+  Twitter,
+  Globe
 };

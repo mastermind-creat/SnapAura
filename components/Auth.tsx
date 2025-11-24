@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Chrome, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck } from './Icons';
+import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck } from './Icons';
 import { showToast } from './Toast';
 
 interface AuthProps {
@@ -45,7 +45,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-full flex items-center justify-center p-6 relative overflow-hidden">
        {/* Background Elements */}
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
            <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse-slow"></div>
@@ -131,7 +131,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                
                <div className="grid grid-cols-3 gap-3">
                    <button onClick={() => handleSocialLogin('Google')} className="bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-xl flex justify-center items-center transition-all hover:-translate-y-1">
-                       <Chrome size={20} className="text-white" />
+                       <Globe size={20} className="text-white" />
                    </button>
                    <button onClick={() => handleSocialLogin('Twitter')} className="bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-xl flex justify-center items-center transition-all hover:-translate-y-1">
                        <Twitter size={20} className="text-blue-400" />
