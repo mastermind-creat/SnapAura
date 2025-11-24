@@ -161,8 +161,9 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
 export const rewriteCaption = async (caption: string, tone: string): Promise<string> => {
   const ai = getAiClient();
   try {
+    // Switched to gemini-2.5-flash for better availability
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.5-flash',
       contents: `Rewrite the following caption to match a "${tone}" vibe. Be creative. Caption: "${caption}"`,
     });
     return response.text || "";
@@ -203,6 +204,8 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
 // --- 4. Image Generation ---
 export const generateImageFromPrompt = async (prompt: string, size: ImageSize): Promise<string> => {
   const ai = getAiClient();
+  
+  // Try Pro Model First
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
@@ -219,45 +222,35 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
     }
     throw new Error("No image generated (Pro).");
   } catch (error: any) {
-    const isAccessError = 
-      error.status === 'PERMISSION_DENIED' || 
-      error.status === 403 || 
-      error.code === 403 || 
-      error.status === 'NOT_FOUND' || 
-      error.status === 404 ||
-      (error.message && error.message.includes('permission'));
+    // Fallback: If Pro model fails for ANY reason (auth, access, not found), try Flash Image
+    console.warn("Pro model failed. Attempting Flash fallback. Error:", error);
 
-    if (isAccessError) {
-      console.warn("Pro model access denied or not found. Falling back to Gemini 2.5 Flash Image.");
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
-          contents: { parts: [{ text: prompt }] },
-          config: { imageConfig: { aspectRatio: "1:1" } },
-        });
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [{ text: prompt }] },
+        config: { imageConfig: { aspectRatio: "1:1" } },
+      });
 
-        for (const part of response.candidates?.[0]?.content?.parts || []) {
-          if (part.inlineData) {
-            return `data:image/png;base64,${part.inlineData.data}`;
-          }
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
         }
-        throw new Error("No image generated (Flash Fallback).");
-      } catch (fallbackError) {
-        console.error("Fallback Image Gen Error:", fallbackError);
-        throw fallbackError;
       }
+      throw new Error("No image generated (Flash Fallback).");
+    } catch (fallbackError) {
+      console.error("Fallback Image Gen Error:", fallbackError);
+      throw fallbackError;
     }
-    
-    console.error("Image Gen Error:", error);
-    throw error;
   }
 };
 
 // --- 5. Chatbot ---
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string) => {
     const ai = getAiClient();
+    // Switched to gemini-2.5-flash for broader compatibility and speed
     const chatSession = ai.chats.create({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.5-flash',
         history: history,
         config: {
             systemInstruction: "You are SnapAura, a helpful, witty, and aesthetic AI assistant for a photo editing app. You help users with photography tips, caption ideas, and navigating the app."
