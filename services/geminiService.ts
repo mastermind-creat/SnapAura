@@ -39,6 +39,22 @@ const getAiClient = () => {
     return new GoogleGenAI({ apiKey: key });
 }
 
+// --- KEY VALIDATION UTILITY ---
+export const validateApiKey = async (apiKey: string): Promise<boolean> => {
+    try {
+        const ai = new GoogleGenAI({ apiKey });
+        // Attempt a minimal generation to test the key
+        await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts: [{ text: 'ping' }] },
+        });
+        return true;
+    } catch (error) {
+        console.warn("API Key Validation Failed:", error);
+        return false;
+    }
+};
+
 // Helper: Extract raw base64 and mimeType from Data URL
 const processBase64Image = (base64String: string) => {
   const match = base64String.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X } from './Icons';
+import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X, RefreshCw } from './Icons';
 import { Logo } from './Logo';
 import { showToast } from './Toast';
+import { validateApiKey } from '../services/geminiService';
 
 interface ApiKeyModalProps {
   isVisible: boolean;
@@ -29,7 +30,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!key.trim()) {
       showToast("Please enter an API key", "error");
       return;
@@ -42,13 +43,22 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
 
     setIsValidating(true);
     
-    // Simulate validation delay for effect
-    setTimeout(() => {
-      localStorage.setItem('GEMINI_API_KEY', key.trim());
+    try {
+      // Perform real validation against Gemini API
+      const isValid = await validateApiKey(key.trim());
+
+      if (isValid) {
+        localStorage.setItem('GEMINI_API_KEY', key.trim());
+        showToast("API Key validated & connected!", "success");
+        onClose();
+      } else {
+        showToast("Invalid API Key. Permission denied.", "error");
+      }
+    } catch (e) {
+      showToast("Verification failed. Check your internet.", "error");
+    } finally {
       setIsValidating(false);
-      showToast("API Key secured locally!", "success");
-      onClose();
-    }, 800);
+    }
   };
 
   const handleDelete = () => {
@@ -150,7 +160,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
                 className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
              >
                 {isValidating ? (
-                  <>Verifying...</>
+                  <><RefreshCw className="animate-spin" size={18} /> Verifying Key...</>
                 ) : (
                   <><Save size={18} /> Save & Connect</>
                 )}
