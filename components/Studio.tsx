@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
@@ -7,6 +7,7 @@ import { Logo } from './Logo';
 interface StudioProps {
   image: string | null;
   setImage: (img: string) => void;
+  onLogout: () => void; // New Prop
 }
 
 // Global definition for confetti
@@ -20,7 +21,7 @@ type FilterType = 'none' | 'bw' | 'warm' | 'vivid' | 'cool' | 'sepia';
 type CaptionStyle = 'modern' | 'neon' | 'polaroid' | 'bold';
 type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
-const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
+const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false); // New State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -317,6 +318,13 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
     return (
       <div className="relative min-h-full flex flex-col items-center justify-center p-6 overflow-hidden">
         
+        {/* Header with Logout (Only visible on landing if needed, typically in top corner) */}
+        <div className="absolute top-4 right-4 z-50">
+           <button onClick={onLogout} className="text-gray-400 hover:text-white p-2 rounded-full bg-white/5 backdrop-blur-md">
+               <LogOut size={20} />
+           </button>
+        </div>
+
         {/* Animated Background Elements */}
         <div className="absolute top-10 right-10 w-32 h-32 bg-secondary/20 rounded-full blur-[40px] animate-pulse-slow"></div>
         <div className="absolute bottom-20 left-10 w-40 h-40 bg-primary/20 rounded-full blur-[50px] animate-pulse-slow delay-700"></div>
@@ -415,6 +423,13 @@ const Studio: React.FC<StudioProps> = ({ image, setImage }) => {
                  className="text-gray-400 hover:text-white text-xs font-medium bg-white/5 px-3 py-1.5 rounded-full transition-colors flex items-center active:scale-95"
              >
                  New
+             </button>
+             <button 
+                 onClick={onLogout}
+                 className="text-red-400 hover:text-red-300 p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                 title="Logout"
+             >
+                 <LogOut size={18} />
              </button>
           </div>
         </div>

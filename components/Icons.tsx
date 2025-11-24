@@ -52,7 +52,13 @@ import {
   Users,
   Link2,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  LogOut,
+  ScanLine,
+  ShieldAlert,
+  Chrome,
+  Facebook,
+  Twitter
 } from 'lucide-react';
 
 export { 
@@ -108,5 +114,11 @@ export {
   Users,
   Link2,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  LogOut,
+  ScanLine,
+  ShieldAlert,
+  Chrome,
+  Facebook,
+  Twitter
 };

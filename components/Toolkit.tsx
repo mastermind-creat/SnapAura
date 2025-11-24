@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 
 // Define tool types for better state management
-type ToolType = 'menu' | 'shortener' | 'qr' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle';
+type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle';
 
 const Toolkit: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolType>('menu');
@@ -19,6 +19,7 @@ const Toolkit: React.FC = () => {
   const [bioInput, setBioInput] = useState('');
   const [bios, setBios] = useState<string[]>([]);
   const [isWritingBio, setIsWritingBio] = useState(false);
+  const [scannedResult, setScannedResult] = useState<string | null>(null);
 
   // --- FINANCIAL TOOLS STATE ---
   const [selectedCoin, setSelectedCoin] = useState('Bitcoin (BTC)');
@@ -140,6 +141,37 @@ const Toolkit: React.FC = () => {
           setBios(result.split('||').map(s => s.trim()).filter(s => s));
       } finally { setIsWritingBio(false); }
   };
+  
+  // Initialize Scanner
+  useEffect(() => {
+    let html5QrCode: any;
+    if (activeTool === 'qr-scan') {
+       // @ts-ignore
+       if (window.Html5Qrcode) {
+           // @ts-ignore
+           html5QrCode = new Html5Qrcode("reader");
+           const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+           
+           html5QrCode.start({ facingMode: "environment" }, config, (decodedText: string) => {
+               setScannedResult(decodedText);
+               html5QrCode.stop().then(() => {
+                   showToast("QR Code Scanned!", "success");
+               });
+           }, (errorMessage: any) => {
+               // ignore errors for scanning
+           }).catch((err: any) => {
+               console.error(err);
+               showToast("Camera permission denied", "error");
+           });
+       }
+    }
+    
+    return () => {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch((err: any) => console.log(err));
+        }
+    }
+  }, [activeTool]);
 
   // --- FINANCIAL HANDLERS (UPDATED) ---
   const handleCryptoAnalysis = async () => {
@@ -270,11 +302,12 @@ const Toolkit: React.FC = () => {
         {/* Section: Essentials */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Essentials</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
                 <MenuCard icon={Bitcoin} color="text-orange-400" bg="bg-orange-500/20" title="Crypto" onClick={() => setActiveTool('crypto')} />
                 <MenuCard icon={Banknote} color="text-green-400" bg="bg-green-500/20" title="Currency" onClick={() => setActiveTool('currency')} />
                 <MenuCard icon={Link} color="text-blue-400" bg="bg-blue-500/20" title="Shortener" onClick={() => setActiveTool('shortener')} />
-                <MenuCard icon={QrCode} color="text-purple-400" bg="bg-purple-500/20" title="QR Code" onClick={() => setActiveTool('qr')} />
+                <MenuCard icon={QrCode} color="text-purple-400" bg="bg-purple-500/20" title="Gen QR" onClick={() => setActiveTool('qr')} />
+                <MenuCard icon={ScanLine} color="text-red-400" bg="bg-red-500/20" title="Scan QR" onClick={() => { setScannedResult(null); setActiveTool('qr-scan'); }} />
             </div>
         </div>
 
@@ -321,7 +354,7 @@ const Toolkit: React.FC = () => {
       {/* Header */}
       <div className="flex items-center gap-3 sticky top-0 bg-[#0f0f11]/80 backdrop-blur-md py-2 z-20">
         {activeTool !== 'menu' && (
-            <button onClick={() => setActiveTool('menu')} className="p-2 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 transition-all">
+            <button onClick={() => { setActiveTool('menu'); /* Stop scanner if running */ }} className="p-2 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 transition-all">
                 <ArrowLeft size={20} className="text-white" />
             </button>
         )}
@@ -331,6 +364,38 @@ const Toolkit: React.FC = () => {
       </div>
 
       {activeTool === 'menu' && renderMenu()}
+
+      {/* --- QR SCANNER --- */}
+      {activeTool === 'qr-scan' && (
+          <div className="space-y-4 animate-fade-in-up">
+              <div className="glass-panel p-4 rounded-xl text-center">
+                  {!scannedResult ? (
+                      <div className="overflow-hidden rounded-lg relative">
+                          <div id="reader" className="w-full"></div>
+                          <p className="text-xs text-gray-400 mt-2">Point camera at a QR code</p>
+                      </div>
+                  ) : (
+                      <div className="space-y-4">
+                          <div className="bg-green-500/20 text-green-400 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                              <CheckCircle size={32} />
+                          </div>
+                          <h3 className="text-xl font-bold text-white">Scan Successful!</h3>
+                          <div className="bg-black/30 p-4 rounded-xl border border-white/10 break-all text-sm text-gray-300">
+                              {scannedResult}
+                          </div>
+                          <div className="flex gap-2">
+                              <button onClick={() => {navigator.clipboard.writeText(scannedResult); showToast("Copied to clipboard", "success")}} className="flex-1 bg-white/10 py-3 rounded-xl font-bold hover:bg-white/20">
+                                  Copy Text
+                              </button>
+                              <button onClick={() => { setScannedResult(null); window.location.reload(); /* Dirty way to restart scanner, ideally re-init */ }} className="flex-1 bg-primary py-3 rounded-xl font-bold text-white">
+                                  Scan Again
+                              </button>
+                          </div>
+                      </div>
+                  )}
+              </div>
+          </div>
+      )}
 
       {/* --- CRYPTO TOOL --- */}
       {activeTool === 'crypto' && (
