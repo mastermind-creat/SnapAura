@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
@@ -7,7 +7,7 @@ import { Logo } from './Logo';
 interface StudioProps {
   image: string | null;
   setImage: (img: string) => void;
-  onLogout: () => void; // New Prop
+  onLogout: () => void;
 }
 
 // Global definition for confetti
@@ -23,7 +23,7 @@ type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
 const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false); // New State
+  const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [selectedCaption, setSelectedCaption] = useState<string | null>(null);
@@ -197,7 +197,6 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
                 ctx.fillStyle = grad;
                 ctx.fillRect(0,0,canvas.width, canvas.height);
             }
-            // Grain requires pattern, skipped for simplicity in canvas export but visible in UI
             ctx.restore();
         }
 
@@ -316,64 +315,127 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
   // LANDING PAGE VIEW
   if (!image) {
     return (
-      <div className="relative min-h-full flex flex-col items-center justify-center p-6 overflow-hidden">
+      <div className="relative h-full flex flex-col items-center overflow-hidden bg-[#0f0f11]">
         
-        {/* Header with Logout (Only visible on landing if needed, typically in top corner) */}
-        <div className="absolute top-4 right-4 z-50">
-           <button onClick={onLogout} className="text-gray-400 hover:text-white p-2 rounded-full bg-white/5 backdrop-blur-md">
+        {/* LOGOUT BUTTON - Absolute Top */}
+        <div className="absolute top-6 right-6 z-50">
+           <button onClick={onLogout} className="text-gray-400 hover:text-white p-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all">
                <LogOut size={20} />
            </button>
         </div>
 
-        {/* Animated Background Elements */}
-        <div className="absolute top-10 right-10 w-32 h-32 bg-secondary/20 rounded-full blur-[40px] animate-pulse-slow"></div>
-        <div className="absolute bottom-20 left-10 w-40 h-40 bg-primary/20 rounded-full blur-[50px] animate-pulse-slow delay-700"></div>
+        {/* --- PREMIUM ANIMATED BACKGROUND --- */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+             {/* Aurora Waves */}
+             <div className="absolute top-[-20%] left-[-20%] w-[150%] h-[80%] bg-primary/20 rounded-[100%] blur-[100px] animate-aurora mix-blend-screen opacity-40"></div>
+             <div className="absolute bottom-[-20%] right-[-20%] w-[120%] h-[70%] bg-secondary/20 rounded-[100%] blur-[120px] animate-aurora mix-blend-screen opacity-40" style={{animationDelay: '-5s', animationDirection: 'reverse'}}></div>
+             
+             {/* Floating Particles */}
+             <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full opacity-20 animate-float-slow"></div>
+             <div className="absolute top-3/4 right-1/4 w-3 h-3 bg-purple-400 rounded-full opacity-20 animate-float" style={{animationDelay: '1s'}}></div>
+             <div className="absolute bottom-10 left-10 w-1 h-1 bg-blue-400 rounded-full opacity-30 animate-pulse"></div>
 
-        {/* Hero Section */}
-        <div className="text-center z-10 space-y-6 max-w-sm animate-fade-in-up">
-          <div className="flex justify-center mb-4">
-             <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary blur-xl opacity-50 rounded-full animate-pulse-slow"></div>
-                <div className="bg-black/40 p-4 rounded-2xl border border-white/10 backdrop-blur-md relative">
-                   <Logo size={64} />
-                </div>
-                <Sparkles className="absolute -top-2 -right-2 text-yellow-400 animate-bounce" size={24} />
-             </div>
-          </div>
-
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight">
-            <span className="block text-white">SnapAura</span>
-            <span className="bg-gradient-to-r from-primary via-purple-400 to-secondary bg-clip-text text-transparent">
-              AI Studio
-            </span>
-          </h1>
-          
-          <p className="text-gray-400 text-lg leading-relaxed">
-            Transform your reality with next-gen AI. Edit, generate, and caption in seconds.
-          </p>
-
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="group relative inline-flex items-center justify-center gap-3 bg-white text-black px-8 py-4 rounded-full font-bold text-lg shadow-xl shadow-white/10 hover:scale-105 active:scale-95 transition-all duration-300 w-full"
-          >
-            <Upload size={24} className="group-hover:-translate-y-1 transition-transform" />
-            <span>Start Creating</span>
-            <div className="absolute inset-0 rounded-full border border-white/50 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"></div>
-          </button>
+             {/* Grain Texture */}
+             <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")'}}></div>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-3 gap-3 w-full max-w-md mt-12 z-10 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-            {[
-                { icon: Rocket, label: "Enhance", color: "text-blue-400" },
-                { icon: Palette, label: "Create", color: "text-pink-400" },
-                { icon: Brain, label: "Witty", color: "text-purple-400" },
-            ].map((feature, i) => (
-                <div key={i} className="glass-panel p-3 rounded-xl flex flex-col items-center gap-2 text-center hover:bg-white/5 transition-colors">
-                    <feature.icon className={`${feature.color}`} size={24} />
-                    <span className="text-xs font-medium text-gray-300">{feature.label}</span>
+        {/* --- MAIN CONTENT CONTAINER --- */}
+        <div className="relative z-10 w-full max-w-md h-full flex flex-col items-center justify-between p-6 pb-28 pt-12">
+            
+            {/* HERO SECTION */}
+            <div className="flex flex-col items-center text-center space-y-6 animate-fade-in-up w-full">
+                
+                {/* Logo with Aura */}
+                <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary via-purple-500 to-secondary rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-1000 animate-pulse-slow"></div>
+                    <div className="absolute inset-0 bg-white/10 rounded-full blur-md animate-spin-slow opacity-30"></div>
+                    <div className="relative bg-black/40 p-5 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
+                         <Logo size={80} className="drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
+                    </div>
+                    {/* Badge */}
+                    <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg animate-bounce border border-white/20">
+                        V1.0
+                    </div>
                 </div>
-            ))}
+
+                {/* Identity Text */}
+                <div className="space-y-2">
+                    <h1 className="text-5xl font-black tracking-tighter text-white drop-shadow-lg">
+                        Snap<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Aura</span>
+                    </h1>
+                    <p className="text-xl font-medium text-gray-300 tracking-wide">
+                        Unleash Your Creative Aura.
+                    </p>
+                </div>
+
+                {/* CTA Button */}
+                <div className="w-full pt-4 px-4">
+                     <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="group relative w-full overflow-hidden rounded-2xl bg-white/5 backdrop-blur-md border border-white/20 p-[1px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95"
+                     >
+                         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-white/5 to-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                         
+                         {/* Animated Border Gradient */}
+                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-shimmer"></div>
+
+                         <div className="relative bg-black/40 rounded-2xl px-6 py-5 flex items-center justify-center gap-3">
+                             <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg text-white shadow-lg">
+                                 <Upload size={24} strokeWidth={3} />
+                             </div>
+                             <div className="text-left">
+                                 <span className="block text-lg font-bold text-white leading-none">Start Creating</span>
+                                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Tap to Upload</span>
+                             </div>
+                             <ArrowRightIcon className="ml-auto text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                         </div>
+                     </button>
+                </div>
+            </div>
+
+            {/* --- CAROUSEL & PREVIEWS --- */}
+            <div className="w-full space-y-5 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+                 
+                 {/* Swipeable Feature Cards */}
+                 <div className="w-full overflow-x-auto hide-scrollbar flex gap-3 px-1 py-2 snap-x">
+                     {[
+                         { title: "Vibe Analysis", icon: Brain, desc: "AI Mood & Captions", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+                         { title: "Magic Edit", icon: Wand2, desc: "Generative Fill", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+                         { title: "AI Art", icon: ImageIcon, desc: "Text-to-Image", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
+                     ].map((feat, i) => (
+                         <div key={i} className={`flex-shrink-0 w-36 snap-center rounded-2xl p-3 border backdrop-blur-md ${feat.bg} ${feat.border} flex flex-col items-center text-center gap-2`}>
+                             <feat.icon className={`${feat.color}`} size={20} />
+                             <div>
+                                 <h4 className="text-xs font-bold text-white">{feat.title}</h4>
+                                 <p className="text-[9px] text-gray-400">{feat.desc}</p>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+
+                 {/* Action Buttons Grid */}
+                 <div className="grid grid-cols-3 gap-3">
+                    {[
+                        { icon: Rocket, label: "Enhance", color: "text-cyan-400" },
+                        { icon: Palette, label: "Design", color: "text-pink-400" },
+                        { icon: MessageCircle, label: "Captions", color: "text-yellow-400" },
+                    ].map((btn, i) => (
+                        <button key={i} onClick={() => showToast("Upload an image first!", "info")} className="glass-panel p-3 rounded-xl flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all group">
+                             <div className={`p-2 rounded-full bg-white/5 border border-white/5 group-hover:border-white/20 transition-colors`}>
+                                 <btn.icon className={`${btn.color}`} size={18} />
+                             </div>
+                             <span className="text-[10px] font-bold text-gray-300">{btn.label}</span>
+                        </button>
+                    ))}
+                 </div>
+            </div>
+
+            {/* --- FOOTER --- */}
+            <div className="text-center space-y-1 opacity-60 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+                <div className="w-8 h-[1px] bg-white/20 mx-auto mb-2"></div>
+                <p className="text-[10px] text-gray-500 font-medium tracking-widest uppercase">SnapAura v1.0</p>
+                <p className="text-[10px] text-gray-600 font-bold">Powered by TechSafi</p>
+            </div>
         </div>
 
         {/* Hidden Input */}
@@ -387,13 +449,15 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
         
         {/* Upload Loading Overlay */}
         {isUploading && (
-          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in-up">
-              <div className="relative mb-4">
-                  <div className="absolute inset-0 bg-primary/50 blur-xl rounded-full animate-pulse"></div>
-                  <RefreshCw className="animate-spin text-white relative z-10" size={48} />
+          <div className="absolute inset-0 z-50 bg-[#0f0f11]/90 backdrop-blur-xl flex flex-col items-center justify-center animate-fade-in-up">
+              <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary blur-xl rounded-full animate-pulse"></div>
+                  <div className="bg-black/50 p-4 rounded-full border border-white/10 relative z-10">
+                    <RefreshCw className="animate-spin text-white" size={40} />
+                  </div>
               </div>
-              <p className="text-white font-bold text-lg">Loading Studio...</p>
-              <p className="text-gray-400 text-sm">Preparing visuals</p>
+              <h2 className="text-2xl font-black text-white tracking-tight">Loading Studio</h2>
+              <p className="text-gray-400 text-sm mt-1">Igniting pixels...</p>
           </div>
         )}
       </div>
@@ -774,5 +838,10 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
     </div>
   );
 };
+
+// Mini Arrow Icon Component for Button
+const ArrowRightIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+);
 
 export default Studio;
