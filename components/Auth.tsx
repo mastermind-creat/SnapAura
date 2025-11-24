@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Chrome, Facebook, Twitter, ShieldAlert, ArrowRight, CheckCircle, RefreshCw } from './Icons';
+import { Chrome, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck } from './Icons';
 import { showToast } from './Toast';
 
 interface AuthProps {
@@ -12,27 +12,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-
-  // Simulate Cloudflare Turnstile
-  // In a real app, this would verify with your backend
-  const renderTurnstile = () => {
-    // @ts-ignore
-    if (window.turnstile) {
-        // @ts-ignore
-        window.turnstile.render('#cf-turnstile', {
-            sitekey: '1x00000000000000000000AA', // Cloudflare Test Sitekey
-            callback: function(token: string) {
-                setTurnstileToken(token);
-            },
-        });
-    }
-  };
-
-  React.useEffect(() => {
-    // Delay render to ensure script load
-    setTimeout(renderTurnstile, 500);
-  }, [isLogin]);
+  const [isVerified, setIsVerified] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +21,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         return;
     }
     
-    // Check captcha
-    if (!turnstileToken) {
+    // Check manual verification
+    if (!isVerified) {
         showToast("Please verify you are human", "error");
         return;
     }
@@ -108,9 +88,28 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                    />
                </div>
 
-               {/* Cloudflare Turnstile Container */}
+               {/* Manual Verification Checkbox */}
                <div className="flex justify-center py-2">
-                   <div id="cf-turnstile"></div>
+                   <div 
+                     onClick={() => setIsVerified(!isVerified)}
+                     className={`w-full p-4 rounded-xl border cursor-pointer flex items-center justify-between gap-3 transition-all select-none ${
+                        isVerified 
+                        ? "bg-green-500/10 border-green-500" 
+                        : "bg-black/30 border-white/10 hover:bg-white/5"
+                     }`}
+                   >
+                       <div className="flex items-center gap-3">
+                           <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-colors ${
+                               isVerified ? "bg-green-500 border-green-500" : "border-gray-500"
+                           }`}>
+                               {isVerified && <CheckCircle size={16} className="text-white" />}
+                           </div>
+                           <span className={`text-sm font-medium ${isVerified ? "text-green-400" : "text-gray-400"}`}>
+                               Verify I am human
+                           </span>
+                       </div>
+                       <ShieldCheck size={18} className={isVerified ? "text-green-500" : "text-gray-600"} />
+                   </div>
                </div>
 
                <button 
