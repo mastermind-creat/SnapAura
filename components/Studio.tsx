@@ -402,8 +402,26 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onLogout }) => {
 
   // STUDIO VIEW
   return (
-    <div className="h-full overflow-y-auto hide-scrollbar scroll-smooth">
-      <div className="p-4 pb-48 space-y-6 animate-fade-in-up max-w-lg mx-auto">
+    <div className="h-full overflow-y-auto hide-scrollbar scroll-smooth relative">
+      
+      {/* AMBIENT BACKGROUND EFFECT */}
+      {/* Only visible when not in design/effects modes (i.e., Analyze mode) to allow focus on editing later */}
+      {image && (
+        <div 
+            className={`fixed inset-0 w-full h-full pointer-events-none transition-opacity duration-700 ease-in-out z-0 ${
+                activeTab === 'analyze' ? 'opacity-40' : 'opacity-0'
+            }`}
+        >
+            <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${image})` }}
+            />
+            {/* Blurring and darkening overlay */}
+            <div className="absolute inset-0 backdrop-blur-[80px] bg-black/60"></div>
+        </div>
+      )}
+
+      <div className="p-4 pb-48 space-y-6 animate-fade-in-up max-w-lg mx-auto relative z-10">
         
         {/* Header */}
         <div className="flex justify-between items-center glass-panel p-4 rounded-xl sticky top-4 z-40 bg-black/60 backdrop-blur-xl border-white/10 shadow-lg">
