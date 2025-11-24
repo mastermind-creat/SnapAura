@@ -13,6 +13,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [shake, setShake] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +24,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     
     // Check manual verification
     if (!isVerified) {
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
         showToast("Please verify you are human", "error");
         return;
     }
@@ -89,26 +92,35 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                </div>
 
                {/* Manual Verification Checkbox */}
-               <div className="flex justify-center py-2">
+               <div className={`flex justify-center py-2 transition-transform ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
+                   <style>{`
+                     @keyframes shake {
+                       0%, 100% { transform: translateX(0); }
+                       25% { transform: translateX(-5px); }
+                       75% { transform: translateX(5px); }
+                     }
+                   `}</style>
                    <div 
                      onClick={() => setIsVerified(!isVerified)}
                      className={`w-full p-4 rounded-xl border cursor-pointer flex items-center justify-between gap-3 transition-all select-none ${
                         isVerified 
-                        ? "bg-green-500/10 border-green-500" 
-                        : "bg-black/30 border-white/10 hover:bg-white/5"
+                        ? "bg-green-500/10 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" 
+                        : shake 
+                            ? "bg-red-500/10 border-red-500" 
+                            : "bg-black/30 border-white/10 hover:bg-white/5"
                      }`}
                    >
                        <div className="flex items-center gap-3">
                            <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-colors ${
-                               isVerified ? "bg-green-500 border-green-500" : "border-gray-500"
+                               isVerified ? "bg-green-500 border-green-500" : shake ? "border-red-500" : "border-gray-500"
                            }`}>
                                {isVerified && <CheckCircle size={16} className="text-white" />}
                            </div>
-                           <span className={`text-sm font-medium ${isVerified ? "text-green-400" : "text-gray-400"}`}>
+                           <span className={`text-sm font-medium ${isVerified ? "text-green-400" : shake ? "text-red-400" : "text-gray-400"}`}>
                                Verify I am human
                            </span>
                        </div>
-                       <ShieldCheck size={18} className={isVerified ? "text-green-500" : "text-gray-600"} />
+                       <ShieldCheck size={18} className={isVerified ? "text-green-500" : shake ? "text-red-500" : "text-gray-600"} />
                    </div>
                </div>
 

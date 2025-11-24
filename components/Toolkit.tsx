@@ -34,6 +34,7 @@ const Toolkit: React.FC = () => {
   const [utilImage, setUtilImage] = useState<string | null>(null);
   const [imageMeta, setImageMeta] = useState<any>(null);
   const utilFileInputRef = useRef<HTMLInputElement>(null);
+  const qrFileInputRef = useRef<HTMLInputElement>(null); // New ref for QR upload
   
   // Palette
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
@@ -106,6 +107,30 @@ const Toolkit: React.FC = () => {
       }
   };
 
+  const handleQrFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      
+      // @ts-ignore
+      if (window.Html5Qrcode) {
+          // @ts-ignore
+          const html5QrCode = new Html5Qrcode("reader");
+          html5QrCode.scanFile(file, true)
+            .then((decodedText: string) => {
+                setScannedResult(decodedText);
+                setIsUploading(false);
+                showToast("QR Code Scanned!", "success");
+            })
+            .catch((err: any) => {
+                setIsUploading(false);
+                showToast("No QR code found in image", "error");
+                console.error(err);
+            });
+      }
+  };
+
   const handlePresetSelect = (url: string) => {
       setIsUploading(true);
       setUtilImage(url);
@@ -142,10 +167,11 @@ const Toolkit: React.FC = () => {
       } finally { setIsWritingBio(false); }
   };
   
-  // Initialize Scanner
+  // Initialize Scanner (Camera)
   useEffect(() => {
     let html5QrCode: any;
-    if (activeTool === 'qr-scan') {
+    // Only start camera if active tool is qr-scan and no result yet
+    if (activeTool === 'qr-scan' && !scannedResult) {
        // @ts-ignore
        if (window.Html5Qrcode) {
            // @ts-ignore
@@ -160,8 +186,7 @@ const Toolkit: React.FC = () => {
            }, (errorMessage: any) => {
                // ignore errors for scanning
            }).catch((err: any) => {
-               console.error(err);
-               showToast("Camera permission denied", "error");
+               console.log("Camera start failed (might use file upload)", err);
            });
        }
     }
@@ -171,7 +196,7 @@ const Toolkit: React.FC = () => {
             html5QrCode.stop().catch((err: any) => console.log(err));
         }
     }
-  }, [activeTool]);
+  }, [activeTool, scannedResult]);
 
   // --- FINANCIAL HANDLERS (UPDATED) ---
   const handleCryptoAnalysis = async () => {
@@ -346,8 +371,8 @@ const Toolkit: React.FC = () => {
                   <div className="absolute inset-0 bg-primary/50 blur-xl rounded-full animate-pulse"></div>
                   <RefreshCw className="animate-spin text-white relative z-10" size={48} />
               </div>
-              <p className="text-white font-bold text-lg">Scanning Image...</p>
-              <p className="text-gray-400 text-sm">Extracting pixel data</p>
+              <p className="text-white font-bold text-lg">Processing...</p>
+              <p className="text-gray-400 text-sm">Please wait</p>
           </div>
       )}
 
@@ -370,9 +395,24 @@ const Toolkit: React.FC = () => {
           <div className="space-y-4 animate-fade-in-up">
               <div className="glass-panel p-4 rounded-xl text-center">
                   {!scannedResult ? (
-                      <div className="overflow-hidden rounded-lg relative">
-                          <div id="reader" className="w-full"></div>
-                          <p className="text-xs text-gray-400 mt-2">Point camera at a QR code</p>
+                      <div className="space-y-4">
+                          <div className="overflow-hidden rounded-lg relative min-h-[250px] bg-black/50 border-2 border-dashed border-white/10 flex items-center justify-center">
+                              <div id="reader" className="w-full"></div>
+                              <p className="absolute text-xs text-gray-400 pointer-events-none">Point camera or upload image</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                              <div className="h-[1px] bg-white/10 flex-1"></div>
+                              <span className="text-xs text-gray-500 font-bold uppercase">Options</span>
+                              <div className="h-[1px] bg-white/10 flex-1"></div>
+                          </div>
+
+                          <button 
+                            onClick={() => qrFileInputRef.current?.click()}
+                            className="w-full bg-white/5 hover:bg-white/10 py-3 rounded-xl border border-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                          >
+                              <ImagePlus size={16} /> Upload QR Image
+                          </button>
                       </div>
                   ) : (
                       <div className="space-y-4">
@@ -702,6 +742,8 @@ const Toolkit: React.FC = () => {
 
        {/* Hidden Upload for Util Tools */}
        <input type="file" ref={utilFileInputRef} onChange={handleUtilImageUpload} className="hidden" accept="image/*" />
+       {/* Hidden Upload for QR Scanner */}
+       <input type="file" ref={qrFileInputRef} onChange={handleQrFileUpload} className="hidden" accept="image/*" />
     </div>
   );
 };
