@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck } from './Icons';
+import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck, WhatsApp } from './Icons';
 import { showToast } from './Toast';
 
 interface AuthProps {
@@ -154,8 +154,20 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                </div>
            </div>
 
+           {/* Community Link */}
+           <div className="mt-6 border-t border-white/10 pt-6 text-center">
+                <a 
+                    href="https://chat.whatsapp.com/H2IYoYinYdb4hFVeyBy405?mode=wwt" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors bg-green-500/10 hover:bg-green-500/20 px-5 py-2.5 rounded-full text-sm font-bold border border-green-500/20 active:scale-95"
+                >
+                    <WhatsApp size={18} /> Join our Community
+                </a>
+           </div>
+
            {/* Toggle */}
-           <div className="mt-8 text-center">
+           <div className="mt-6 text-center">
                <p className="text-sm text-gray-400">
                    {isLogin ? "Don't have an account? " : "Already have an account? "}
                    <button onClick={() => setIsLogin(!isLogin)} className="text-white font-bold hover:underline">
