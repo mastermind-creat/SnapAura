@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X, RefreshCw, WhatsApp } from './Icons';
+import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X, RefreshCw } from './Icons';
 import { Logo } from './Logo';
 import { showToast } from './Toast';
 import { validateApiKey } from '../services/geminiService';
@@ -75,21 +75,23 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
       {/* Dimmed Background */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-fade-in-up"></div>
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-fade-in-up"></div>
 
       {/* Modal Content */}
       <div className="relative w-full max-w-sm bg-[#1a1a20] border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up ring-1 ring-white/5 max-h-[90vh] overflow-y-auto hide-scrollbar">
         
         {/* Close Button (Top Right) */}
-        <button 
-            onClick={handleSkip}
-            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full z-20"
-            title="Close"
-        >
-            <X size={20} />
-        </button>
+        {canClose && (
+            <button 
+                onClick={onClose}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full z-20"
+                title="Close"
+            >
+                <X size={20} />
+            </button>
+        )}
 
         {/* Glow Effects */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-50"></div>
@@ -101,8 +103,8 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
             <Logo size={48} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">SnapAura Intelligence</h2>
-            <p className="text-sm text-gray-400 mt-1">Connect your Google Gemini API Key to unlock AI features.</p>
+            <h2 className="text-xl font-bold text-white">API Configuration</h2>
+            <p className="text-sm text-gray-400 mt-1">Connect your Google Gemini API Key.</p>
           </div>
         </div>
 
@@ -194,15 +196,6 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
               className="flex items-center justify-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors"
             >
               Get a key from Google AI Studio <ExternalLink size={10} />
-            </a>
-
-             <a 
-                href="https://chat.whatsapp.com/H2IYoYinYdb4hFVeyBy405?mode=wwt" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 text-green-400 bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl text-xs font-bold hover:bg-green-500/20 transition-all active:scale-95"
-            >
-                <WhatsApp size={16} /> Join Community
             </a>
           </div>
         </div>

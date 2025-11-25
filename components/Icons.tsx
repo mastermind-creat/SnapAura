@@ -67,7 +67,9 @@ import {
   ClipboardPaste,
   ExternalLink,
   Mic,
-  Volume2
+  Volume2,
+  ChevronRight,
+  RotateCcw as RotateLeft
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -152,5 +154,7 @@ export {
   ClipboardPaste,
   ExternalLink,
   Mic,
-  Volume2
+  Volume2,
+  ChevronRight,
+  RotateLeft as RotateCcw
 };

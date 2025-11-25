@@ -8,6 +8,7 @@ import Toolkit from './components/Toolkit';
 import Auth from './components/Auth';
 import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
+import SettingsModal from './components/SettingsModal';
 import { Tab } from './types';
 import { Smartphone, Download } from './components/Icons';
 
@@ -16,8 +17,9 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
-  // API Key State
+  // Modal States
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isKeyRequired, setIsKeyRequired] = useState(false);
 
   // PWA Install State
@@ -70,8 +72,13 @@ const App: React.FC = () => {
   };
 
   const handleOpenSettings = () => {
-      setIsKeyRequired(false); // Can close if opening via settings
-      setShowKeyModal(true);
+      setShowSettingsModal(true);
+  };
+
+  const handleLogout = () => {
+      setIsAuthenticated(false);
+      setShowSettingsModal(false);
+      // Optional: clear session data if needed
   };
 
   return (
@@ -80,6 +87,18 @@ const App: React.FC = () => {
       {/* Toast System */}
       <ToastContainer />
       
+      {/* Settings Modal (Global) */}
+      <SettingsModal 
+        isVisible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onOpenApiKey={() => {
+            setIsKeyRequired(false);
+            setShowSettingsModal(false); // Close settings
+            setShowKeyModal(true); // Open key modal
+        }}
+        onLogout={handleLogout}
+      />
+
       {/* API Key Modal */}
       <ApiKeyModal 
         isVisible={showKeyModal} 

@@ -180,7 +180,7 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image', // Ensure this is correct
+      model: 'gemini-2.5-flash-image', 
       contents: {
         parts: [
           { inlineData: { data: data, mimeType: mimeType } },
@@ -197,8 +197,8 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
     throw new Error("No image returned from edit.");
   } catch (error: any) {
     console.error("Image Edit Error:", error);
-    if (error.status === 403 || error.message?.includes('permission')) {
-        throw new Error("Permission Denied: Your API Key does not support Image Editing. Please check your Google AI Studio plan.");
+    if (error.status === 403 || error.message?.includes('permission') || error.message?.includes('403')) {
+        throw new Error("Access Denied: Image Editing requires a paid Google Cloud Project. Please enable billing in Google AI Studio.");
     }
     throw error;
   }
@@ -242,8 +242,8 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
       throw new Error("No image generated (Flash Fallback).");
     } catch (fallbackError: any) {
       console.error("Fallback Image Gen Error:", fallbackError);
-       if (fallbackError.status === 403 || fallbackError.message?.includes('permission')) {
-        throw new Error("Permission Denied: API Key lacks access to Image Generation models.");
+       if (fallbackError.status === 403 || fallbackError.message?.includes('permission') || fallbackError.message?.includes('403')) {
+        throw new Error("Access Restricted: Image Generation requires a billed Google Cloud Project. Free tier keys are not supported for this model.");
        }
       throw fallbackError;
     }
