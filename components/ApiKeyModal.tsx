@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X, RefreshCw } from './Icons';
+import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X, RefreshCw, WhatsApp } from './Icons';
 import { Logo } from './Logo';
 import { showToast } from './Toast';
 import { validateApiKey } from '../services/geminiService';
@@ -80,7 +80,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
       <div className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-fade-in-up"></div>
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-sm bg-[#1a1a20] border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up ring-1 ring-white/5">
+      <div className="relative w-full max-w-sm bg-[#1a1a20] border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up ring-1 ring-white/5 max-h-[90vh] overflow-y-auto hide-scrollbar">
         
         {/* Close Button (Top Right) */}
         <button 
@@ -185,15 +185,24 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
              </button>
           </div>
 
-          {/* Helper Link */}
-          <div className="text-center pt-2">
+          {/* Helper Links */}
+          <div className="pt-2 border-t border-white/10 space-y-3 text-center">
             <a 
               href="https://aistudio.google.com/app/apikey" 
               target="_blank" 
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors border-b border-transparent hover:border-primary"
+              className="flex items-center justify-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors"
             >
               Get a key from Google AI Studio <ExternalLink size={10} />
+            </a>
+
+             <a 
+                href="https://chat.whatsapp.com/H2IYoYinYdb4hFVeyBy405?mode=wwt" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 text-green-400 bg-green-500/10 border border-green-500/20 px-4 py-2 rounded-xl text-xs font-bold hover:bg-green-500/20 transition-all active:scale-95"
+            >
+                <WhatsApp size={16} /> Join Community
             </a>
           </div>
         </div>

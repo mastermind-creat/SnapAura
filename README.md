@@ -52,6 +52,10 @@ A comprehensive utility hub for creators.
 **Fun:**
 *   **🧩 Puzzle Game:** An interactive drag-and-drop slide puzzle using custom or uploaded images.
 
+### 6. 🔐 Settings & Security
+*   **API Key Management:** Securely manage your Google Gemini API key. Stored locally on-device.
+*   **Community:** Direct access to the official SnapAura WhatsApp community for support and updates.
+
 ---
 
 ## 🛠 Tech Stack

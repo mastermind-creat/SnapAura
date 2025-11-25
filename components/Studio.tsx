@@ -432,17 +432,6 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
 
             {/* --- FOOTER --- */}
             <div className="text-center space-y-4 opacity-80 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-                <div className="flex justify-center">
-                     <a 
-                        href="https://chat.whatsapp.com/H2IYoYinYdb4hFVeyBy405?mode=wwt" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-green-400 bg-black/40 border border-green-500/30 px-5 py-2.5 rounded-full text-xs font-bold hover:bg-green-500/10 transition-all active:scale-95 shadow-lg backdrop-blur-md"
-                    >
-                        <WhatsApp size={16} /> Join WhatsApp Group
-                    </a>
-                </div>
-                
                 <div className="w-8 h-[1px] bg-white/20 mx-auto"></div>
                 <div className="space-y-1 opacity-60">
                     <p className="text-[10px] text-gray-500 font-medium tracking-widest uppercase">SnapAura v1.0</p>
