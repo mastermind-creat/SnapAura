@@ -32,8 +32,6 @@ const getApiKey = (): string => {
 };
 
 // DYNAMIC CLIENT GENERATOR
-// We must generate the client on every request to ensure we use the latest key
-// if the user updates it in LocalStorage during the session.
 const getAiClient = () => {
     const key = getApiKey();
     return new GoogleGenAI({ apiKey: key });
@@ -57,7 +55,9 @@ export const validateApiKey = async (apiKey: string): Promise<boolean> => {
 
 // Helper: Extract raw base64 and mimeType from Data URL
 const processBase64Image = (base64String: string) => {
-  const match = base64String.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+  // Remove any whitespace
+  const cleanString = base64String.trim();
+  const match = cleanString.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
   
   if (match) {
     return {
@@ -66,9 +66,10 @@ const processBase64Image = (base64String: string) => {
     };
   }
   
+  // If it's already raw base64, assume png but this is risky
   return {
     mimeType: 'image/png',
-    data: base64String
+    data: cleanString
   };
 };
 
@@ -161,7 +162,6 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
 export const rewriteCaption = async (caption: string, tone: string): Promise<string> => {
   const ai = getAiClient();
   try {
-    // Switched to gemini-2.5-flash for better availability
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `Rewrite the following caption to match a "${tone}" vibe. Be creative. Caption: "${caption}"`,
@@ -180,7 +180,7 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-2.5-flash-image', // Ensure this is correct
       contents: {
         parts: [
           { inlineData: { data: data, mimeType: mimeType } },
@@ -195,8 +195,11 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
         }
     }
     throw new Error("No image returned from edit.");
-  } catch (error) {
+  } catch (error: any) {
     console.error("Image Edit Error:", error);
+    if (error.status === 403 || error.message?.includes('permission')) {
+        throw new Error("Permission Denied: Your API Key does not support Image Editing. Please check your Google AI Studio plan.");
+    }
     throw error;
   }
 };
@@ -222,7 +225,6 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
     }
     throw new Error("No image generated (Pro).");
   } catch (error: any) {
-    // Fallback: If Pro model fails for ANY reason (auth, access, not found), try Flash Image
     console.warn("Pro model failed. Attempting Flash fallback. Error:", error);
 
     try {
@@ -238,8 +240,11 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
         }
       }
       throw new Error("No image generated (Flash Fallback).");
-    } catch (fallbackError) {
+    } catch (fallbackError: any) {
       console.error("Fallback Image Gen Error:", fallbackError);
+       if (fallbackError.status === 403 || fallbackError.message?.includes('permission')) {
+        throw new Error("Permission Denied: API Key lacks access to Image Generation models.");
+       }
       throw fallbackError;
     }
   }
@@ -248,12 +253,12 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 // --- 5. Chatbot ---
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string) => {
     const ai = getAiClient();
-    // Switched to gemini-2.5-flash for broader compatibility and speed
+    // Use Flash for standard chat, robust and fast
     const chatSession = ai.chats.create({
         model: 'gemini-2.5-flash',
         history: history,
         config: {
-            systemInstruction: "You are SnapAura, a helpful, witty, and aesthetic AI assistant for a photo editing app. You help users with photography tips, caption ideas, and navigating the app."
+            systemInstruction: "You are SnapAura, a helpful, witty, and aesthetic AI assistant for a photo editing app. You help users with photography tips, caption ideas, and navigating the app. Format your responses with Markdown: use **bold** for emphasis, lists for steps, and keep it concise."
         }
     });
 

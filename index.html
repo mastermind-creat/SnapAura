@@ -19,6 +19,7 @@
     <!-- Use cdnjs for reliability -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <script>
       tailwind.config = {
@@ -93,6 +94,13 @@
         background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
         background-size: 200% 100%;
       }
+      /* Markdown Styles */
+      .prose p { margin-bottom: 0.5em; }
+      .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
+      .prose ol { list-style-type: decimal; padding-left: 1.2em; margin-bottom: 0.5em; }
+      .prose strong { color: #ec4899; font-weight: 700; }
+      .prose code { background: rgba(255,255,255,0.1); padding: 2px 4px; rounded: 4px; font-family: monospace; font-size: 0.9em; }
+      .prose pre { background: rgba(0,0,0,0.3); padding: 1em; rounded: 8px; overflow-x: auto; margin-bottom: 0.5em; }
     </style>
   <script type="importmap">
 {

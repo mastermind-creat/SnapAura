@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings } from './Icons';
+import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings, Mic, Volume2 } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -15,6 +15,9 @@ interface ChatProps {
   onOpenSettings: () => void;
 }
 
+// Global for marked (loaded via CDN)
+declare const marked: any;
+
 const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const [mode, setMode] = useState<ChatMode>('ai');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -22,9 +25,11 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   // --- AI CHAT STATE ---
   const [aiInput, setAiInput] = useState('');
   const [aiMessages, setAiMessages] = useState<Message[]>([
-    { role: 'model', text: "Hey! I'm SnapAura. Need help with a caption, a photo idea, or just want to chat?" }
+    { role: 'model', text: "Hey! I'm **SnapAura**. Need help with a caption, a photo idea, or just want to chat?" }
   ]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // --- P2P CHAT STATE ---
   const [p2pState, setP2pState] = useState<P2PState>('idle');
@@ -52,6 +57,52 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     };
   }, []);
 
+  // Auto-Resize Textarea
+  useEffect(() => {
+      if(textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      }
+  }, [aiInput]);
+
+  // --- SPEECH RECOGNITION ---
+  const handleVoiceInput = () => {
+      if (!('webkitSpeechRecognition' in window)) {
+          showToast("Voice input not supported in this browser", "error");
+          return;
+      }
+      
+      const recognition = new (window as any).webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+          setIsListening(true);
+      };
+      
+      recognition.onresult = (event: any) => {
+          const text = event.results[0][0].transcript;
+          setAiInput(prev => prev + (prev ? ' ' : '') + text);
+      };
+      
+      recognition.onend = () => {
+          setIsListening(false);
+      };
+      
+      recognition.start();
+  };
+
+  // --- TEXT TO SPEECH ---
+  const speakText = (text: string) => {
+      if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text.replace(/[*#]/g, '')); // Strip markdown
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          window.speechSynthesis.speak(utterance);
+      }
+  };
+
   // --- AI HANDLERS ---
   const handleAiSend = async () => {
     if (!aiInput.trim() || aiLoading) return;
@@ -61,9 +112,12 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     setAiInput('');
     setAiLoading(true);
 
+    // Reset textarea height
+    if(textareaRef.current) textareaRef.current.style.height = 'auto';
+
     try {
       const history = aiMessages.map(m => ({
-        role: m.role === 'model' ? 'model' : 'user', // Map 'me'/'peer' if mixed (shouldn't happen here)
+        role: m.role === 'model' ? 'model' : 'user', 
         parts: [{ text: m.text }]
       }));
       
@@ -83,8 +137,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     });
 
     pc.onicecandidate = (event) => {
-      // We wait for all candidates to be gathered (null candidate)
-      // to bundle them into a single SDP string for easy copy-paste
       if (event.candidate === null) {
         if (pc.localDescription) {
           const code = btoa(JSON.stringify(pc.localDescription));
@@ -127,7 +179,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    // Wait for onicecandidate to setSessionCode
   };
 
   const handleJoinRoom = () => {
@@ -149,7 +200,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        // Wait for onicecandidate to setSessionCode (which will be the answer)
       } catch (e) {
           showToast("Invalid Session ID", "error");
       }
@@ -160,7 +210,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       try {
           const answerDesc = JSON.parse(atob(remoteCode));
           await peerConnection.current.setRemoteDescription(answerDesc);
-          // Connection should establish now
       } catch (e) {
           showToast("Invalid Answer Code", "error");
       }
@@ -176,6 +225,14 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const copyToClipboard = (text: string) => {
       navigator.clipboard.writeText(text);
       showToast("Copied to clipboard", "success");
+  };
+
+  // Helper to render MD
+  const renderMarkdown = (text: string) => {
+      if (typeof marked !== 'undefined') {
+          return { __html: marked.parse(text) };
+      }
+      return { __html: text };
   };
 
   return (
@@ -216,40 +273,67 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
             <div className="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar" ref={scrollRef}>
                 {aiMessages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${
+                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${
                     msg.role === 'user' 
                         ? 'bg-secondary text-white rounded-tr-none' 
-                        : 'bg-white/10 text-gray-200 rounded-tl-none'
+                        : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
                     }`}>
-                    {msg.text}
+                        {msg.role === 'model' ? (
+                            <div className="prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={renderMarkdown(msg.text)}></div>
+                        ) : (
+                            msg.text
+                        )}
+                        
+                        {msg.role === 'model' && (
+                            <div className="mt-2 pt-2 border-t border-white/10 flex justify-end">
+                                <button onClick={() => speakText(msg.text)} className="p-1 text-gray-400 hover:text-white transition-colors">
+                                    <Volume2 size={14} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
                 ))}
                 {aiLoading && (
-                <div className="flex justify-start">
-                    <div className="bg-white/10 p-3 rounded-2xl rounded-tl-none flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                <div className="flex justify-start animate-fade-in-up">
+                    <div className="bg-white/10 p-4 rounded-2xl rounded-tl-none flex gap-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
                     </div>
                 </div>
                 )}
             </div>
 
-            <div className="p-4 pb-20">
-                <div className="flex gap-2 items-center bg-white/5 rounded-full p-2 border border-white/10">
-                <input
-                    type="text"
+            <div className="p-3 pb-20 bg-black/30 backdrop-blur-md">
+                <div className="flex gap-2 items-end bg-white/5 rounded-2xl p-2 border border-white/10 shadow-lg">
+                
+                <button 
+                    onClick={handleVoiceInput}
+                    className={`p-3 rounded-full transition-all ${isListening ? 'bg-red-500/20 text-red-400 animate-pulse' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Mic size={20} />
+                </button>
+
+                <textarea
+                    ref={textareaRef}
                     value={aiInput}
                     onChange={(e) => setAiInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAiSend()}
+                    onKeyDown={(e) => {
+                        if(e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAiSend();
+                        }
+                    }}
                     placeholder="Ask Gemini anything..."
-                    className="flex-1 bg-transparent px-4 text-white focus:outline-none placeholder-gray-500"
+                    rows={1}
+                    className="flex-1 bg-transparent px-2 py-3 text-white focus:outline-none placeholder-gray-500 resize-none max-h-32 hide-scrollbar"
                 />
+                
                 <button 
                     onClick={handleAiSend}
                     disabled={!aiInput.trim() || aiLoading}
-                    className="bg-secondary p-2.5 rounded-full text-white hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                    className="bg-secondary p-3 rounded-xl text-white hover:bg-secondary/80 transition-colors disabled:opacity-50 mb-1 active:scale-95"
                 >
                     <Send size={18} />
                 </button>

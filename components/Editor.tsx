@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings } from './Icons';
+import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings, Grid } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -12,8 +12,16 @@ interface EditorProps {
 const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [sliderPos, setSliderPos] = useState(50);
 
-  // Dedicated Aesthetic Filters
+  // Store original image when first loaded
+  React.useEffect(() => {
+    if (image && !originalImage) {
+        setOriginalImage(image);
+    }
+  }, [image]);
+
   const filters = [
     { 
         id: 'cinematic', 
@@ -51,18 +59,20 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
     const promptToUse = customPrompt || prompt;
     if (!image || !promptToUse) return;
     
+    // Lock original if this is the first edit
+    if(!originalImage) setOriginalImage(image);
+
     if (navigator.vibrate) navigator.vibrate(50);
     setIsProcessing(true);
     showToast("Applying magic...", "info");
     
     try {
-      // Using gemini-2.5-flash-image
       const result = await editImageWithPrompt(image, promptToUse);
       setImage(result);
-      if (!customPrompt) setPrompt(''); // Clear input if it was a manual prompt
+      if (!customPrompt) setPrompt('');
       showToast("Edit complete!", "success");
-    } catch (error) {
-      showToast("Editing failed. Try a different prompt.", "error");
+    } catch (error: any) {
+      showToast(error.message || "Editing failed.", "error");
     } finally {
       setIsProcessing(false);
     }
@@ -111,16 +121,59 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
          </button>
       </div>
       
-      {/* Image Preview */}
-      <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50 group shadow-lg">
-         <img src={image} alt="To Edit" className="w-full h-auto max-h-[50vh] object-contain mx-auto" />
-         {isProcessing && (
-             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center flex-col gap-3 z-10">
-                 <RefreshCw className="animate-spin text-primary" size={32} />
-                 <span className="text-sm font-medium animate-pulse">Gemini is painting...</span>
+      {/* Image Preview & Comparison Slider */}
+      <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50 group shadow-lg select-none">
+         {/* If we have original image and it differs from current, show slider UI */}
+         {originalImage && originalImage !== image && !isProcessing ? (
+             <div className="relative w-full h-auto min-h-[300px] touch-none">
+                 {/* Background (Edited) */}
+                 <img src={image} className="w-full h-full object-contain pointer-events-none" alt="Edited" />
+                 
+                 {/* Foreground (Original) - clipped */}
+                 <div 
+                    className="absolute inset-0 overflow-hidden border-r-2 border-white/50 shadow-[2px_0_10px_rgba(0,0,0,0.5)]"
+                    style={{ width: `${sliderPos}%` }}
+                 >
+                     <img src={originalImage} className="w-full h-full object-contain max-w-none pointer-events-none" style={{width: '100vw', maxWidth: '100%'}} alt="Original" />
+                     <div className="absolute bottom-2 left-2 bg-black/60 px-2 rounded text-[10px] text-white">Before</div>
+                 </div>
+                 
+                 <div className="absolute bottom-2 right-2 bg-black/60 px-2 rounded text-[10px] text-white">After</div>
+
+                 {/* Slider Handle */}
+                 <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={sliderPos}
+                    onChange={(e) => setSliderPos(parseInt(e.target.value))}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
+                 />
+                 
+                 {/* Visual Handle Icon */}
+                 <div 
+                    className="absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg z-10 pointer-events-none"
+                    style={{ left: `calc(${sliderPos}% - 16px)` }}
+                 >
+                     <Grid size={14} className="text-black" />
+                 </div>
              </div>
+         ) : (
+            <>
+                <img src={image} alt="To Edit" className="w-full h-auto max-h-[50vh] object-contain mx-auto" />
+                {isProcessing && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center flex-col gap-3 z-10">
+                        <RefreshCw className="animate-spin text-primary" size={32} />
+                        <span className="text-sm font-medium animate-pulse">Gemini is painting...</span>
+                    </div>
+                )}
+            </>
          )}
       </div>
+      
+      {originalImage && originalImage !== image && (
+          <p className="text-center text-[10px] text-gray-500 uppercase tracking-widest">Slide to compare</p>
+      )}
 
       {/* Aesthetic Filters */}
       <div className="space-y-3">

@@ -65,7 +65,9 @@ import {
   Eye,
   EyeOff,
   ClipboardPaste,
-  ExternalLink
+  ExternalLink,
+  Mic,
+  Volume2
 } from 'lucide-react';
 
 export { 
@@ -134,5 +136,7 @@ export {
   Eye,
   EyeOff,
   ClipboardPaste,
-  ExternalLink
+  ExternalLink,
+  Mic,
+  Volume2
 };
