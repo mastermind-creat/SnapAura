@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 
 // Define tool types for better state management
-type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle';
+type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit';
 
 interface ToolkitProps {
   onOpenSettings: () => void;
@@ -34,11 +34,18 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
   const [fromCurr, setFromCurr] = useState('USD');
   const [toCurr, setToCurr] = useState('KES');
 
+  // --- UNIT CONVERTER STATE ---
+  const [unitCategory, setUnitCategory] = useState<'length' | 'mass' | 'temp'>('length');
+  const [unitVal, setUnitVal] = useState('1');
+  const [unitFrom, setUnitFrom] = useState('m');
+  const [unitTo, setUnitTo] = useState('ft');
+  const [unitResult, setUnitResult] = useState<string | null>(null);
+
   // --- PHOTO UTILS STATE ---
   const [utilImage, setUtilImage] = useState<string | null>(null);
   const [imageMeta, setImageMeta] = useState<any>(null);
   const utilFileInputRef = useRef<HTMLInputElement>(null);
-  const qrFileInputRef = useRef<HTMLInputElement>(null); // New ref for QR upload
+  const qrFileInputRef = useRef<HTMLInputElement>(null); 
   
   // Palette
   const [extractedColors, setExtractedColors] = useState<string[]>([]);
@@ -54,16 +61,21 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
   const [draggedTileIndex, setDraggedTileIndex] = useState<number | null>(null);
 
   const COINS = ["Bitcoin (BTC)", "Ethereum (ETH)", "Solana (SOL)", "Binance Coin (BNB)", "Ripple (XRP)", "Cardano (ADA)", "Dogecoin (DOGE)"];
+  
   const CURRENCIES = [
-    {code: 'USD', name: 'US Dollar'}, 
-    {code: 'EUR', name: 'Euro'}, 
-    {code: 'KES', name: 'Kenyan Shilling'}, 
-    {code: 'GBP', name: 'British Pound'},
-    {code: 'JPY', name: 'Japanese Yen'},
-    {code: 'CAD', name: 'Canadian Dollar'},
-    {code: 'AUD', name: 'Australian Dollar'},
-    {code: 'NGN', name: 'Nigerian Naira'},
-    {code: 'ZAR', name: 'South African Rand'}
+    {code: 'USD', name: 'US Dollar', flag: '🇺🇸'}, 
+    {code: 'EUR', name: 'Euro', flag: '🇪🇺'}, 
+    {code: 'GBP', name: 'British Pound', flag: '🇬🇧'},
+    {code: 'KES', name: 'Kenyan Shilling', flag: '🇰🇪'}, 
+    {code: 'JPY', name: 'Japanese Yen', flag: '🇯🇵'},
+    {code: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦'},
+    {code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺'},
+    {code: 'CHF', name: 'Swiss Franc', flag: '🇨🇭'},
+    {code: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳'},
+    {code: 'INR', name: 'Indian Rupee', flag: '🇮🇳'},
+    {code: 'NGN', name: 'Nigerian Naira', flag: '🇳🇬'},
+    {code: 'ZAR', name: 'South African Rand', flag: '🇿🇦'},
+    {code: 'AED', name: 'UAE Dirham', flag: '🇦🇪'}
   ];
 
   const PUZZLE_PRESETS = [
@@ -186,6 +198,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
                setScannedResult(decodedText);
                html5QrCode.stop().then(() => {
                    showToast("QR Code Scanned!", "success");
+                   if (navigator.vibrate) navigator.vibrate(100);
                });
            }, (errorMessage: any) => {
                // ignore errors for scanning
@@ -202,7 +215,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
     }
   }, [activeTool, scannedResult]);
 
-  // --- FINANCIAL HANDLERS (UPDATED) ---
+  // --- FINANCIAL HANDLERS ---
   const handleCryptoAnalysis = async () => {
       setIsAnalyzingFinance(true);
       setCryptoResult(null);
@@ -229,6 +242,48 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
           setIsAnalyzingFinance(false); 
       }
   };
+
+  // --- UNIT CONVERTER HANDLER ---
+  const handleUnitConvert = () => {
+      const v = parseFloat(unitVal);
+      if(isNaN(v)) return;
+      
+      let res = 0;
+      // Simple strict conversions logic (demo purpose)
+      // Length (base meter)
+      const lenFactors: any = { m: 1, km: 1000, cm: 0.01, mm: 0.001, ft: 0.3048, mi: 1609.34, in: 0.0254, yd: 0.9144 };
+      // Mass (base kg)
+      const massFactors: any = { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592, oz: 0.0283495 };
+      
+      if(unitCategory === 'length') {
+          const valInMeters = v * (lenFactors[unitFrom] || 1);
+          res = valInMeters / (lenFactors[unitTo] || 1);
+      } else if (unitCategory === 'mass') {
+          const valInKg = v * (massFactors[unitFrom] || 1);
+          res = valInKg / (massFactors[unitTo] || 1);
+      } else if (unitCategory === 'temp') {
+          // Temp is special
+          let valInC = v;
+          if(unitFrom === 'F') valInC = (v - 32) * 5/9;
+          if(unitFrom === 'K') valInC = v - 273.15;
+          
+          if(unitTo === 'C') res = valInC;
+          if(unitTo === 'F') res = (valInC * 9/5) + 32;
+          if(unitTo === 'K') res = valInC + 273.15;
+      }
+
+      setUnitResult(res.toLocaleString(undefined, { maximumFractionDigits: 4 }));
+      if (navigator.vibrate) navigator.vibrate(20);
+  };
+
+  // Update units when category changes
+  useEffect(() => {
+      setUnitResult(null);
+      if(unitCategory === 'length') { setUnitFrom('m'); setUnitTo('ft'); }
+      if(unitCategory === 'mass') { setUnitFrom('kg'); setUnitTo('lb'); }
+      if(unitCategory === 'temp') { setUnitFrom('C'); setUnitTo('F'); }
+  }, [unitCategory]);
+
 
   // --- PHOTO UTILS LOGIC ---
   const extractPalette = (imgSrc: string) => {
@@ -281,15 +336,13 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
 
   // --- PUZZLE LOGIC ---
   const initPuzzle = () => {
-      // Create solvable state (any swap state is solvable in this mode)
       setPuzzleTiles([...Array(9).keys()].sort(() => Math.random() - 0.5));
-      setPuzzleWin(false); // Fix: Explicitly reset win state
+      setPuzzleWin(false);
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
       setDraggedTileIndex(index);
       e.dataTransfer.effectAllowed = "move";
-      // Transparent drag image
       const img = new Image();
       img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
       e.dataTransfer.setDragImage(img, 0, 0);
@@ -306,7 +359,6 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       if (draggedTileIndex === targetIndex) return;
 
       const newTiles = [...puzzleTiles];
-      // Swap elements
       const temp = newTiles[draggedTileIndex];
       newTiles[draggedTileIndex] = newTiles[targetIndex];
       newTiles[targetIndex] = temp;
@@ -314,16 +366,18 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       setPuzzleTiles(newTiles);
       setDraggedTileIndex(null);
 
-      // Check Win
       const isSorted = newTiles.every((val, i) => val === i);
       if (isSorted) {
           setPuzzleWin(true);
           showToast("Puzzle Solved!", "success");
           if (window.confetti) window.confetti();
       } else {
-          // Haptic feedback for successful swap
           if (navigator.vibrate) navigator.vibrate(20);
       }
+  };
+
+  const isUrl = (text: string) => {
+      return /^(http|https):\/\/[^ "]+$/.test(text);
   };
 
   const renderMenu = () => (
@@ -334,6 +388,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
             <div className="grid grid-cols-3 gap-3">
                 <MenuCard icon={Bitcoin} color="text-orange-400" bg="bg-orange-500/20" title="Crypto" onClick={() => setActiveTool('crypto')} />
                 <MenuCard icon={Banknote} color="text-green-400" bg="bg-green-500/20" title="Currency" onClick={() => setActiveTool('currency')} />
+                <MenuCard icon={Ruler} color="text-teal-400" bg="bg-teal-500/20" title="Units" onClick={() => setActiveTool('unit')} />
                 <MenuCard icon={Link} color="text-blue-400" bg="bg-blue-500/20" title="Shortener" onClick={() => setActiveTool('shortener')} />
                 <MenuCard icon={QrCode} color="text-purple-400" bg="bg-purple-500/20" title="Gen QR" onClick={() => setActiveTool('qr')} />
                 <MenuCard icon={ScanLine} color="text-red-400" bg="bg-red-500/20" title="Scan QR" onClick={() => { setScannedResult(null); setActiveTool('qr-scan'); }} />
@@ -413,13 +468,6 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
                               <div id="reader" className="w-full"></div>
                               <p className="absolute text-xs text-gray-400 pointer-events-none">Point camera or upload image</p>
                           </div>
-                          
-                          <div className="flex items-center gap-3">
-                              <div className="h-[1px] bg-white/10 flex-1"></div>
-                              <span className="text-xs text-gray-500 font-bold uppercase">Options</span>
-                              <div className="h-[1px] bg-white/10 flex-1"></div>
-                          </div>
-
                           <button 
                             onClick={() => qrFileInputRef.current?.click()}
                             className="w-full bg-white/5 hover:bg-white/10 py-3 rounded-xl border border-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
@@ -433,14 +481,25 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
                               <CheckCircle size={32} />
                           </div>
                           <h3 className="text-xl font-bold text-white">Scan Successful!</h3>
-                          <div className="bg-black/30 p-4 rounded-xl border border-white/10 break-all text-sm text-gray-300">
-                              {scannedResult}
+                          
+                          <div className="glass-panel p-4 rounded-xl text-left">
+                              <p className="text-xs text-gray-500 font-bold uppercase mb-2">Content</p>
+                              <div className="bg-black/30 p-3 rounded-lg border border-white/10 break-all text-sm text-white font-mono">
+                                  {scannedResult}
+                              </div>
+                              
+                              {isUrl(scannedResult) && (
+                                  <a href={scannedResult} target="_blank" rel="noreferrer" className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+                                      <ExternalLink size={16} /> Open Link
+                                  </a>
+                              )}
                           </div>
+
                           <div className="flex gap-2">
-                              <button onClick={() => {navigator.clipboard.writeText(scannedResult); showToast("Copied to clipboard", "success")}} className="flex-1 bg-white/10 py-3 rounded-xl font-bold hover:bg-white/20">
-                                  Copy Text
+                              <button onClick={() => {navigator.clipboard.writeText(scannedResult); showToast("Copied to clipboard", "success")}} className="flex-1 bg-white/10 py-3 rounded-xl font-bold hover:bg-white/20 flex items-center justify-center gap-2">
+                                  <Copy size={16} /> Copy
                               </button>
-                              <button onClick={() => { setScannedResult(null); window.location.reload(); /* Dirty way to restart scanner, ideally re-init */ }} className="flex-1 bg-primary py-3 rounded-xl font-bold text-white">
+                              <button onClick={() => { setScannedResult(null); window.location.reload(); }} className="flex-1 bg-white/5 text-gray-400 hover:text-white py-3 rounded-xl font-bold">
                                   Scan Again
                               </button>
                           </div>
@@ -485,7 +544,6 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
                           </div>
                       </div>
 
-                      {/* SVG Mini Chart */}
                       {cryptoResult.trend && (
                         <div className="h-24 w-full flex items-end gap-1 border-b border-white/5 pb-2">
                             {cryptoResult.trend.map((val: number, i: number) => (
@@ -512,20 +570,23 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       {activeTool === 'currency' && (
           <div className="space-y-4 animate-fade-in-up">
               <div className="glass-panel p-4 rounded-xl space-y-4 border-t-4 border-green-500">
-                   <div className="flex gap-2">
+                   <div className="flex flex-col gap-3">
                        <input 
                           type="number" 
                           value={amount} 
                           onChange={e => setAmount(e.target.value)} 
-                          className="w-1/3 bg-black/30 p-3 rounded-xl text-white font-bold text-center border border-white/10"
+                          className="w-full bg-black/30 p-4 rounded-xl text-white font-bold text-xl text-center border border-white/10"
+                          placeholder="Amount"
                        />
-                       <select value={fromCurr} onChange={e => setFromCurr(e.target.value)} className="w-1/3 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10">
-                           {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                       </select>
-                       <div className="flex items-center text-gray-400"><ArrowRight size={16}/></div>
-                       <select value={toCurr} onChange={e => setToCurr(e.target.value)} className="w-1/3 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10">
-                           {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                       </select>
+                       <div className="flex items-center gap-2">
+                           <select value={fromCurr} onChange={e => setFromCurr(e.target.value)} className="flex-1 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10 appearance-none">
+                               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                           </select>
+                           <div className="bg-white/5 p-2 rounded-full text-gray-400"><ArrowRight size={16}/></div>
+                           <select value={toCurr} onChange={e => setToCurr(e.target.value)} className="flex-1 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10 appearance-none">
+                               {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                           </select>
+                       </div>
                    </div>
                    
                    <button 
@@ -539,14 +600,85 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
               </div>
 
               {financialResult && (
-                  <div className="glass-panel p-6 rounded-2xl animate-fade-in-up text-center space-y-3">
-                      <p className="text-xs text-gray-400 uppercase tracking-widest">Conversion Result</p>
-                      <h2 className="text-3xl font-black text-white">{financialResult.result}</h2>
-                      <div className="inline-block bg-white/5 px-3 py-1 rounded-full text-xs text-green-300 border border-white/10">
+                  <div className="glass-panel p-6 rounded-2xl animate-fade-in-up text-center space-y-3 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-10">
+                          <Banknote size={100} />
+                      </div>
+                      <p className="text-xs text-gray-400 uppercase tracking-widest relative z-10">Conversion Result</p>
+                      <h2 className="text-4xl font-black text-white relative z-10 tracking-tight">{financialResult.result}</h2>
+                      <div className="inline-block bg-white/5 px-3 py-1 rounded-full text-xs text-green-300 border border-white/10 relative z-10">
                           {financialResult.rate}
                       </div>
-                      <p className="text-xs text-gray-400 pt-2 border-t border-white/10">{financialResult.details}</p>
+                      <p className="text-xs text-gray-400 pt-2 border-t border-white/10 relative z-10">{financialResult.details}</p>
                   </div>
+              )}
+          </div>
+      )}
+
+      {/* --- UNIT CONVERTER TOOL --- */}
+      {activeTool === 'unit' && (
+          <div className="space-y-4 animate-fade-in-up">
+              <div className="glass-panel p-4 rounded-xl space-y-4 border-t-4 border-teal-500">
+                  {/* Category Selector */}
+                  <div className="flex bg-white/5 p-1 rounded-lg">
+                      {(['length', 'mass', 'temp'] as const).map(cat => (
+                          <button 
+                            key={cat} 
+                            onClick={() => setUnitCategory(cat)}
+                            className={`flex-1 py-2 text-xs font-bold uppercase rounded-md transition-all ${unitCategory === cat ? 'bg-teal-500 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+                          >
+                              {cat}
+                          </button>
+                      ))}
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                       <input 
+                          type="number" 
+                          value={unitVal} 
+                          onChange={e => setUnitVal(e.target.value)} 
+                          className="w-full bg-black/30 p-4 rounded-xl text-white font-bold text-xl text-center border border-white/10"
+                          placeholder="Value"
+                       />
+                       
+                       <div className="flex items-center gap-2">
+                           {/* From Unit */}
+                           <select value={unitFrom} onChange={e => setUnitFrom(e.target.value)} className="flex-1 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10 font-bold text-center">
+                               {unitCategory === 'length' && ['m', 'km', 'cm', 'mm', 'ft', 'mi', 'in', 'yd'].map(u => <option key={u} value={u}>{u}</option>)}
+                               {unitCategory === 'mass' && ['kg', 'g', 'mg', 'lb', 'oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                               {unitCategory === 'temp' && ['C', 'F', 'K'].map(u => <option key={u} value={u}>{u}</option>)}
+                           </select>
+                           
+                           <div className="text-gray-500"><ArrowRight size={14}/></div>
+                           
+                           {/* To Unit */}
+                           <select value={unitTo} onChange={e => setUnitTo(e.target.value)} className="flex-1 bg-black/30 p-3 rounded-xl text-white text-sm border border-white/10 font-bold text-center">
+                               {unitCategory === 'length' && ['m', 'km', 'cm', 'mm', 'ft', 'mi', 'in', 'yd'].map(u => <option key={u} value={u}>{u}</option>)}
+                               {unitCategory === 'mass' && ['kg', 'g', 'mg', 'lb', 'oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                               {unitCategory === 'temp' && ['C', 'F', 'K'].map(u => <option key={u} value={u}>{u}</option>)}
+                           </select>
+                       </div>
+                  </div>
+
+                  <button 
+                      onClick={handleUnitConvert}
+                      className="w-full bg-teal-500 hover:bg-teal-600 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all"
+                  >
+                      Convert
+                  </button>
+              </div>
+
+              {unitResult && (
+                   <div className="glass-panel p-6 rounded-2xl animate-fade-in-up text-center relative overflow-hidden">
+                      <div className="absolute top-0 left-0 p-4 opacity-10">
+                          <Ruler size={100} />
+                      </div>
+                      <p className="text-xs text-gray-400 uppercase tracking-widest relative z-10">Result</p>
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                          <h2 className="text-4xl font-black text-white relative z-10">{unitResult}</h2>
+                          <span className="text-xl font-bold text-teal-400 relative z-10">{unitTo}</span>
+                      </div>
+                   </div>
               )}
           </div>
       )}
