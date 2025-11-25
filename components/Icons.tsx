@@ -71,7 +71,13 @@ import {
   ChevronRight,
   RotateCcw as RotateLeft,
   Ruler,
-  Radio
+  Radio,
+  Paperclip,
+  FileText,
+  XCircle,
+  StopCircle,
+  Play,
+  Pause
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -160,5 +166,11 @@ export {
   ChevronRight,
   RotateLeft as RotateCcw,
   Ruler,
-  Radio
+  Radio,
+  Paperclip,
+  FileText,
+  XCircle,
+  StopCircle,
+  Play,
+  Pause
 };
