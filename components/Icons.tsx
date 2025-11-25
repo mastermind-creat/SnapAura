@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Camera, 
@@ -13,7 +14,7 @@ import {
   Send,
   Image as ImageIcon,
   Zap,
-  Trash2,
+  Trash2, 
   Rocket,
   Palette,
   Brain,
@@ -77,7 +78,10 @@ import {
   XCircle,
   StopCircle,
   Play,
-  Pause
+  Pause,
+  UserPlus,
+  DownloadCloud,
+  LogIn
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -172,5 +176,9 @@ export {
   XCircle,
   StopCircle,
   Play,
-  Pause
+  Pause,
+  UserPlus,
+  DownloadCloud,
+  LogIn
 };
+    

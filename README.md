@@ -1,3 +1,4 @@
+
 # SnapAura AI 📸✨
 
 **SnapAura AI** is a premium, Progressive Web App (PWA) designed for the modern social media era. It leverages the latest **Google Gemini Models** to transform how users create, edit, and caption their content, while providing a suite of essential creator tools.
@@ -29,8 +30,12 @@ Text-to-Image generation studio.
 *   **Fallback Mechanism:** Automatically degrades to *Flash Image* if the user lacks Pro permissions, ensuring reliability.
 
 ### 4. 💬 Chat & Connectivity
-*   **AI Assistant:** A helpful creative assistant powered by **Gemini 3 Pro Preview**. Ask for photography tips, app navigation, or creative ideas.
-*   **🛡️ Secure P2P Chat:** A serverless, browser-to-browser encrypted chat system using **WebRTC**. Users can create secure rooms via Session IDs to chat privately without any backend storage.
+*   **AI Assistant:** A helpful creative assistant powered by **Gemini 2.5 Flash** (switched from Pro for reliability). Ask for photography tips, app navigation, or creative ideas.
+*   **🛡️ Secure Group Chat:** 
+    *   **P2P Encryption:** Serverless, browser-to-browser chat using **WebRTC (PeerJS)**.
+    *   **Group Support:** Host a session and invite multiple friends via a shared link.
+    *   **Multimedia:** Send voice notes, images, and files with instant downloads.
+    *   **Zero Logs:** Messages exist only in memory and vanish when you close the tab.
 
 ### 5. 🧰 Creator Toolkit
 A comprehensive utility hub for creators.
@@ -38,8 +43,10 @@ A comprehensive utility hub for creators.
 **Essentials:**
 *   **📈 Crypto Market:** Real-time cryptocurrency price analysis, trend graphs, and trading signals using **Search Grounding**.
 *   **💱 Currency Exchange:** Real-time fiat currency conversion with detailed market context.
+*   **📏 Unit Converter:** Convert Length, Mass, and Temperature instantly.
 *   **🔗 Link Shortener:** Instantly shorten long URLs.
 *   **📱 QR Generator:** Create custom QR codes.
+*   **📸 QR Scanner:** Scan codes from camera or uploaded images (supports URL detection).
 
 **Photo Utilities:**
 *   **😂 Meme Maker:** Add top and bottom text to your images instantly.
@@ -63,10 +70,10 @@ A comprehensive utility hub for creators.
 *   **Frontend:** React 19, TypeScript, Vite
 *   **Styling:** Tailwind CSS (Custom animations, Glassmorphism utility classes)
 *   **AI Core:** Google GenAI SDK (`@google/genai`)
-*   **Real-time:** WebRTC (Data Channels)
+*   **Real-time:** WebRTC (PeerJS) with Host-Relay topology for groups
 *   **Icons:** Lucide React
 *   **PWA:** Web Manifest, Service Worker ready, iOS/Android meta tags, Install Prompts
-*   **Libraries:** `exif-js` (Metadata), `canvas-confetti` (Animations)
+*   **Libraries:** `exif-js` (Metadata), `canvas-confetti` (Animations), `marked` (Markdown)
 
 ---
 
@@ -75,10 +82,10 @@ A comprehensive utility hub for creators.
 | Feature | Model | Description |
 | :--- | :--- | :--- |
 | **Image Analysis** | `gemini-2.5-flash` | Fast multimodal analysis for captions & tags |
-| **Caption Rewrite** | `gemini-3-pro-preview` | Complex reasoning for tone shifting |
+| **Caption Rewrite** | `gemini-2.5-flash` | Optimized for fast tone shifting |
 | **Magic Editor** | `gemini-2.5-flash-image` | "Nano Banana" model for fast image manipulation |
 | **Image Gen (HQ)** | `gemini-3-pro-image-preview` | "Nano Banana Pro" for 4K generation |
-| **Chat Assistant** | `gemini-3-pro-preview` | High-intelligence conversational agent |
+| **Chat Assistant** | `gemini-2.5-flash` | High-intelligence conversational agent |
 | **Toolkit (Bio)** | `gemini-2.5-flash` | Fast text generation |
 | **Financial Tools** | `gemini-2.5-flash` | Uses **Google Search Grounding** for real-time data |
 
@@ -123,3 +130,4 @@ To install on mobile:
 ## 📄 License
 
 MIT License. Built for the Google Gemini Developer Competition.
+    
