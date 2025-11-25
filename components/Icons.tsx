@@ -70,7 +70,8 @@ import {
   Volume2,
   ChevronRight,
   RotateCcw as RotateLeft,
-  Ruler
+  Ruler,
+  Radio
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -158,5 +159,6 @@ export {
   Volume2,
   ChevronRight,
   RotateLeft as RotateCcw,
-  Ruler
+  Ruler,
+  Radio
 };

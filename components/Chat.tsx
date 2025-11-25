@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings, Mic, Volume2 } from './Icons';
+import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -9,7 +9,7 @@ interface Message {
 }
 
 type ChatMode = 'ai' | 'p2p';
-type P2PState = 'idle' | 'creating' | 'waiting_for_answer' | 'joining' | 'connected';
+type P2PState = 'idle' | 'setup' | 'connected';
 
 interface ChatProps {
   onOpenSettings: () => void;
@@ -17,6 +17,8 @@ interface ChatProps {
 
 // Global for marked (loaded via CDN)
 declare const marked: any;
+// Global for PeerJS
+declare const Peer: any;
 
 const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const [mode, setMode] = useState<ChatMode>('ai');
@@ -31,16 +33,17 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // --- P2P CHAT STATE ---
+  // --- P2P CHAT STATE (PeerJS) ---
   const [p2pState, setP2pState] = useState<P2PState>('idle');
   const [p2pMessages, setP2pMessages] = useState<Message[]>([]);
   const [p2pInput, setP2pInput] = useState('');
-  const [sessionCode, setSessionCode] = useState('');
-  const [remoteCode, setRemoteCode] = useState('');
+  const [myPeerId, setMyPeerId] = useState('');
+  const [targetPeerId, setTargetPeerId] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
   
-  // WebRTC Refs
-  const peerConnection = useRef<RTCPeerConnection | null>(null);
-  const dataChannel = useRef<RTCDataChannel | null>(null);
+  // Refs for PeerJS
+  const peerInstance = useRef<any>(null);
+  const connInstance = useRef<any>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -48,14 +51,112 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     }
   }, [aiMessages, p2pMessages, mode]);
 
-  // Clean up WebRTC on unmount
+  // Clean up Peer on unmount
   useEffect(() => {
     return () => {
-      if (peerConnection.current) {
-        peerConnection.current.close();
-      }
+      destroyPeer();
     };
   }, []);
+
+  // Initialize Peer when switching to P2P mode
+  useEffect(() => {
+      if (mode === 'p2p' && !peerInstance.current) {
+          setP2pState('setup');
+          initPeer();
+      }
+  }, [mode]);
+
+  const destroyPeer = () => {
+      if (connInstance.current) {
+          connInstance.current.close();
+          connInstance.current = null;
+      }
+      if (peerInstance.current) {
+          peerInstance.current.destroy();
+          peerInstance.current = null;
+      }
+      setP2pState('idle');
+      setMyPeerId('');
+  };
+
+  const initPeer = () => {
+      if (typeof Peer === 'undefined') {
+          showToast("P2P library loading...", "info");
+          setTimeout(initPeer, 500); // Retry if CDN is slow
+          return;
+      }
+
+      // Generate a friendly random ID: snap-XXXX
+      const randomId = 'snap-' + Math.random().toString(36).substr(2, 4);
+      
+      const peer = new Peer(randomId);
+      
+      peer.on('open', (id: string) => {
+          setMyPeerId(id);
+      });
+
+      peer.on('connection', (conn: any) => {
+          // Incoming connection
+          setupConnection(conn);
+          showToast(`Connected to ${conn.peer}!`, "success");
+      });
+
+      peer.on('error', (err: any) => {
+          console.error(err);
+          if (err.type === 'peer-unavailable') {
+              showToast("User not found. Check ID.", "error");
+          } else if (err.type === 'unavailable-id') {
+              // Retry with new ID if taken
+              initPeer(); 
+          } else {
+              showToast("Connection Error", "error");
+          }
+          setIsConnecting(false);
+      });
+
+      peerInstance.current = peer;
+  };
+
+  const connectToPeer = () => {
+      if (!targetPeerId.trim() || !peerInstance.current) return;
+      
+      if (targetPeerId === myPeerId) {
+          showToast("Cannot connect to yourself", "error");
+          return;
+      }
+
+      setIsConnecting(true);
+      const conn = peerInstance.current.connect(targetPeerId);
+      setupConnection(conn);
+  };
+
+  const setupConnection = (conn: any) => {
+      connInstance.current = conn;
+      
+      conn.on('open', () => {
+          setP2pState('connected');
+          setIsConnecting(false);
+          // showToast("Secure Channel Established", "success");
+      });
+
+      conn.on('data', (data: any) => {
+          setP2pMessages(prev => [...prev, { role: 'peer', text: data }]);
+          if (navigator.vibrate) navigator.vibrate(20);
+      });
+
+      conn.on('close', () => {
+          setP2pState('setup');
+          showToast("Peer disconnected", "info");
+          connInstance.current = null;
+      });
+  };
+
+  const handleP2pSend = () => {
+      if (!p2pInput.trim() || !connInstance.current) return;
+      connInstance.current.send(p2pInput);
+      setP2pMessages(prev => [...prev, { role: 'me', text: p2pInput }]);
+      setP2pInput('');
+  };
 
   // Auto-Resize Textarea
   useEffect(() => {
@@ -68,7 +169,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   // --- SPEECH RECOGNITION ---
   const handleVoiceInput = () => {
       if (!('webkitSpeechRecognition' in window)) {
-          showToast("Voice input not supported in this browser", "error");
+          showToast("Voice input not supported", "error");
           return;
       }
       
@@ -77,28 +178,19 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       recognition.interimResults = false;
       recognition.lang = 'en-US';
       
-      recognition.onstart = () => {
-          setIsListening(true);
-      };
-      
+      recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event: any) => {
           const text = event.results[0][0].transcript;
           setAiInput(prev => prev + (prev ? ' ' : '') + text);
       };
-      
-      recognition.onend = () => {
-          setIsListening(false);
-      };
-      
+      recognition.onend = () => setIsListening(false);
       recognition.start();
   };
 
   // --- TEXT TO SPEECH ---
   const speakText = (text: string) => {
       if ('speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(text.replace(/[*#]/g, '')); // Strip markdown
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
+          const utterance = new SpeechSynthesisUtterance(text.replace(/[*#]/g, ''));
           window.speechSynthesis.speak(utterance);
       }
   };
@@ -112,7 +204,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     setAiInput('');
     setAiLoading(true);
 
-    // Reset textarea height
     if(textareaRef.current) textareaRef.current.style.height = 'auto';
 
     try {
@@ -130,101 +221,9 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     }
   };
 
-  // --- P2P HANDLERS ---
-  const initPeerConnection = () => {
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate === null) {
-        if (pc.localDescription) {
-          const code = btoa(JSON.stringify(pc.localDescription));
-          setSessionCode(code);
-        }
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') {
-            setP2pState('connected');
-            showToast("Secure connection established!", "success");
-        } else if (pc.connectionState === 'disconnected') {
-            setP2pState('idle');
-            showToast("Peer disconnected", "info");
-        }
-    };
-
-    return pc;
-  };
-
-  const setupDataChannel = (dc: RTCDataChannel) => {
-    dc.onopen = () => {
-        setP2pState('connected');
-        showToast("Chat channel open!", "success");
-    };
-    dc.onmessage = (e) => {
-        setP2pMessages(prev => [...prev, { role: 'peer', text: e.data }]);
-    };
-    dataChannel.current = dc;
-  };
-
-  const handleCreateRoom = async () => {
-    setP2pState('creating');
-    const pc = initPeerConnection();
-    peerConnection.current = pc;
-
-    const dc = pc.createDataChannel("chat");
-    setupDataChannel(dc);
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-  };
-
-  const handleJoinRoom = () => {
-    setP2pState('joining');
-  };
-
-  const handleGenerateAnswer = async () => {
-      if (!remoteCode) return;
-      try {
-        const pc = initPeerConnection();
-        peerConnection.current = pc;
-
-        pc.ondatachannel = (e) => {
-            setupDataChannel(e.channel);
-        };
-
-        const offerDesc = JSON.parse(atob(remoteCode));
-        await pc.setRemoteDescription(offerDesc);
-
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-      } catch (e) {
-          showToast("Invalid Session ID", "error");
-      }
-  };
-
-  const handleCompleteConnection = async () => {
-      if (!remoteCode || !peerConnection.current) return;
-      try {
-          const answerDesc = JSON.parse(atob(remoteCode));
-          await peerConnection.current.setRemoteDescription(answerDesc);
-      } catch (e) {
-          showToast("Invalid Answer Code", "error");
-      }
-  };
-
-  const handleP2pSend = () => {
-      if (!p2pInput.trim() || !dataChannel.current) return;
-      dataChannel.current.send(p2pInput);
-      setP2pMessages(prev => [...prev, { role: 'me', text: p2pInput }]);
-      setP2pInput('');
-  };
-
   const copyToClipboard = (text: string) => {
       navigator.clipboard.writeText(text);
-      showToast("Copied to clipboard", "success");
+      showToast("ID Copied!", "success");
   };
 
   // Helper to render MD
@@ -262,7 +261,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                 onClick={() => setMode('p2p')}
                 className={`flex-1 py-2 text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${mode === 'p2p' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400'}`}
             >
-                <ShieldCheck size={14} /> Secure P2P
+                <ShieldCheck size={14} /> Instant P2P
             </button>
         </div>
       </div>
@@ -342,137 +341,104 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
           </>
       )}
 
-      {/* --- P2P CHAT VIEW --- */}
+      {/* --- P2P CHAT VIEW (PeerJS) --- */}
       {mode === 'p2p' && (
           <div className="flex-1 flex flex-col overflow-hidden">
              
-             {/* P2P SETUP UI */}
-             {p2pState !== 'connected' && (
-                 <div className="flex-1 overflow-y-auto p-6 space-y-6 animate-fade-in-up">
-                     <div className="text-center space-y-2">
-                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto text-green-400 mb-4">
-                            <ShieldCheck size={32} />
-                        </div>
-                        <h2 className="text-xl font-bold text-white">Encrypted P2P Chat</h2>
-                        <p className="text-sm text-gray-400">Direct browser-to-browser connection. No servers, no logs.</p>
-                     </div>
-
-                     {p2pState === 'idle' && (
-                         <div className="grid grid-cols-1 gap-4">
-                             <button onClick={handleCreateRoom} className="bg-white/10 hover:bg-white/20 p-4 rounded-xl text-left transition-all border border-white/5">
-                                 <div className="flex items-center gap-3 mb-1">
-                                     <Users className="text-blue-400" />
-                                     <span className="font-bold text-white">Create Room</span>
-                                 </div>
-                                 <p className="text-xs text-gray-500">Generate a session ID to share with a friend.</p>
-                             </button>
-                             <button onClick={handleJoinRoom} className="bg-white/10 hover:bg-white/20 p-4 rounded-xl text-left transition-all border border-white/5">
-                                 <div className="flex items-center gap-3 mb-1">
-                                     <Link2 className="text-purple-400" />
-                                     <span className="font-bold text-white">Join Room</span>
-                                 </div>
-                                 <p className="text-xs text-gray-500">Enter a session ID from a friend.</p>
-                             </button>
-                         </div>
-                     )}
-
-                     {p2pState === 'creating' && (
-                         <div className="glass-panel p-4 rounded-xl space-y-4">
-                             <h3 className="font-bold text-white text-sm">1. Share this Session ID</h3>
-                             {sessionCode ? (
-                                <div className="relative">
-                                    <textarea readOnly value={sessionCode} className="w-full h-24 bg-black/30 rounded-lg p-3 text-xs text-gray-300 break-all resize-none border border-white/10" />
-                                    <button onClick={() => copyToClipboard(sessionCode)} className="absolute top-2 right-2 bg-white/10 p-2 rounded hover:bg-white/20 text-white"><Copy size={14} /></button>
-                                </div>
-                             ) : (
-                                 <div className="flex items-center gap-2 text-sm text-gray-400"><RefreshCw className="animate-spin" size={16}/> Generating keys...</div>
-                             )}
-                             
-                             <h3 className="font-bold text-white text-sm pt-4 border-t border-white/10">2. Paste Peer's Answer</h3>
-                             <textarea 
-                                value={remoteCode}
-                                onChange={(e) => setRemoteCode(e.target.value)}
-                                placeholder="Paste the answer code here..."
-                                className="w-full h-24 bg-black/30 rounded-lg p-3 text-xs text-white break-all resize-none border border-white/10 focus:border-green-500 outline-none" 
-                             />
-                             
-                             <button onClick={handleCompleteConnection} className="w-full bg-green-600 py-3 rounded-lg font-bold text-white shadow-lg active:scale-95 transition-all">
-                                 Connect
-                             </button>
-                             <button onClick={() => setP2pState('idle')} className="w-full text-xs text-gray-500 mt-2 underline">Cancel</button>
-                         </div>
-                     )}
-
-                     {p2pState === 'joining' && (
-                         <div className="glass-panel p-4 rounded-xl space-y-4">
-                             {!sessionCode ? (
-                                 <>
-                                    <h3 className="font-bold text-white text-sm">1. Paste Session ID</h3>
-                                    <textarea 
-                                        value={remoteCode}
-                                        onChange={(e) => setRemoteCode(e.target.value)}
-                                        placeholder="Paste the host's session ID here..."
-                                        className="w-full h-24 bg-black/30 rounded-lg p-3 text-xs text-white break-all resize-none border border-white/10 focus:border-purple-500 outline-none" 
-                                    />
-                                    <button onClick={handleGenerateAnswer} className="w-full bg-purple-600 py-3 rounded-lg font-bold text-white shadow-lg active:scale-95 transition-all">
-                                        Generate Answer
-                                    </button>
-                                 </>
-                             ) : (
-                                 <>
-                                     <h3 className="font-bold text-white text-sm">2. Share Answer Code</h3>
-                                     <div className="relative">
-                                        <textarea readOnly value={sessionCode} className="w-full h-24 bg-black/30 rounded-lg p-3 text-xs text-gray-300 break-all resize-none border border-white/10" />
-                                        <button onClick={() => copyToClipboard(sessionCode)} className="absolute top-2 right-2 bg-white/10 p-2 rounded hover:bg-white/20 text-white"><Copy size={14} /></button>
-                                    </div>
-                                    <p className="text-center text-xs text-yellow-400 animate-pulse">Waiting for host to connect...</p>
-                                 </>
-                             )}
-                             <button onClick={() => setP2pState('idle')} className="w-full text-xs text-gray-500 mt-2 underline">Cancel</button>
-                         </div>
-                     )}
+             {/* P2P TOP BAR (ID & CONNECT) */}
+             <div className="p-4 border-b border-white/5 bg-white/5 space-y-4">
+                 {/* My ID Display */}
+                 <div className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/10">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 uppercase font-bold">Your Session ID</span>
+                        <span className="font-mono text-green-400 font-bold tracking-wider">{myPeerId || 'Generating...'}</span>
+                    </div>
+                    <button 
+                        onClick={() => copyToClipboard(myPeerId)}
+                        className="bg-white/10 p-2 rounded-lg hover:bg-white/20 transition-colors text-white active:scale-95"
+                    >
+                        <Copy size={16} />
+                    </button>
                  </div>
-             )}
 
-             {/* P2P MESSAGING UI */}
-             {p2pState === 'connected' && (
-                 <>
-                    <div className="bg-green-500/10 border-b border-green-500/20 p-2 text-center">
-                        <p className="text-xs text-green-400 flex items-center justify-center gap-1"><ShieldCheck size={12}/> Secure Channel Active</p>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar" ref={scrollRef}>
-                        {p2pMessages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'me' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${
-                                msg.role === 'me' 
-                                    ? 'bg-green-600 text-white rounded-tr-none' 
-                                    : 'bg-white/10 text-gray-200 rounded-tl-none'
-                                }`}>
-                                {msg.text}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="p-4 pb-20">
-                        <div className="flex gap-2 items-center bg-white/5 rounded-full p-2 border border-white/10">
-                            <input
-                                type="text"
-                                value={p2pInput}
-                                onChange={(e) => setP2pInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleP2pSend()}
-                                placeholder="Type a secure message..."
-                                className="flex-1 bg-transparent px-4 text-white focus:outline-none placeholder-gray-500"
-                            />
-                            <button 
-                                onClick={handleP2pSend}
-                                disabled={!p2pInput.trim()}
-                                className="bg-green-600 p-2.5 rounded-full text-white hover:bg-green-500 transition-colors disabled:opacity-50"
-                            >
-                                <Send size={18} />
-                            </button>
+                 {/* Connect Input (Only if not connected) */}
+                 {p2pState !== 'connected' && (
+                     <div className="flex gap-2">
+                         <input 
+                            value={targetPeerId}
+                            onChange={(e) => setTargetPeerId(e.target.value)}
+                            placeholder="Enter friend's ID..."
+                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 text-sm text-white focus:border-green-500 outline-none"
+                         />
+                         <button 
+                            onClick={connectToPeer}
+                            disabled={isConnecting || !targetPeerId}
+                            className="bg-green-600 hover:bg-green-500 px-4 rounded-xl text-white font-bold text-sm shadow-lg disabled:opacity-50 transition-all flex items-center gap-2"
+                         >
+                             {isConnecting ? <RefreshCw className="animate-spin" size={16}/> : <Link2 size={16}/>}
+                             Connect
+                         </button>
+                     </div>
+                 )}
+
+                 {/* Connected Status */}
+                 {p2pState === 'connected' && (
+                     <div className="bg-green-500/10 border border-green-500/30 p-2 rounded-xl text-center animate-fade-in-up">
+                         <p className="text-xs text-green-400 flex items-center justify-center gap-2 font-bold">
+                             <Radio size={14} className="animate-pulse" /> Secure Channel Active
+                         </p>
+                     </div>
+                 )}
+             </div>
+
+             {/* P2P MESSAGES */}
+             <div className="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar relative" ref={scrollRef}>
+                 {p2pState === 'setup' && !isConnecting && (
+                     <div className="flex flex-col items-center justify-center h-full text-center opacity-60 space-y-4">
+                         <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center">
+                             <Users size={32} className="text-gray-400" />
+                         </div>
+                         <div>
+                             <p className="text-white font-bold">Waiting for connection...</p>
+                             <p className="text-sm text-gray-500">Share your ID or enter a friend's ID above.</p>
+                         </div>
+                     </div>
+                 )}
+
+                 {p2pMessages.map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.role === 'me' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
+                        <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed shadow-md ${
+                        msg.role === 'me' 
+                            ? 'bg-green-600 text-white rounded-tr-none' 
+                            : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
+                        }`}>
+                        {msg.text}
                         </div>
                     </div>
-                 </>
+                ))}
+             </div>
+             
+             {/* P2P INPUT */}
+             {p2pState === 'connected' && (
+                <div className="p-4 pb-20 bg-black/30 backdrop-blur-md">
+                    <div className="flex gap-2 items-center bg-white/5 rounded-full p-2 border border-white/10">
+                        <input
+                            type="text"
+                            value={p2pInput}
+                            onChange={(e) => setP2pInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleP2pSend()}
+                            placeholder="Type a secure message..."
+                            className="flex-1 bg-transparent px-4 text-white focus:outline-none placeholder-gray-500"
+                        />
+                        <button 
+                            onClick={handleP2pSend}
+                            disabled={!p2pInput.trim()}
+                            className="bg-green-600 p-2.5 rounded-full text-white hover:bg-green-500 transition-colors disabled:opacity-50"
+                        >
+                            <Send size={18} />
+                        </button>
+                    </div>
+                </div>
              )}
           </div>
       )}
