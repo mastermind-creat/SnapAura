@@ -1,13 +1,15 @@
+
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck } from './Icons';
+import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck, X } from './Icons';
 import { showToast } from './Toast';
 
 interface AuthProps {
-  onLogin: () => void;
+  onLogin: (userData: any) => void;
+  onClose: () => void;
 }
 
-const Auth: React.FC<AuthProps> = ({ onLogin }) => {
+const Auth: React.FC<AuthProps> = ({ onLogin, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,31 +37,51 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     // Simulate API call
     setTimeout(() => {
         setLoading(false);
+        const mockUser = {
+            name: email.split('@')[0],
+            email: email,
+            joinDate: new Date().toLocaleDateString(),
+            stats: { edits: 12, generated: 5, chats: 24 }
+        };
         showToast(isLogin ? "Welcome back!" : "Account created successfully!", "success");
-        onLogin();
+        onLogin(mockUser);
     }, 1500);
   };
 
   const handleSocialLogin = (provider: string) => {
      showToast(`Connecting with ${provider}...`, "info");
      setTimeout(() => {
-         onLogin();
+         const mockUser = {
+            name: "Snap User",
+            email: `user@${provider.toLowerCase()}.com`,
+            joinDate: new Date().toLocaleDateString(),
+            stats: { edits: 0, generated: 0, chats: 0 }
+        };
+         onLogin(mockUser);
      }, 1000);
   };
 
   return (
-    <div className="h-full relative overflow-hidden bg-[#0f0f11]">
-       {/* Fixed Background Elements */}
+    <div className="fixed inset-0 z-[100] bg-[#0f0f11] overflow-hidden animate-fade-in-up">
+       {/* Background Elements */}
        <div className="absolute inset-0 pointer-events-none z-0">
            <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse-slow"></div>
            <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-secondary/20 rounded-full blur-[100px] animate-pulse-slow delay-1000"></div>
        </div>
+       
+       {/* Close Button */}
+       <button 
+           onClick={onClose}
+           className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+       >
+           <X size={24} />
+       </button>
 
        {/* Scrollable Container */}
        <div className="absolute inset-0 overflow-y-auto hide-scrollbar z-10">
            <div className="min-h-full flex flex-col items-center justify-center p-6 py-12">
                
-               <div className="glass-panel w-full max-w-sm p-8 rounded-3xl border border-white/20 shadow-2xl relative animate-fade-in-up my-auto">
+               <div className="glass-panel w-full max-w-sm p-8 rounded-3xl border border-white/20 shadow-2xl relative my-auto">
                    
                    {/* Header */}
                    <div className="text-center mb-8">

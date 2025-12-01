@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { 
   Camera, 
@@ -71,7 +70,7 @@ import {
   Mic,
   Volume2,
   ChevronRight,
-  RotateCcw as RotateLeft,
+  RotateCcw,
   Ruler,
   Radio,
   Paperclip,
@@ -91,7 +90,8 @@ import {
   Heart,
   Wifi,
   Lock,
-  Unlock
+  Unlock,
+  Star
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -123,7 +123,7 @@ export {
   ImageIcon,
   Zap,
   Trash2, 
-  Rocket,
+  Rocket, 
   Palette,
   Brain,
   CheckCircle,
@@ -178,7 +178,7 @@ export {
   Mic,
   Volume2,
   ChevronRight,
-  RotateLeft as RotateCcw,
+  RotateCcw,
   Ruler,
   Radio,
   Paperclip,
@@ -198,5 +198,6 @@ export {
   Heart,
   Wifi,
   Lock,
-  Unlock
+  Unlock,
+  Star
 };

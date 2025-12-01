@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import Studio from './components/Studio';
@@ -5,17 +6,22 @@ import Editor from './components/Editor';
 import Generator from './components/Generator';
 import Chat from './components/Chat';
 import Toolkit from './components/Toolkit';
-import Auth from './components/Auth';
 import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
-import { Tab } from './types';
+import Profile from './components/Profile';
+import Auth from './components/Auth';
+import { Tab, UserProfile } from './types';
 import { Smartphone, Download } from './components/Icons';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Modal States
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -53,6 +59,14 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  // Check for Join Link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('join')) {
+      setActiveTab(Tab.CHAT);
+    }
+  }, []);
+
   const handleInstallClick = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -66,19 +80,29 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogin = () => {
-      setIsAuthenticated(true);
-      setActiveTab(Tab.HOME);
-  };
-
   const handleOpenSettings = () => {
       setShowSettingsModal(true);
   };
 
+  const handleUserIconClick = () => {
+      if (isAuthenticated) {
+          setActiveTab(Tab.PROFILE);
+      } else {
+          setShowAuthModal(true);
+      }
+  };
+
+  const handleLogin = (userData: UserProfile) => {
+      setUser(userData);
+      setIsAuthenticated(true);
+      setShowAuthModal(false);
+  };
+
   const handleLogout = () => {
+      setUser(null);
       setIsAuthenticated(false);
+      setActiveTab(Tab.HOME);
       setShowSettingsModal(false);
-      // Optional: clear session data if needed
   };
 
   return (
@@ -96,7 +120,6 @@ const App: React.FC = () => {
             setShowSettingsModal(false); // Close settings
             setShowKeyModal(true); // Open key modal
         }}
-        onLogout={handleLogout}
       />
 
       {/* API Key Modal */}
@@ -106,22 +129,29 @@ const App: React.FC = () => {
         canClose={!isKeyRequired} 
       />
 
+      {/* Auth Modal (Overlay) */}
+      {showAuthModal && (
+          <Auth 
+            onLogin={handleLogin} 
+            onClose={() => setShowAuthModal(false)} 
+          />
+      )}
+
       {/* Background Decoration */}
       <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
       <div className="fixed bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">
-        
-        {!isAuthenticated ? (
-            <Auth onLogin={handleLogin} />
-        ) : (
             <>
                 {activeTab === Tab.HOME && (
                   <Studio 
                     image={currentImage} 
                     setImage={setCurrentImage} 
                     onOpenSettings={handleOpenSettings}
+                    onUserClick={handleUserIconClick}
+                    setActiveTab={setActiveTab}
+                    isAuthenticated={isAuthenticated}
                   />
                 )}
                 
@@ -144,12 +174,18 @@ const App: React.FC = () => {
                 {activeTab === Tab.TOOLKIT && (
                   <Toolkit onOpenSettings={handleOpenSettings} />
                 )}
+
+                {activeTab === Tab.PROFILE && (
+                    <Profile 
+                        user={user} 
+                        onLogout={handleLogout}
+                        onOpenSettings={handleOpenSettings}
+                    />
+                )}
             </>
-        )}
       </main>
 
-      {/* Install Banner & Nav - Only show when authenticated */}
-      {isAuthenticated && (
+      {/* Install Banner & Nav */}
         <>
             {showInstallBanner && (
                 <div className="absolute bottom-[80px] left-4 right-4 z-50 animate-fade-in-up">
@@ -176,7 +212,6 @@ const App: React.FC = () => {
 
             <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
         </>
-      )}
     </div>
   );
 };

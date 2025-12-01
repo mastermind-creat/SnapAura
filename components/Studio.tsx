@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon, Settings, WhatsApp, Briefcase } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon, Settings, WhatsApp, Briefcase, User } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
@@ -10,7 +10,9 @@ interface StudioProps {
   image: string | null;
   setImage: (img: string) => void;
   onOpenSettings: () => void;
+  onUserClick: () => void;
   setActiveTab: (tab: Tab) => void;
+  isAuthenticated: boolean;
 }
 
 // Global definition for confetti
@@ -24,7 +26,7 @@ type FilterType = 'none' | 'bw' | 'warm' | 'vivid' | 'cool' | 'sepia';
 type CaptionStyle = 'modern' | 'neon' | 'polaroid' | 'bold';
 type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
-const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, setActiveTab }) => {
+const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUserClick, setActiveTab, isAuthenticated }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -320,11 +322,23 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, setAct
     return (
       <div className="relative h-full flex flex-col items-center overflow-hidden bg-[#0f0f11]">
         
-        {/* SETTINGS BUTTON - Absolute Top */}
-        <div className="absolute top-6 right-6 z-50">
-           <button onClick={onOpenSettings} className="text-gray-400 hover:text-white p-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95 shadow-lg">
-               <Settings size={20} />
-           </button>
+        {/* TOP BAR */}
+        <div className="absolute top-6 right-6 left-6 z-50 flex justify-between pointer-events-none">
+             <div></div> {/* Spacer */}
+             <div className="flex gap-2 pointer-events-auto">
+                 <button 
+                    onClick={onUserClick} 
+                    className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 transition-all active:scale-95 shadow-lg relative ${
+                        isAuthenticated ? 'bg-primary/20 text-white hover:bg-primary/30' : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                 >
+                     <User size={20} />
+                     {!isAuthenticated && <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[#1a1a20]"></div>}
+                 </button>
+                 <button onClick={onOpenSettings} className="text-gray-400 hover:text-white p-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95 shadow-lg">
+                     <Settings size={20} />
+                 </button>
+             </div>
         </div>
 
         {/* --- PREMIUM ANIMATED BACKGROUND --- */}

@@ -1,3 +1,4 @@
+
 export enum Tab {
   HOME = 'HOME',
   EDIT = 'EDIT',
@@ -27,4 +28,15 @@ export enum ImageSize {
 export interface GeneratedImage {
   url: string;
   prompt: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  joinDate: string;
+  stats: {
+    edits: number;
+    generated: number;
+    chats: number;
+  }
 }
