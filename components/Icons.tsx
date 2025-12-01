@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { 
   Camera, 
@@ -88,7 +89,9 @@ import {
   MoreVertical,
   UserMinus,
   Heart,
-  Wifi
+  Wifi,
+  Lock,
+  Unlock
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -193,5 +196,7 @@ export {
   MoreVertical,
   UserMinus,
   Heart,
-  Wifi
+  Wifi,
+  Lock,
+  Unlock
 };

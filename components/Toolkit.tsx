@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -62,6 +62,15 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
   const [puzzleWin, setPuzzleWin] = useState(false);
   const [draggedTileIndex, setDraggedTileIndex] = useState<number | null>(null);
 
+  // Compression & Resize
+  const [compressQuality, setCompressQuality] = useState(80);
+  const [resizeWidth, setResizeWidth] = useState(1080);
+  const [resizeHeight, setResizeHeight] = useState(1080);
+  const [maintainAspect, setMaintainAspect] = useState(true);
+  const [aspectRatio, setAspectRatio] = useState(1);
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [processedMeta, setProcessedMeta] = useState<{ size: string, dimensions?: string } | null>(null);
+
   const COINS = ["Bitcoin (BTC)", "Ethereum (ETH)", "Solana (SOL)", "Binance Coin (BNB)", "Ripple (XRP)", "Cardano (ADA)", "Dogecoin (DOGE)"];
   
   const CURRENCIES = [
@@ -100,6 +109,10 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       const file = e.target.files?.[0];
       if (file) {
           setIsUploading(true);
+          // Reset processed states
+          setProcessedImage(null);
+          setProcessedMeta(null);
+
           // EXIF Logic
           if (activeTool === 'meta') {
             // @ts-ignore
@@ -123,10 +136,26 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
 
           const reader = new FileReader();
           reader.onloadend = () => {
-              setUtilImage(reader.result as string);
-              if (activeTool === 'palette') extractPalette(reader.result as string);
+              const res = reader.result as string;
+              setUtilImage(res);
+              
+              if (activeTool === 'palette') extractPalette(res);
               if (activeTool === 'puzzle') initPuzzle();
               
+              if (activeTool === 'resize' || activeTool === 'compress') {
+                  const img = new Image();
+                  img.src = res;
+                  img.onload = () => {
+                      setResizeWidth(img.width);
+                      setResizeHeight(img.height);
+                      setAspectRatio(img.width / img.height);
+                      setImageMeta({
+                          size: (file.size/1024).toFixed(2) + ' KB',
+                          dimensions: `${img.width}x${img.height}`
+                      });
+                  }
+              }
+
               // Simulate a short processing delay for effect
               setTimeout(() => setIsUploading(false), 800);
           };
@@ -263,9 +292,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       
       let res = 0;
       // Simple strict conversions logic (demo purpose)
-      // Length (base meter)
       const lenFactors: any = { m: 1, km: 1000, cm: 0.01, mm: 0.001, ft: 0.3048, mi: 1609.34, in: 0.0254, yd: 0.9144 };
-      // Mass (base kg)
       const massFactors: any = { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592, oz: 0.0283495 };
       
       if(unitCategory === 'length') {
@@ -275,11 +302,9 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
           const valInKg = v * (massFactors[unitFrom] || 1);
           res = valInKg / (massFactors[unitTo] || 1);
       } else if (unitCategory === 'temp') {
-          // Temp is special
           let valInC = v;
           if(unitFrom === 'F') valInC = (v - 32) * 5/9;
           if(unitFrom === 'K') valInC = v - 273.15;
-          
           if(unitTo === 'C') res = valInC;
           if(unitTo === 'F') res = (valInC * 9/5) + 32;
           if(unitTo === 'K') res = valInC + 273.15;
@@ -289,7 +314,6 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       if (navigator.vibrate) navigator.vibrate(20);
   };
 
-  // Update units when category changes
   useEffect(() => {
       setUnitResult(null);
       if(unitCategory === 'length') { setUnitFrom('m'); setUnitTo('ft'); }
@@ -310,7 +334,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
           ctx.drawImage(img, 0, 0, 100, 100);
           const data = ctx.getImageData(0,0,100,100).data;
           const colors = [];
-          for(let i=0; i<data.length; i+=400) { // Sample every 100th pixel
+          for(let i=0; i<data.length; i+=400) { 
               colors.push(`rgb(${data[i]}, ${data[i+1]}, ${data[i+2]})`);
           }
           setExtractedColors([...new Set(colors)].slice(0, 6));
@@ -344,6 +368,66 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
           }
           setMemeCanvasUrl(canvas.toDataURL());
           showToast("Meme rendered!", "success");
+      }
+  };
+
+  const handleCompress = () => {
+      if (!utilImage) return;
+      setIsUploading(true);
+      const img = new Image();
+      img.src = utilImage;
+      img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if(!ctx) return;
+          ctx.drawImage(img, 0, 0);
+          
+          const quality = compressQuality / 100;
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          setProcessedImage(dataUrl);
+
+          // Calculate size estimate
+          const head = 'data:image/jpeg;base64,';
+          const sizeBytes = Math.round((dataUrl.length - head.length) * 3 / 4);
+          setProcessedMeta({ 
+              size: (sizeBytes/1024).toFixed(2) + ' KB',
+              dimensions: `${img.width}x${img.height}`
+          });
+          setIsUploading(false);
+          showToast("Image compressed!", "success");
+      }
+  };
+
+  const handleResize = () => {
+      if (!utilImage) return;
+      setIsUploading(true);
+      const img = new Image();
+      img.src = utilImage;
+      img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = resizeWidth;
+          canvas.height = resizeHeight;
+          const ctx = canvas.getContext('2d');
+          if(!ctx) return;
+          
+          // High quality scaling
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, resizeWidth, resizeHeight);
+          
+          const dataUrl = canvas.toDataURL('image/png');
+          setProcessedImage(dataUrl);
+          
+           const head = 'data:image/png;base64,';
+          const sizeBytes = Math.round((dataUrl.length - head.length) * 3 / 4);
+          setProcessedMeta({ 
+              size: (sizeBytes/1024).toFixed(2) + ' KB', 
+              dimensions: `${resizeWidth}x${resizeHeight}`
+          });
+          setIsUploading(false);
+          showToast("Image resized!", "success");
       }
   };
 
@@ -412,11 +496,11 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Photo Utilities</h3>
             <div className="grid grid-cols-3 gap-3">
-                <MenuCard icon={Info} color="text-yellow-400" bg="bg-yellow-500/20" title="Metadata" onClick={() => { setUtilImage(null); setActiveTool('meta'); }} />
+                <MenuCard icon={Minimize} color="text-cyan-400" bg="bg-cyan-500/20" title="Compress" onClick={() => { setUtilImage(null); setActiveTool('compress'); }} />
+                <MenuCard icon={Maximize} color="text-indigo-400" bg="bg-indigo-500/20" title="Resize" onClick={() => { setUtilImage(null); setActiveTool('resize'); }} />
                 <MenuCard icon={Palette} color="text-pink-400" bg="bg-pink-500/20" title="Palette" onClick={() => { setUtilImage(null); setActiveTool('palette'); }} />
                 <MenuCard icon={Smile} color="text-red-400" bg="bg-red-500/20" title="Meme" onClick={() => { setUtilImage(null); setActiveTool('meme'); }} />
-                <MenuCard icon={Minimize} color="text-cyan-400" bg="bg-cyan-500/20" title="Compress" onClick={() => showToast("Coming Soon", "info")} />
-                <MenuCard icon={Maximize} color="text-indigo-400" bg="bg-indigo-500/20" title="Resize" onClick={() => showToast("Coming Soon", "info")} />
+                <MenuCard icon={Info} color="text-yellow-400" bg="bg-yellow-500/20" title="Metadata" onClick={() => { setUtilImage(null); setActiveTool('meta'); }} />
                 <MenuCard icon={Gamepad} color="text-white" bg="bg-white/10" title="Puzzle" onClick={() => { setUtilImage(null); setActiveTool('puzzle'); }} />
             </div>
         </div>
@@ -743,6 +827,119 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
                           <span className="text-xl font-bold text-teal-400 relative z-10">{unitTo}</span>
                       </div>
                    </div>
+              )}
+          </div>
+      )}
+      
+      {/* --- COMPRESS TOOL --- */}
+      {activeTool === 'compress' && (
+          <div className="space-y-4 animate-fade-in-up">
+              {!utilImage ? (
+                  <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5 transition-all active:scale-95">
+                      <Minimize size={48} className="text-cyan-400 mb-2"/>
+                      <p className="text-sm font-bold text-gray-300">Upload Image to Compress</p>
+                  </div>
+              ) : (
+                  <div className="glass-panel p-4 rounded-xl space-y-4 border-t-4 border-cyan-500">
+                      <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-400">Quality</span>
+                          <span className="text-cyan-400 font-bold">{compressQuality}%</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="1" 
+                        max="100" 
+                        value={compressQuality} 
+                        onChange={e => setCompressQuality(parseInt(e.target.value))}
+                        className="w-full accent-cyan-400"
+                      />
+                      
+                      <button onClick={handleCompress} className="w-full bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                          <Minimize size={18} /> Compress Image
+                      </button>
+
+                      {processedImage && (
+                          <div className="bg-white/5 p-4 rounded-xl space-y-3">
+                              <div className="flex justify-between text-sm">
+                                  <div className="text-gray-400">Original Size: <span className="text-white">{imageMeta?.size}</span></div>
+                                  <div className="text-cyan-400">New Size: <span className="font-bold">{processedMeta?.size}</span></div>
+                              </div>
+                              <a href={processedImage} download="snapaura-compressed.jpg" className="block w-full text-center bg-white text-black py-2 rounded-lg font-bold">Download Result</a>
+                          </div>
+                      )}
+                  </div>
+              )}
+          </div>
+      )}
+
+      {/* --- RESIZE TOOL --- */}
+      {activeTool === 'resize' && (
+          <div className="space-y-4 animate-fade-in-up">
+              {!utilImage ? (
+                  <div onClick={() => utilFileInputRef.current?.click()} className="glass-panel h-48 rounded-2xl flex flex-col items-center justify-center border-dashed border-2 border-white/20 cursor-pointer hover:bg-white/5 transition-all active:scale-95">
+                      <Maximize size={48} className="text-indigo-400 mb-2"/>
+                      <p className="text-sm font-bold text-gray-300">Upload Image to Resize</p>
+                  </div>
+              ) : (
+                  <div className="glass-panel p-4 rounded-xl space-y-4 border-t-4 border-indigo-500">
+                      <div className="flex gap-2 mb-2">
+                           <button onClick={() => { setResizeWidth(1080); setResizeHeight(1920); }} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5">Story</button>
+                           <button onClick={() => { setResizeWidth(1080); setResizeHeight(1080); }} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5">Square</button>
+                           <button onClick={() => { setResizeWidth(1920); setResizeHeight(1080); }} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5">HD</button>
+                           <button onClick={() => { setResizeWidth(3840); setResizeHeight(2160); }} className="text-[10px] bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5">4K</button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                              <label className="text-[10px] text-gray-500 uppercase font-bold">Width (px)</label>
+                              <input 
+                                type="number" 
+                                value={resizeWidth} 
+                                onChange={e => {
+                                    const val = parseInt(e.target.value);
+                                    setResizeWidth(val);
+                                    if(maintainAspect && aspectRatio) setResizeHeight(Math.round(val / aspectRatio));
+                                }}
+                                className="w-full bg-black/30 p-3 rounded-xl border border-white/10 text-white font-mono"
+                              />
+                          </div>
+                          <div className="space-y-1">
+                              <label className="text-[10px] text-gray-500 uppercase font-bold">Height (px)</label>
+                              <input 
+                                type="number" 
+                                value={resizeHeight} 
+                                onChange={e => {
+                                    const val = parseInt(e.target.value);
+                                    setResizeHeight(val);
+                                    if(maintainAspect && aspectRatio) setResizeWidth(Math.round(val * aspectRatio));
+                                }}
+                                className="w-full bg-black/30 p-3 rounded-xl border border-white/10 text-white font-mono"
+                              />
+                          </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={() => { 
+                          setMaintainAspect(!maintainAspect); 
+                          if(!maintainAspect) setAspectRatio(resizeWidth / resizeHeight); 
+                        }}>
+                          {maintainAspect ? <Lock size={16} className="text-green-400"/> : <Unlock size={16} className="text-red-400"/>}
+                          <span className="text-xs text-gray-400">Maintain Aspect Ratio</span>
+                      </div>
+                      
+                      <button onClick={handleResize} className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                          <Maximize size={18} /> Resize Image
+                      </button>
+
+                      {processedImage && (
+                          <div className="bg-white/5 p-4 rounded-xl space-y-3">
+                              <div className="flex justify-between text-sm">
+                                  <div className="text-gray-400">Dimensions: <span className="text-white">{processedMeta?.dimensions}</span></div>
+                                  <div className="text-indigo-400">Size: <span className="font-bold">{processedMeta?.size}</span></div>
+                              </div>
+                              <a href={processedImage} download="snapaura-resized.png" className="block w-full text-center bg-white text-black py-2 rounded-lg font-bold">Download Result</a>
+                          </div>
+                      )}
+                  </div>
               )}
           </div>
       )}
