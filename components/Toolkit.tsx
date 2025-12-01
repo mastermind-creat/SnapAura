@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -24,6 +25,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
   const [bios, setBios] = useState<string[]>([]);
   const [isWritingBio, setIsWritingBio] = useState(false);
   const [scannedResult, setScannedResult] = useState<string | null>(null);
+  const [showWifiPass, setShowWifiPass] = useState(false);
 
   // --- FINANCIAL TOOLS STATE ---
   const [selectedCoin, setSelectedCoin] = useState('Bitcoin (BTC)');
@@ -84,6 +86,15 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       { name: "Abstract", url: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&h=500&fit=crop" }
   ];
 
+  // Helper to parse WiFi string
+  const parseWifi = (text: string) => {
+      const ssid = text.match(/S:([^;]+)/)?.[1] || '';
+      const password = text.match(/P:([^;]+)/)?.[1] || '';
+      const type = text.match(/T:([^;]+)/)?.[1] || 'nopass';
+      const hidden = text.match(/H:([^;]+)/)?.[1] === 'true';
+      return { ssid, password, type, hidden };
+  };
+
   // Helper: Load Image for Utils with Loading Effect
   const handleUtilImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -136,6 +147,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
           html5QrCode.scanFile(file, true)
             .then((decodedText: string) => {
                 setScannedResult(decodedText);
+                setShowWifiPass(false);
                 setIsUploading(false);
                 showToast("QR Code Scanned!", "success");
             })
@@ -196,6 +208,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
            
            html5QrCode.start({ facingMode: "environment" }, config, (decodedText: string) => {
                setScannedResult(decodedText);
+               setShowWifiPass(false);
                html5QrCode.stop().then(() => {
                    showToast("QR Code Scanned!", "success");
                    if (navigator.vibrate) navigator.vibrate(100);
@@ -482,24 +495,75 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
                           </div>
                           <h3 className="text-xl font-bold text-white">Scan Successful!</h3>
                           
-                          <div className="glass-panel p-4 rounded-xl text-left">
-                              <p className="text-xs text-gray-500 font-bold uppercase mb-2">Content</p>
-                              <div className="bg-black/30 p-3 rounded-lg border border-white/10 break-all text-sm text-white font-mono">
-                                  {scannedResult}
-                              </div>
+                          {/* Parse Result logic */}
+                          {(() => {
+                              const wifiData = scannedResult.startsWith('WIFI:') ? parseWifi(scannedResult) : null;
                               
-                              {isUrl(scannedResult) && (
-                                  <a href={scannedResult} target="_blank" rel="noreferrer" className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-                                      <ExternalLink size={16} /> Open Link
-                                  </a>
-                              )}
-                          </div>
+                              if (wifiData) {
+                                  return (
+                                    <div className="glass-panel p-4 rounded-xl text-left space-y-3">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="bg-blue-500/20 p-2 rounded-full text-blue-400">
+                                                <Wifi size={24} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400 font-bold uppercase">WiFi Network</p>
+                                                <h3 className="text-xl font-bold text-white">{wifiData.ssid}</h3>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-black/30 p-3 rounded-lg border border-white/10 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-500">Password</span>
+                                                <span className="text-xs text-gray-500">Security: {wifiData.type}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-mono text-white text-lg tracking-wider">
+                                                    {showWifiPass ? wifiData.password : '••••••••'}
+                                                </span>
+                                                <button onClick={() => setShowWifiPass(!showWifiPass)} className="text-gray-400 hover:text-white">
+                                                    {showWifiPass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => {navigator.clipboard.writeText(wifiData.password); showToast("Password Copied", "success")}}
+                                            className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Copy size={16} /> Copy Password & Connect
+                                        </button>
+                                        <p className="text-[10px] text-gray-500 text-center">
+                                            Paste password in your WiFi settings
+                                        </p>
+                                    </div>
+                                  );
+                              }
+                              
+                              return (
+                                  <div className="glass-panel p-4 rounded-xl text-left">
+                                      <p className="text-xs text-gray-500 font-bold uppercase mb-2">Content</p>
+                                      <div className="bg-black/30 p-3 rounded-lg border border-white/10 break-all text-sm text-white font-mono">
+                                          {scannedResult}
+                                      </div>
+                                      
+                                      {isUrl(scannedResult) && (
+                                          <a href={scannedResult} target="_blank" rel="noreferrer" className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+                                              <ExternalLink size={16} /> Open Link
+                                          </a>
+                                      )}
+                                  </div>
+                              );
+                          })()}
 
                           <div className="flex gap-2">
-                              <button onClick={() => {navigator.clipboard.writeText(scannedResult); showToast("Copied to clipboard", "success")}} className="flex-1 bg-white/10 py-3 rounded-xl font-bold hover:bg-white/20 flex items-center justify-center gap-2">
-                                  <Copy size={16} /> Copy
-                              </button>
-                              <button onClick={() => { setScannedResult(null); window.location.reload(); }} className="flex-1 bg-white/5 text-gray-400 hover:text-white py-3 rounded-xl font-bold">
+                              {/* Only show generic copy if not WiFi (wifi has its own copy button) */}
+                              {!scannedResult.startsWith('WIFI:') && (
+                                  <button onClick={() => {navigator.clipboard.writeText(scannedResult); showToast("Copied to clipboard", "success")}} className="flex-1 bg-white/10 py-3 rounded-xl font-bold hover:bg-white/20 flex items-center justify-center gap-2">
+                                      <Copy size={16} /> Copy
+                                  </button>
+                              )}
+                              <button onClick={() => { setScannedResult(null); window.location.reload(); }} className="flex-1 bg-white/5 text-gray-400 hover:text-white py-3 rounded-xl font-bold border border-white/5">
                                   Scan Again
                               </button>
                           </div>

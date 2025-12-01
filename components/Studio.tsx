@@ -1,13 +1,16 @@
+
 import React, { useRef, useState } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon, Settings, WhatsApp } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon, Settings, WhatsApp, Briefcase } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
+import { Tab } from '../types';
 
 interface StudioProps {
   image: string | null;
   setImage: (img: string) => void;
   onOpenSettings: () => void;
+  setActiveTab: (tab: Tab) => void;
 }
 
 // Global definition for confetti
@@ -21,7 +24,7 @@ type FilterType = 'none' | 'bw' | 'warm' | 'vivid' | 'cool' | 'sepia';
 type CaptionStyle = 'modern' | 'neon' | 'polaroid' | 'bold';
 type EffectType = 'none' | 'grain' | 'leak1' | 'leak2' | 'vignette' | 'dust';
 
-const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
+const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, setActiveTab }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -32,7 +35,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
   const [generatingCard, setGeneratingCard] = useState(false);
   
   // Design State
-  const [activeTab, setActiveTab] = useState<'analyze' | 'design' | 'effects'>('analyze');
+  const [activeTab, setInternalTab] = useState<'analyze' | 'design' | 'effects'>('analyze');
   const [activeFilter, setActiveFilter] = useState<FilterType>('none');
   const [captionStyle, setCaptionStyle] = useState<CaptionStyle>('modern');
   const [activeEffect, setActiveEffect] = useState<EffectType>('none');
@@ -77,7 +80,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
     if (!image) return;
     triggerHaptic();
     setIsAnalyzing(true);
-    setActiveTab('analyze');
+    setInternalTab('analyze');
     try {
       const result = await analyzeImageAndGenerateCaptions(image);
       setAnalysisResult(result);
@@ -340,36 +343,35 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
         </div>
 
         {/* --- MAIN CONTENT CONTAINER --- */}
-        <div className="relative z-10 w-full max-w-md h-full flex flex-col items-center justify-between p-6 pb-28 pt-12">
+        <div className="relative z-10 w-full max-w-md h-full flex flex-col items-center justify-center p-6 pb-28">
             
             {/* HERO SECTION */}
             <div className="flex flex-col items-center text-center space-y-6 animate-fade-in-up w-full">
                 
                 {/* Logo with Aura */}
-                <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary via-purple-500 to-secondary rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-1000 animate-pulse-slow"></div>
-                    <div className="absolute inset-0 bg-white/10 rounded-full blur-md animate-spin-slow opacity-30"></div>
-                    <div className="relative bg-black/40 p-5 rounded-full border border-white/10 backdrop-blur-xl shadow-2xl">
-                         <Logo size={80} className="drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
+                <div className="relative group mb-4">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-primary via-purple-500 to-secondary rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-1000 animate-pulse-slow"></div>
+                    <div className="relative bg-black/40 p-6 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl">
+                         <Logo size={90} className="drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]" />
                     </div>
                     {/* Badge */}
-                    <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg animate-bounce border border-white/20">
-                        V1.0
+                    <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg animate-bounce border border-white/20">
+                        PRO
                     </div>
                 </div>
 
                 {/* Identity Text */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                     <h1 className="text-5xl font-black tracking-tighter text-white drop-shadow-lg">
                         Snap<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Aura</span>
                     </h1>
-                    <p className="text-xl font-medium text-gray-300 tracking-wide">
-                        Unleash Your Creative Aura.
+                    <p className="text-lg font-medium text-gray-400 tracking-wide max-w-[280px] mx-auto leading-relaxed">
+                        Unleash your creative aura with AI-powered tools.
                     </p>
                 </div>
 
-                {/* CTA Button */}
-                <div className="w-full pt-4 px-4">
+                {/* MAIN CTA Button */}
+                <div className="w-full pt-4 px-2 space-y-4">
                      <button 
                         onClick={() => fileInputRef.current?.click()}
                         className="group relative w-full overflow-hidden rounded-2xl bg-white/5 backdrop-blur-md border border-white/20 p-[1px] shadow-2xl transition-all hover:scale-[1.02] active:scale-95"
@@ -379,63 +381,49 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
                          {/* Animated Border Gradient */}
                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-shimmer"></div>
 
-                         <div className="relative bg-black/40 rounded-2xl px-6 py-5 flex items-center justify-center gap-3">
-                             <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-lg text-white shadow-lg">
-                                 <Upload size={24} strokeWidth={3} />
+                         <div className="relative bg-black/40 rounded-2xl px-6 py-5 flex items-center justify-center gap-4">
+                             <div className="bg-gradient-to-r from-primary to-secondary p-3 rounded-xl text-white shadow-lg group-hover:shadow-primary/30 transition-shadow">
+                                 <Upload size={28} strokeWidth={2.5} />
                              </div>
                              <div className="text-left">
-                                 <span className="block text-lg font-bold text-white leading-none">Start Creating</span>
-                                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Tap to Upload</span>
+                                 <span className="block text-xl font-bold text-white leading-none mb-1">Upload Photo</span>
+                                 <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Start Editing & Analysis</span>
                              </div>
                              <ArrowRightIcon className="ml-auto text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
                          </div>
                      </button>
+
+                     {/* Quick Access Grid */}
+                     <div className="grid grid-cols-3 gap-3">
+                        <button onClick={() => setActiveTab(Tab.GENERATE)} className="glass-panel p-3 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all group">
+                             <div className="p-2.5 rounded-full bg-pink-500/10 text-pink-400 group-hover:bg-pink-500/20 group-hover:scale-110 transition-all">
+                                 <ImageIcon size={20} />
+                             </div>
+                             <span className="text-[10px] font-bold text-gray-300">AI Art</span>
+                        </button>
+                        <button onClick={() => setActiveTab(Tab.CHAT)} className="glass-panel p-3 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all group">
+                             <div className="p-2.5 rounded-full bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:scale-110 transition-all">
+                                 <MessageCircle size={20} />
+                             </div>
+                             <span className="text-[10px] font-bold text-gray-300">Chat</span>
+                        </button>
+                        <button onClick={() => setActiveTab(Tab.TOOLKIT)} className="glass-panel p-3 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all group">
+                             <div className="p-2.5 rounded-full bg-green-500/10 text-green-400 group-hover:bg-green-500/20 group-hover:scale-110 transition-all">
+                                 <Briefcase size={20} />
+                             </div>
+                             <span className="text-[10px] font-bold text-gray-300">Tools</span>
+                        </button>
+                     </div>
                 </div>
             </div>
 
-            {/* --- CAROUSEL & PREVIEWS --- */}
-            <div className="w-full space-y-5 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-                 
-                 {/* Swipeable Feature Cards */}
-                 <div className="w-full overflow-x-auto hide-scrollbar flex gap-3 px-1 py-2 snap-x">
-                     {[
-                         { title: "Vibe Analysis", icon: Brain, desc: "AI Mood & Captions", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-                         { title: "Magic Edit", icon: Wand2, desc: "Generative Fill", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20" },
-                         { title: "AI Art", icon: ImageIcon, desc: "Text-to-Image", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
-                     ].map((feat, i) => (
-                         <div key={i} className={`flex-shrink-0 w-36 snap-center rounded-2xl p-3 border backdrop-blur-md ${feat.bg} ${feat.border} flex flex-col items-center text-center gap-2`}>
-                             <feat.icon className={`${feat.color}`} size={20} />
-                             <div>
-                                 <h4 className="text-xs font-bold text-white">{feat.title}</h4>
-                                 <p className="text-[9px] text-gray-400">{feat.desc}</p>
-                             </div>
-                         </div>
-                     ))}
-                 </div>
-
-                 {/* Action Buttons Grid */}
-                 <div className="grid grid-cols-3 gap-3">
-                    {[
-                        { icon: Rocket, label: "Enhance", color: "text-cyan-400" },
-                        { icon: Palette, label: "Design", color: "text-pink-400" },
-                        { icon: MessageCircle, label: "Captions", color: "text-yellow-400" },
-                    ].map((btn, i) => (
-                        <button key={i} onClick={() => showToast("Upload an image first!", "info")} className="glass-panel p-3 rounded-xl flex flex-col items-center gap-2 hover:bg-white/10 active:scale-95 transition-all group">
-                             <div className={`p-2 rounded-full bg-white/5 border border-white/5 group-hover:border-white/20 transition-colors`}>
-                                 <btn.icon className={`${btn.color}`} size={18} />
-                             </div>
-                             <span className="text-[10px] font-bold text-gray-300">{btn.label}</span>
-                        </button>
-                    ))}
-                 </div>
-            </div>
-
             {/* --- FOOTER --- */}
-            <div className="text-center space-y-4 opacity-80 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-                <div className="w-8 h-[1px] bg-white/20 mx-auto"></div>
-                <div className="space-y-1 opacity-60">
-                    <p className="text-[10px] text-gray-500 font-medium tracking-widest uppercase">SnapAura v1.0</p>
-                    <p className="text-[10px] text-gray-600 font-bold">Powered by TechSafi</p>
+            <div className="mt-auto text-center space-y-4 opacity-80 animate-fade-in-up w-full pt-6" style={{animationDelay: '0.4s'}}>
+                <div className="w-12 h-[1px] bg-white/10 mx-auto"></div>
+                <div className="flex justify-center gap-6 text-[10px] font-medium text-gray-500">
+                    <span>v1.0.0</span>
+                    <span>•</span>
+                    <span>Powered by TechSafi</span>
                 </div>
             </div>
         </div>
@@ -594,19 +582,19 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
         {/* Toggle Mode */}
         <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
             <button 
-                onClick={() => setActiveTab('analyze')}
+                onClick={() => setInternalTab('analyze')}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'analyze' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
             >
                 <Brain size={14} /> AI Analysis
             </button>
             <button 
-                onClick={() => setActiveTab('design')}
+                onClick={() => setInternalTab('design')}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'design' ? 'bg-secondary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
             >
                 <Sliders size={14} /> Design
             </button>
             <button 
-                onClick={() => setActiveTab('effects')}
+                onClick={() => setInternalTab('effects')}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'effects' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
             >
                 <Film size={14} /> Effects
@@ -810,7 +798,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings }) => {
                 <div className="flex justify-between items-start mb-4">
                     <p className="text-sm font-medium text-white pr-4 leading-relaxed max-h-20 overflow-y-auto">"{selectedCaption}"</p>
                     <div className="flex gap-2 shrink-0">
-                       <button onClick={() => setActiveTab('design')} className="text-white hover:text-secondary bg-primary p-2 rounded-lg transition-colors active:scale-90 shadow-lg shadow-primary/30" title="Edit Design">
+                       <button onClick={() => setInternalTab('design')} className="text-white hover:text-secondary bg-primary p-2 rounded-lg transition-colors active:scale-90 shadow-lg shadow-primary/30" title="Edit Design">
                           <Sliders size={16} />
                       </button>
                       <button onClick={() => handleCopy(selectedCaption)} className="text-gray-400 hover:text-white bg-white/10 p-2 rounded-lg transition-colors active:scale-90" title="Copy Text">

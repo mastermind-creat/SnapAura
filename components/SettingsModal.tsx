@@ -1,15 +1,14 @@
+
 import React from 'react';
-import { X, Key, WhatsApp, RotateCcw, ChevronRight, Smartphone, ShieldCheck, LogOut } from './Icons';
-import { showToast } from './Toast';
+import { X, Key, WhatsApp, RotateCcw, ChevronRight, Smartphone, ShieldCheck } from './Icons';
 
 interface SettingsModalProps {
   isVisible: boolean;
   onClose: () => void;
   onOpenApiKey: () => void;
-  onLogout: () => void;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpenApiKey, onLogout }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpenApiKey }) => {
   if (!isVisible) return null;
 
   const handleReset = () => {
@@ -86,13 +85,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpe
                  <span className="flex items-center gap-1"><Smartphone size={12}/> v1.0.0</span>
                  <span className="flex items-center gap-1"><ShieldCheck size={12}/> Secure</span>
              </div>
-             
-             <button 
-                onClick={onLogout}
-                className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center justify-center gap-2 w-full py-3 hover:bg-red-500/5 rounded-xl transition-colors"
-             >
-                 <LogOut size={14} /> Sign Out
-             </button>
         </div>
       </div>
     </div>

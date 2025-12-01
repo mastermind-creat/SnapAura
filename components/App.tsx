@@ -6,7 +6,6 @@ import Editor from './components/Editor';
 import Generator from './components/Generator';
 import Chat from './components/Chat';
 import Toolkit from './components/Toolkit';
-import Auth from './components/Auth';
 import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
@@ -15,7 +14,6 @@ import { Smartphone, Download } from './components/Icons';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Modal States
@@ -75,24 +73,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogin = () => {
-      setIsAuthenticated(true);
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('join')) {
-        setActiveTab(Tab.CHAT);
-      } else {
-        setActiveTab(Tab.HOME);
-      }
-  };
-
   const handleOpenSettings = () => {
       setShowSettingsModal(true);
-  };
-
-  const handleLogout = () => {
-      setIsAuthenticated(false);
-      setShowSettingsModal(false);
-      // Optional: clear session data if needed
   };
 
   return (
@@ -110,7 +92,6 @@ const App: React.FC = () => {
             setShowSettingsModal(false); // Close settings
             setShowKeyModal(true); // Open key modal
         }}
-        onLogout={handleLogout}
       />
 
       {/* API Key Modal */}
@@ -126,16 +107,13 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">
-        
-        {!isAuthenticated ? (
-            <Auth onLogin={handleLogin} />
-        ) : (
             <>
                 {activeTab === Tab.HOME && (
                   <Studio 
                     image={currentImage} 
                     setImage={setCurrentImage} 
                     onOpenSettings={handleOpenSettings}
+                    setActiveTab={setActiveTab}
                   />
                 )}
                 
@@ -159,11 +137,9 @@ const App: React.FC = () => {
                   <Toolkit onOpenSettings={handleOpenSettings} />
                 )}
             </>
-        )}
       </main>
 
-      {/* Install Banner & Nav - Only show when authenticated */}
-      {isAuthenticated && (
+      {/* Install Banner & Nav */}
         <>
             {showInstallBanner && (
                 <div className="absolute bottom-[80px] left-4 right-4 z-50 animate-fade-in-up">
@@ -190,7 +166,6 @@ const App: React.FC = () => {
 
             <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
         </>
-      )}
     </div>
   );
 };

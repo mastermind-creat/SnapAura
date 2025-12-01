@@ -87,7 +87,8 @@ import {
   Trash,
   MoreVertical,
   UserMinus,
-  Heart
+  Heart,
+  Wifi
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -191,5 +192,6 @@ export {
   Trash,
   MoreVertical,
   UserMinus,
-  Heart
+  Heart,
+  Wifi
 };

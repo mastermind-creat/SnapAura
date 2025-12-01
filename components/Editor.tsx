@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings, Grid } from './Icons';
+import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings, Grid, RotateCcw } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -78,6 +79,24 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
     }
   };
 
+  const handleDownload = () => {
+    if (!image) return;
+    const link = document.createElement('a');
+    link.href = image;
+    link.download = `snapaura-edit-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Downloading...", "success");
+  };
+
+  const handleRevert = () => {
+      if (originalImage) {
+          setImage(originalImage);
+          showToast("Reverted to original", "info");
+      }
+  };
+
   const suggestions = [
     "Remove the background",
     "Add fireworks in the sky",
@@ -107,7 +126,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
   }
 
   return (
-    <div className="p-4 pb-24 space-y-6 h-full overflow-y-auto hide-scrollbar">
+    <div className="p-4 pb-40 space-y-6 h-full overflow-y-auto hide-scrollbar relative">
       <div className="flex justify-between items-center">
          <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Wand2 className="text-primary" /> Magic Editor
@@ -125,7 +144,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
       <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50 group shadow-lg select-none">
          {/* If we have original image and it differs from current, show slider UI */}
          {originalImage && originalImage !== image && !isProcessing ? (
-             <div className="relative w-full h-auto min-h-[300px] touch-none">
+             <div className="relative w-full h-auto min-h-[300px] touch-pan-y">
                  {/* Background (Edited) */}
                  <img src={image} className="w-full h-full object-contain pointer-events-none" alt="Edited" />
                  
@@ -134,7 +153,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
                     className="absolute inset-0 overflow-hidden border-r-2 border-white/50 shadow-[2px_0_10px_rgba(0,0,0,0.5)]"
                     style={{ width: `${sliderPos}%` }}
                  >
-                     <img src={originalImage} className="w-full h-full object-contain max-w-none pointer-events-none" style={{width: '100vw', maxWidth: '100%'}} alt="Original" />
+                     <img src={originalImage} className="w-full h-full object-contain max-w-none pointer-events-none" style={{width: '100%', height: '100%'}} alt="Original" />
                      <div className="absolute bottom-2 left-2 bg-black/60 px-2 rounded text-[10px] text-white">Before</div>
                  </div>
                  
@@ -147,7 +166,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
                     max="100" 
                     value={sliderPos}
                     onChange={(e) => setSliderPos(parseInt(e.target.value))}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20 touch-pan-y"
                  />
                  
                  {/* Visual Handle Icon */}
@@ -233,15 +252,24 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
         </div>
       </div>
       
-      <div className="flex justify-center pt-2">
-           <a 
-            href={image} 
-            download="snap-aura-edit.png" 
-            className="flex items-center gap-2 text-sm text-white bg-white/10 hover:bg-white/20 px-6 py-3 rounded-full border border-white/10 active:scale-95 transition-all shadow-lg backdrop-blur-md"
-            onClick={() => showToast("Downloading...", "info")}
-           >
-                <Download size={16} /> Save to Device
-           </a>
+      {/* Sticky Bottom Action Bar */}
+      <div className="fixed bottom-20 left-4 right-4 z-40 animate-fade-in-up">
+           <div className="max-w-md mx-auto glass-panel p-2 rounded-2xl border border-white/10 shadow-2xl flex gap-2 bg-black/80 backdrop-blur-xl">
+               <button
+                   onClick={handleRevert}
+                   disabled={!originalImage || originalImage === image}
+                   className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 disabled:opacity-30 transition-colors"
+                   title="Revert to Original"
+               >
+                   <RotateCcw size={20} />
+               </button>
+               <button
+                   onClick={handleDownload}
+                   className="flex-1 bg-white text-black font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+               >
+                   <Download size={18} /> Download Image
+               </button>
+           </div>
       </div>
     </div>
   );
