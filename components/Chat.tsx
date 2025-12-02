@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Pause, Download, UserPlus, LogIn, DownloadCloud, Link as LinkIcon, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart } from './Icons';
+import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Pause, Download, UserPlus, LogIn, DownloadCloud, Link as LinkIcon, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, Camera, TrendingUp, Briefcase, Smile, Trophy, Grid } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -22,6 +22,82 @@ interface Message {
 type ChatMode = 'ai' | 'p2p';
 type P2PState = 'username' | 'setup' | 'connected';
 
+interface Persona {
+  id: string;
+  name: string;
+  role: string;
+  icon: any;
+  color: string;
+  bg: string;
+  systemPrompt: string;
+}
+
+const PERSONAS: Persona[] = [
+  {
+    id: 'aesthetic',
+    name: 'Aesthetic Coach',
+    role: 'Vibe & Style Expert',
+    icon: Sparkles,
+    color: 'text-pink-400',
+    bg: 'bg-pink-500/20',
+    systemPrompt: "You are an Aesthetic Coach. Your tone is trendy, chic, and visually descriptive. Help users edit photos, choose filters, and curate their feeds to perfection. Use Gen-Z slang occasionally but keep it professional."
+  },
+  {
+    id: 'photo',
+    name: 'Photography Mentor',
+    role: 'Pro Photographer',
+    icon: Camera,
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/20',
+    systemPrompt: "You are a professional Photography Mentor. Offer technical advice on lighting, composition, camera settings (ISO, aperture), and editing techniques. Be encouraging but precise."
+  },
+  {
+    id: 'social',
+    name: 'Social Strategist',
+    role: 'Growth Hacker',
+    icon: TrendingUp,
+    color: 'text-purple-400',
+    bg: 'bg-purple-500/20',
+    systemPrompt: "You are a Social Media Strategist. Help users maximize engagement, write viral captions, pick trending audio, and time their posts. Focus on growth and analytics."
+  },
+  {
+    id: 'vibe',
+    name: 'Vibe Advisor',
+    role: 'Relationship Guru',
+    icon: Heart,
+    color: 'text-red-400',
+    bg: 'bg-red-500/20',
+    systemPrompt: "You are a Relationship & Vibe Advisor. You help with replying to texts, understanding social cues, and giving friendly life advice. Your tone is empathetic, warm, and real."
+  },
+  {
+    id: 'productivity',
+    name: 'Productivity Coach',
+    role: 'Focus Expert',
+    icon: Briefcase,
+    color: 'text-orange-400',
+    bg: 'bg-orange-500/20',
+    systemPrompt: "You are a Productivity Coach. Help users organize their tasks, beat procrastination, and stay focused. Keep your responses actionable, clear, and motivating."
+  },
+  {
+    id: 'football',
+    name: 'Football Analyst',
+    role: 'Sports Expert',
+    icon: Trophy,
+    color: 'text-green-400',
+    bg: 'bg-green-500/20',
+    systemPrompt: "You are a Football Analyst. You know everything about soccer stats, team forms, and match predictions. Speak like a sports commentator—enthusiastic and knowledgeable."
+  },
+  {
+    id: 'friend',
+    name: 'Friendly Chat',
+    role: 'Companion',
+    icon: Smile,
+    color: 'text-yellow-400',
+    bg: 'bg-yellow-500/20',
+    systemPrompt: "You are a friendly, casual chat companion. Just here to hang out, tell jokes, and listen. Keep it light, fun, and conversational."
+  }
+];
+
 interface ChatProps {
   onOpenSettings: () => void;
 }
@@ -36,10 +112,9 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // --- AI CHAT STATE ---
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [aiInput, setAiInput] = useState('');
-  const [aiMessages, setAiMessages] = useState<Message[]>([
-    { id: 'init-1', role: 'model', text: "Hey! I'm **SnapAura**. Need help with a caption, a photo idea, or just want to chat?" }
-  ]);
+  const [aiMessages, setAiMessages] = useState<Message[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [isAiListening, setIsAiListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -70,6 +145,18 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const peerInstance = useRef<any>(null);
   const connectionsRef = useRef<any[]>([]); // Store all connections (Host maintains list)
   const connectedUsersRef = useRef<{id: string, name: string}[]>([]); // For admin view
+
+  // Load Persona from LocalStorage
+  useEffect(() => {
+    const savedId = localStorage.getItem('SNAPAURA_PERSONA');
+    if (savedId) {
+      const persona = PERSONAS.find(p => p.id === savedId);
+      if (persona) {
+        setSelectedPersona(persona);
+        setAiMessages([{ id: 'init-p', role: 'model', text: `Hi! I'm your **${persona.name}**. How can I help you today?` }]);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -129,6 +216,18 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
           connectToPeer();
       }
   }, [myPeerId, targetPeerId, p2pState]);
+
+  const selectPersona = (persona: Persona) => {
+    setSelectedPersona(persona);
+    localStorage.setItem('SNAPAURA_PERSONA', persona.id);
+    setAiMessages([{ id: Date.now().toString(), role: 'model', text: `Hello! I'm your **${persona.name}**. Let's get started!` }]);
+    showToast(`${persona.name} Activated`, "success");
+  };
+
+  const clearPersona = () => {
+    setSelectedPersona(null);
+    localStorage.removeItem('SNAPAURA_PERSONA');
+  };
 
   const destroyPeer = () => {
       connectionsRef.current.forEach(conn => conn.close());
@@ -425,7 +524,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     if(textareaRef.current) textareaRef.current.style.height = 'auto';
     try {
       const history = aiMessages.map(m => ({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: m.text }] }));
-      const responseText = await sendChatMessage(history, userMsg.text);
+      const responseText = await sendChatMessage(history, userMsg.text, selectedPersona?.systemPrompt);
       setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: responseText }]);
     } catch (error) {
       setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Oops, I had a glitch. Try again?" }]);
@@ -483,239 +582,310 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
-      {/* HEADER & TABS */}
-      <div className="p-4 border-b border-white/10 bg-black/20 backdrop-blur-md sticky top-0 z-10 space-y-3">
-        <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold flex items-center gap-2">SnapAura Chat</h1>
-            <div className="flex gap-2">
-                 {isHost && activeConnections > 0 && (
-                     <button onClick={() => setShowAdmin(!showAdmin)} className="text-green-400 bg-green-500/10 px-3 py-1.5 rounded-full text-xs font-bold border border-green-500/20 active:scale-95">
-                         {activeConnections} Online
-                     </button>
-                 )}
-                 <button onClick={onOpenSettings} className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"><Settings size={20} /></button>
-            </div>
-        </div>
-        <div className="flex bg-white/5 rounded-lg p-1">
-            <button onClick={() => setMode('ai')} className={`flex-1 py-2 text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${mode === 'ai' ? 'bg-secondary text-white shadow-lg' : 'text-gray-400'}`}><Sparkles size={14} /> AI Assistant</button>
-            <button onClick={() => setMode('p2p')} className={`flex-1 py-2 text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${mode === 'p2p' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400'}`}><ShieldCheck size={14} /> Secure Group</button>
-        </div>
-        {/* Admin Panel */}
-        {showAdmin && isHost && (
-            <div className="bg-black/90 p-4 rounded-xl border border-white/10 animate-fade-in-up">
-                <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Connected Users</h3>
-                <div className="space-y-2 max-h-32 overflow-y-auto hide-scrollbar">
-                    {connectedUsersRef.current.map(u => (
-                        <div key={u.id} className="flex justify-between items-center bg-white/5 p-2 rounded-lg">
-                            <span className="text-sm text-white">{u.name}</span>
-                            <button onClick={() => kickUser(u.id)} className="text-red-400 hover:bg-red-500/20 p-1 rounded"><UserMinus size={14}/></button>
-                        </div>
-                    ))}
-                    {connectedUsersRef.current.length === 0 && <p className="text-xs text-gray-500">No active peers</p>}
+    <div className="h-full flex flex-col relative bg-[#0f0f11]">
+      {/* Header */}
+      <div className="p-4 bg-black/40 backdrop-blur-md sticky top-0 z-30 flex justify-between items-center border-b border-white/10">
+        <div className="flex items-center gap-3">
+            {mode === 'ai' ? (
+                <div className="flex items-center gap-3">
+                   {selectedPersona ? (
+                       <div className="flex items-center gap-3" onClick={clearPersona}>
+                           <div className={`p-2 rounded-full ${selectedPersona.bg} ${selectedPersona.color}`}>
+                               <selectedPersona.icon size={20} />
+                           </div>
+                           <div>
+                               <h1 className="font-bold text-white leading-tight">{selectedPersona.name}</h1>
+                               <p className="text-[10px] text-gray-400">{selectedPersona.role}</p>
+                           </div>
+                           <button className="text-gray-500 ml-2 hover:text-white"><XCircle size={14}/></button>
+                       </div>
+                   ) : (
+                       <>
+                           <div className="p-2 bg-blue-500/20 text-blue-400 rounded-full"><Sparkles size={20} /></div>
+                           <h1 className="text-lg font-bold text-white">SnapAura AI</h1>
+                       </>
+                   )}
                 </div>
+            ) : (
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-green-500/20 text-green-400 rounded-full relative">
+                       <ShieldCheck size={20} />
+                       {activeConnections > 0 && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>}
+                   </div>
+                   <div>
+                       <h1 className="text-lg font-bold text-white">Secure Chat</h1>
+                       <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                           <Radio size={10} className={activeConnections > 0 ? "text-green-500" : "text-gray-500"} />
+                           {activeConnections} Peers Online
+                       </p>
+                   </div>
+                </div>
+            )}
+        </div>
+        
+        <div className="flex gap-2">
+            {mode === 'p2p' && isHost && (
+                <button onClick={() => setShowAdmin(!showAdmin)} className="p-2 hover:bg-white/10 rounded-full text-gray-400">
+                    <MoreVertical size={20} />
+                </button>
+            )}
+            <div className="bg-white/5 p-1 rounded-lg flex border border-white/5">
+                <button onClick={() => setMode('ai')} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${mode === 'ai' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-400'}`}>AI</button>
+                <button onClick={() => setMode('p2p')} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${mode === 'p2p' ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400'}`}>P2P</button>
             </div>
-        )}
+            <button 
+                 onClick={onOpenSettings}
+                 className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+             >
+                 <Settings size={20} />
+             </button>
+        </div>
       </div>
 
-      {/* --- AI CHAT VIEW --- */}
-      {mode === 'ai' && (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-4 hide-scrollbar" ref={scrollRef}>
-                {aiMessages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-none' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
-                        {renderMessageContent(msg)}
-                        {msg.role === 'model' && (
-                            <div className="mt-2 pt-2 border-t border-white/10 flex justify-end">
-                                <button onClick={() => { const u = new SpeechSynthesisUtterance(msg.text.replace(/[*#]/g, '')); window.speechSynthesis.speak(u); }} className="p-1 text-gray-400 hover:text-white transition-colors"><Volume2 size={14} /></button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                ))}
-                {aiLoading && <div className="flex justify-start animate-fade-in-up"><div className="bg-white/10 p-4 rounded-2xl rounded-tl-none flex gap-1"><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div></div></div>}
-            </div>
-            <div className="absolute bottom-16 left-0 right-0 p-3 bg-black/60 backdrop-blur-xl border-t border-white/10">
-                <div className="flex gap-2 items-end bg-white/5 rounded-2xl p-2 border border-white/10 shadow-lg max-w-md mx-auto">
-                    <button onClick={handleAiVoiceInput} className={`p-3 rounded-full transition-all ${isAiListening ? 'bg-red-500/20 text-red-400 animate-pulse' : 'text-gray-400 hover:text-white'}`}><Mic size={20} /></button>
-                    <textarea ref={textareaRef} value={aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => {if(e.key === 'Enter' && !e.shiftKey) {e.preventDefault(); handleAiSend();}}} placeholder="Ask Gemini..." rows={1} className="flex-1 bg-transparent px-2 py-3 text-white focus:outline-none placeholder-gray-500 resize-none max-h-32 hide-scrollbar"/>
-                    <button onClick={handleAiSend} disabled={!aiInput.trim() || aiLoading} className="bg-secondary p-3 rounded-xl text-white hover:bg-secondary/80 transition-colors disabled:opacity-50 mb-1 active:scale-95"><Send size={18} /></button>
-                </div>
-            </div>
-          </>
-      )}
-
-      {/* --- P2P CHAT VIEW --- */}
-      {mode === 'p2p' && (
-          <div className="flex-1 flex flex-col overflow-hidden relative">
-             
-             {/* 1. USERNAME SETUP */}
-             {p2pState === 'username' && (
-                 <div className="flex flex-col items-center justify-center h-full p-8 animate-fade-in-up">
-                     <div className="bg-white/5 p-6 rounded-3xl border border-white/10 w-full max-w-xs text-center space-y-6">
-                         <div className="bg-green-500/20 p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center text-green-400">
-                             <UserPlus size={40} />
-                         </div>
-                         <div>
-                             <h2 className="text-xl font-bold text-white">Join Secure Chat</h2>
-                             <p className="text-sm text-gray-400 mt-2">Enter a display name to start or join.</p>
-                         </div>
-                         <input 
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Your Name"
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-center font-bold focus:border-green-500 outline-none"
-                            onKeyDown={(e) => e.key === 'Enter' && initPeer()}
-                         />
-                         <button 
-                            onClick={initPeer}
-                            disabled={!username.trim()}
-                            className="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50"
-                         >
-                             Start Session
-                         </button>
-                     </div>
-                 </div>
-             )}
-
-             {/* 2. CONNECTION SETUP */}
-             {p2pState === 'setup' && (
-                <div className="flex-1 overflow-y-auto p-4 space-y-6 hide-scrollbar animate-fade-in-up">
-                    <div className="glass-panel p-6 rounded-2xl border-t-4 border-green-500 space-y-4">
-                        <div className="flex items-center justify-between">
-                             <h3 className="font-bold text-white flex items-center gap-2"><Radio size={18} className="text-green-400"/> Session ID</h3>
-                             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-lg">Ready</span>
-                        </div>
-                        <div className="bg-black/30 p-4 rounded-xl border border-white/10 flex items-center justify-between">
-                             <span className="font-mono text-xl font-bold text-green-400 tracking-wider">{myPeerId || '...'}</span>
-                             <div className="flex gap-2">
-                                <button onClick={() => {navigator.clipboard.writeText(myPeerId); showToast("ID Copied", "success")}} className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors" title="Copy ID"><Copy size={18}/></button>
-                                <button onClick={handleCopyLink} className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors" title="Share Link"><LinkIcon size={18}/></button>
-                             </div>
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-2xl space-y-4">
-                        <h3 className="font-bold text-white flex items-center gap-2"><LogIn size={18} className="text-blue-400"/> Join Host</h3>
-                        <div className="flex gap-2">
-                            <input 
-                                value={targetPeerId} 
-                                onChange={(e) => setTargetPeerId(e.target.value)} 
-                                placeholder="Enter Host ID..." 
-                                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 outline-none"
-                            />
-                            <button 
-                                onClick={connectToPeer} 
-                                disabled={isConnecting || !targetPeerId} 
-                                className="bg-blue-600 hover:bg-blue-500 px-6 rounded-xl text-white font-bold shadow-lg disabled:opacity-50 transition-all flex items-center gap-2"
-                            >
-                                {isConnecting ? <RefreshCw className="animate-spin" size={18}/> : "Join"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-             )}
-
-             {/* 3. ACTIVE CHAT */}
-             {p2pState === 'connected' && (
-                 <>
-                    {/* Top Bar */}
-                    <div className="px-4 py-3 border-b border-white/10 bg-black/40 flex items-center justify-between absolute top-0 left-0 right-0 z-10 backdrop-blur-md">
-                         <div className="flex items-center gap-2">
-                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                             <div>
-                                 <h3 className="text-sm font-bold text-white">Secure Group</h3>
-                                 <p className="text-[10px] text-gray-400">ID: {myPeerId}</p>
-                             </div>
-                         </div>
-                         <div className="flex gap-2">
-                             <button onClick={handleCopyLink} className="text-xs bg-white/10 p-2 rounded hover:bg-white/20"><LinkIcon size={14}/></button>
-                             <button onClick={() => setP2pState('setup')} className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded hover:bg-red-500/30">Exit</button>
-                         </div>
-                    </div>
-
-                    {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 pt-16 pb-32 space-y-5 hide-scrollbar relative bg-black/20" ref={scrollRef}>
-                        {p2pMessages.map((msg, idx) => (
-                            <div key={idx} className={`flex flex-col ${msg.role === 'me' ? 'items-end' : 'items-start'} animate-fade-in-up`}>
-                                {msg.sender && msg.role !== 'me' && <span className="text-[10px] text-gray-500 mb-1 ml-1">{msg.sender}</span>}
-                                <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed shadow-md relative ${msg.role === 'me' ? 'bg-green-600 text-white rounded-tr-none' : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'}`}>
-                                    {renderMessageContent(msg)}
-                                </div>
-                                <span className="text-[9px] text-gray-600 mt-1 mr-1">{new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Input Area */}
-                    <div className="absolute bottom-16 left-0 right-0 p-3 bg-black/80 backdrop-blur-xl border-t border-white/10">
-                        {/* Reply Context */}
-                        {replyingTo && (
-                            <div className="flex justify-between items-center bg-white/10 p-2 rounded-lg mb-2 text-xs text-gray-300 border-l-4 border-green-500 mx-2">
-                                <span>Replying to <b>{replyingTo.sender}</b>: {replyingTo.type === 'text' ? replyingTo.text.substring(0,30)+'...' : '[Media]'}</span>
-                                <button onClick={() => setReplyingTo(null)}><XCircle size={14}/></button>
-                            </div>
-                        )}
-
-                        {/* Attachment Preview */}
-                        {attachment && (
-                            <div className="mb-2 p-2 bg-white/10 rounded-xl flex items-center justify-between border border-white/10 animate-fade-in-up mx-2">
-                                <div className="flex items-center gap-3">
-                                    {attachment.type === 'image' ? (
-                                        <img src={attachment.content} alt="Preview" className="w-10 h-10 rounded-lg object-cover" />
-                                    ) : (
-                                        <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400"><FileText size={20} /></div>
-                                    )}
-                                    <div className="flex flex-col overflow-hidden">
-                                        <span className="text-xs font-bold text-white truncate max-w-[150px]">{attachment.name}</span>
-                                        <span className="text-[9px] text-gray-400">{attachment.size}</span>
-                                    </div>
-                                </div>
-                                <button onClick={() => setAttachment(null)} className="p-1 text-gray-400 hover:text-white"><XCircle size={18} /></button>
-                            </div>
-                        )}
-
-                        <div className="flex gap-2 items-center bg-white/5 rounded-2xl p-2 border border-white/10 max-w-md mx-auto">
-                            <div className="relative group">
-                                <button onClick={() => fileInputRef.current?.click()} className="p-2.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all active:scale-95">
-                                    <Paperclip size={20} />
-                                </button>
-                            </div>
-
-                            <input
-                                type="text"
-                                value={p2pInput}
-                                onChange={(e) => setP2pInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleP2pSend()}
-                                placeholder={isRecording ? "Recording audio..." : "Type message..."}
-                                disabled={isRecording}
-                                className="flex-1 bg-transparent px-2 text-white focus:outline-none placeholder-gray-500"
-                            />
-                            
-                            {(p2pInput.trim() || attachment) ? (
-                                <button onClick={handleP2pSend} className="bg-green-600 p-2.5 rounded-full text-white hover:bg-green-500 transition-colors shadow-lg active:scale-95">
-                                    <Send size={18} />
-                                </button>
-                            ) : (
-                                <button 
-                                    onMouseDown={startRecording} 
-                                    onMouseUp={stopRecording}
-                                    onTouchStart={startRecording}
-                                    onTouchEnd={stopRecording}
-                                    className={`p-2.5 rounded-full transition-all active:scale-95 ${isRecording ? 'bg-red-500 text-white animate-pulse scale-110 shadow-red-500/50 shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
-                                >
-                                    {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                 </>
-             )}
-
-             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+      {/* Admin Panel (Host Only) */}
+      {showAdmin && mode === 'p2p' && (
+          <div className="bg-black/80 backdrop-blur-md p-4 border-b border-white/10 animate-fade-in-up">
+              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Connected Users</h3>
+              <div className="space-y-2">
+                  {connectedUsersRef.current.map(u => (
+                      <div key={u.id} className="flex justify-between items-center bg-white/5 p-2 rounded-lg">
+                          <span className="text-sm text-white">{u.name} <span className="text-xs text-gray-500">({u.id.substr(0,4)})</span></span>
+                          <button onClick={() => kickUser(u.id)} className="text-red-400 hover:text-red-300 p-1 bg-red-500/10 rounded"><UserMinus size={14}/></button>
+                      </div>
+                  ))}
+                  {connectedUsersRef.current.length === 0 && <p className="text-xs text-gray-500 italic">No active peers</p>}
+              </div>
           </div>
       )}
+
+      {/* Main Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 hide-scrollbar" ref={scrollRef}>
+        
+        {/* --- AI MODE --- */}
+        {mode === 'ai' && (
+            <>
+                {!selectedPersona && aiMessages.length === 0 ? (
+                    <div className="mt-4 animate-fade-in-up">
+                        <h2 className="text-xl font-bold text-white mb-2 text-center">Choose an Assistant</h2>
+                        <p className="text-sm text-gray-400 text-center mb-6">Select a persona to guide your creative journey.</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {PERSONAS.map(p => (
+                                <button 
+                                    key={p.id}
+                                    onClick={() => selectPersona(p)}
+                                    className="bg-white/5 hover:bg-white/10 border border-white/5 p-4 rounded-2xl text-left transition-all active:scale-95 group relative overflow-hidden"
+                                >
+                                    <div className={`absolute top-0 right-0 p-10 ${p.bg} rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity`}></div>
+                                    <div className={`w-10 h-10 rounded-full ${p.bg} ${p.color} flex items-center justify-center mb-3`}>
+                                        <p.icon size={20} />
+                                    </div>
+                                    <h3 className="font-bold text-white text-sm">{p.name}</h3>
+                                    <p className="text-[10px] text-gray-400 mt-1">{p.role}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {aiMessages.map((msg) => (
+                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
+                            <div 
+                              className={`max-w-[85%] p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                                msg.role === 'user' 
+                                  ? 'bg-blue-600 text-white rounded-br-none' 
+                                  : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5'
+                              }`}
+                            >
+                               {renderMessageContent(msg)}
+                            </div>
+                            {msg.role === 'model' && (
+                                <button 
+                                    onClick={() => {
+                                        const u = new SpeechSynthesisUtterance(msg.text);
+                                        window.speechSynthesis.speak(u);
+                                    }}
+                                    className="ml-2 self-end text-gray-500 hover:text-white"
+                                >
+                                    <Volume2 size={14} />
+                                </button>
+                            )}
+                          </div>
+                        ))}
+                        {aiLoading && (
+                          <div className="flex justify-start">
+                            <div className="bg-white/5 px-4 py-3 rounded-2xl rounded-bl-none flex gap-1 items-center border border-white/5">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+                            </div>
+                          </div>
+                        )}
+                    </>
+                )}
+            </>
+        )}
+
+        {/* --- P2P MODE --- */}
+        {mode === 'p2p' && (
+            <>
+                {p2pState === 'username' && (
+                    <div className="flex flex-col items-center justify-center h-full space-y-6 p-6 text-center animate-fade-in-up">
+                        <div className="bg-green-500/20 p-6 rounded-full text-green-400 ring-4 ring-green-500/10">
+                            <ShieldCheck size={48} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-white">Encrypted Chat</h2>
+                            <p className="text-gray-400 text-sm mt-2">Serverless. Private. Secure.</p>
+                        </div>
+                        <input 
+                            value={username} 
+                            onChange={e => setUsername(e.target.value)}
+                            placeholder="Enter Display Name"
+                            className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-center focus:border-green-500 outline-none"
+                            autoFocus
+                        />
+                        <button onClick={initPeer} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all">
+                            Start Secure Session
+                        </button>
+                    </div>
+                )}
+
+                {p2pState === 'setup' && (
+                    <div className="glass-panel p-6 rounded-2xl space-y-6 text-center animate-fade-in-up m-auto mt-10">
+                         <h3 className="text-lg font-bold text-white">Invite Friends</h3>
+                         <div className="bg-black/30 p-4 rounded-xl border border-white/10 flex items-center justify-between gap-3">
+                             <div className="text-left overflow-hidden">
+                                 <p className="text-[10px] text-gray-500 uppercase font-bold">Your Session ID</p>
+                                 <p className="text-2xl font-mono text-green-400 font-bold tracking-widest">{myPeerId}</p>
+                             </div>
+                             <div className="flex gap-2">
+                                <button onClick={() => {navigator.clipboard.writeText(myPeerId); showToast("ID Copied", "success")}} className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><Copy size={20}/></button>
+                                <button onClick={handleCopyLink} className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30"><LinkIcon size={20}/></button>
+                             </div>
+                         </div>
+                         
+                         <div className="relative">
+                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
+                             <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#1a1a20] px-2 text-gray-500 font-bold">Or Join Session</span></div>
+                         </div>
+
+                         <div className="flex gap-2">
+                             <input 
+                                value={targetPeerId} 
+                                onChange={e => setTargetPeerId(e.target.value)}
+                                placeholder="Enter Friend's ID..."
+                                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-green-500"
+                             />
+                             <button onClick={connectToPeer} disabled={isConnecting} className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-xl font-bold border border-white/10">
+                                 {isConnecting ? <RefreshCw className="animate-spin" /> : <LogIn />}
+                             </button>
+                         </div>
+                    </div>
+                )}
+
+                {p2pState === 'connected' && (
+                    <>
+                        <div className="text-center py-2">
+                            <span className="text-[10px] bg-green-500/10 text-green-400 px-3 py-1 rounded-full border border-green-500/20">
+                                End-to-End Encrypted
+                            </span>
+                        </div>
+                        {p2pMessages.map((msg) => (
+                           <div key={msg.id} className={`flex flex-col ${msg.role === 'me' ? 'items-end' : 'items-start'} animate-fade-in-up`}>
+                               {msg.role !== 'me' && msg.sender && <span className="text-[10px] text-gray-500 mb-1 ml-1">{msg.sender}</span>}
+                               <div 
+                                className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm ${
+                                    msg.role === 'me' 
+                                    ? 'bg-green-600 text-white rounded-br-none' 
+                                    : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5'
+                                }`}
+                               >
+                                   {renderMessageContent(msg)}
+                               </div>
+                               <span className="text-[9px] text-gray-600 mt-1 px-1">{new Date(msg.timestamp || 0).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                           </div>
+                        ))}
+                    </>
+                )}
+            </>
+        )}
+
+      </div>
+
+      {/* Input Area */}
+      {((mode === 'ai') || (mode === 'p2p' && p2pState === 'connected')) && (
+          <div className="p-4 bg-black/80 backdrop-blur-xl border-t border-white/10 fixed bottom-[72px] left-0 right-0 max-w-md mx-auto z-20">
+              
+              {/* Reply Preview */}
+              {replyingTo && (
+                  <div className="flex justify-between items-center bg-white/5 p-2 rounded-lg mb-2 border-l-2 border-blue-500">
+                      <div className="text-xs text-gray-300 truncate">
+                          <span className="font-bold text-blue-400 mr-2">Replying to {replyingTo.sender}:</span>
+                          {replyingTo.text}
+                      </div>
+                      <button onClick={() => setReplyingTo(null)}><XCircle size={14} className="text-gray-500"/></button>
+                  </div>
+              )}
+
+              {/* Attachment Preview */}
+              {attachment && (
+                  <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl mb-2 border border-white/10">
+                      {attachment.type === 'image' ? <ImageIcon size={16} className="text-pink-400"/> : <FileText size={16} className="text-blue-400"/>}
+                      <span className="text-xs text-white truncate flex-1">{attachment.name}</span>
+                      <span className="text-[10px] text-gray-500">{attachment.size}</span>
+                      <button onClick={() => setAttachment(null)}><XCircle size={16} className="text-gray-400 hover:text-white"/></button>
+                  </div>
+              )}
+
+              <div className="flex items-end gap-2">
+                  {/* Media Actions */}
+                  {mode === 'p2p' && (
+                      <div className="flex gap-1 mb-1.5">
+                           <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors">
+                               <Paperclip size={20} />
+                           </button>
+                           <button onClick={isRecording ? stopRecording : startRecording} className={`p-2 rounded-full transition-colors ${isRecording ? 'text-red-500 bg-red-500/10 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}>
+                               {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                           </button>
+                      </div>
+                  )}
+
+                  {mode === 'ai' && (
+                      <button onClick={handleAiVoiceInput} className={`p-2 mb-1.5 rounded-full transition-colors ${isAiListening ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}>
+                          <Mic size={20} />
+                      </button>
+                  )}
+
+                  <div className="flex-1 bg-white/5 rounded-2xl border border-white/10 flex items-center pr-2">
+                      <textarea
+                          ref={textareaRef}
+                          value={mode === 'ai' ? aiInput : p2pInput}
+                          onChange={(e) => mode === 'ai' ? setAiInput(e.target.value) : setP2pInput(e.target.value)}
+                          placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Message SnapAura...") : "Message secure peer..."}
+                          className="w-full bg-transparent border-none text-white px-4 py-3 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
+                          rows={1}
+                          onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  mode === 'ai' ? handleAiSend() : handleP2pSend();
+                              }
+                          }}
+                      />
+                  </div>
+
+                  <button 
+                      onClick={mode === 'ai' ? handleAiSend : handleP2pSend}
+                      disabled={mode === 'ai' ? (!aiInput.trim() || aiLoading) : (!p2pInput.trim() && !attachment)}
+                      className="mb-1 p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
+                  >
+                      {aiLoading ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} />}
+                  </button>
+              </div>
+          </div>
+      )}
+
+      {/* Hidden File Input */}
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
     </div>
   );
 };

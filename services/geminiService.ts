@@ -257,14 +257,14 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 };
 
 // --- 5. Chatbot ---
-export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string) => {
+export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string, systemInstruction?: string) => {
     const ai = getAiClient();
     // Use Flash for standard chat, robust and fast
     const chatSession = ai.chats.create({
         model: 'gemini-2.5-flash',
         history: history,
         config: {
-            systemInstruction: "You are SnapAura, a helpful, witty, and aesthetic AI assistant for a photo editing app. You help users with photography tips, caption ideas, and navigating the app. Format your responses with Markdown: use **bold** for emphasis, lists for steps, and keep it concise."
+            systemInstruction: systemInstruction || "You are SnapAura, a helpful, witty, and aesthetic AI assistant for a photo editing app. You help users with photography tips, caption ideas, and navigating the app. Format your responses with Markdown: use **bold** for emphasis, lists for steps, and keep it concise."
         }
     });
 
