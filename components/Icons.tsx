@@ -95,7 +95,17 @@ import {
   Trophy,
   Target,
   TrendingDown,
-  Percent
+  Percent,
+  FileDigit,
+  Feather,
+  Music,
+  UserCheck,
+  Languages,
+  BookOpen,
+  Hash,
+  Clock,
+  MessageSquare,
+  Lightbulb
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -125,10 +135,10 @@ export {
   RefreshCw, 
   Send,
   ImageIcon,
-  Zap,
+  Zap, 
   Trash2, 
   Rocket, 
-  Palette,
+  Palette, 
   Brain,
   CheckCircle,
   AlertCircle,
@@ -207,5 +217,15 @@ export {
   Trophy,
   Target,
   TrendingDown,
-  Percent
+  Percent,
+  FileDigit,
+  Feather,
+  Music,
+  UserCheck,
+  Languages,
+  BookOpen,
+  Hash,
+  Clock,
+  MessageSquare,
+  Lightbulb
 };

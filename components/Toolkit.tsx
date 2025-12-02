@@ -1,12 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy, UserCheck, Layers, FileText, FileDigit, Music, Hash, Clock, MessageSquare, BookOpen, Feather } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 import SoccerPredictions from './SoccerPredictions';
+import ProfileStudio from './ProfileStudio';
+import MoodboardGenerator from './MoodboardGenerator';
+import SmartNotes from './SmartNotes';
+import SocialGrowth from './SocialGrowth';
+import PdfTools from './PdfTools';
 
 // Define tool types for better state management
-type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit' | 'soccer';
+type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit' | 'soccer' | 'profile-studio' | 'moodboard' | 'notes' | 'social-growth' | 'pdf-tools';
 
 interface ToolkitProps {
   onOpenSettings: () => void;
@@ -480,6 +485,27 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
 
   const renderMenu = () => (
     <div className="grid grid-cols-1 gap-6 animate-fade-in-up">
+        {/* New Feature: Profile Studio & Moodboard */}
+        <div className="grid grid-cols-2 gap-3">
+            <div className="glass-panel p-4 rounded-xl flex flex-col gap-2 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('profile-studio')}>
+                <div className="bg-indigo-500/20 p-3 rounded-full text-indigo-400 w-fit"><UserCheck size={24} /></div>
+                <div><h4 className="font-bold text-white leading-tight">Profile Studio</h4><p className="text-[10px] text-gray-400">Pro Headshots</p></div>
+            </div>
+            <div className="glass-panel p-4 rounded-xl flex flex-col gap-2 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('moodboard')}>
+                <div className="bg-pink-500/20 p-3 rounded-full text-pink-400 w-fit"><Layers size={24} /></div>
+                <div><h4 className="font-bold text-white leading-tight">Moodboard</h4><p className="text-[10px] text-gray-400">Aesthetic Grids</p></div>
+            </div>
+        </div>
+
+        {/* New Feature: PDF & Notes */}
+        <div>
+             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Productivity</h3>
+             <div className="grid grid-cols-2 gap-3">
+                 <MenuCard icon={FileText} color="text-red-400" bg="bg-red-500/20" title="PDF Tools" onClick={() => setActiveTool('pdf-tools')} />
+                 <MenuCard icon={Feather} color="text-yellow-400" bg="bg-yellow-500/20" title="Smart Notes" onClick={() => setActiveTool('notes')} />
+             </div>
+        </div>
+
         {/* Section: Sports & Trends */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Sports & Trends</h3>
@@ -519,10 +545,15 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
         {/* Section: Social */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Social Growth</h3>
-            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('bio')}>
-                <div className="bg-pink-500/20 p-3 rounded-full text-pink-400"><Sparkles size={20} /></div>
-                <div><h4 className="font-bold text-white">AI Bio Writer</h4><p className="text-xs text-gray-400">Perfect your profile</p></div>
-                <ArrowRight className="ml-auto text-gray-500" size={16} />
+            <div className="grid grid-cols-2 gap-3">
+                 <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('bio')}>
+                    <div className="bg-pink-500/20 p-3 rounded-full text-pink-400"><Sparkles size={20} /></div>
+                    <div><h4 className="font-bold text-white">Bio Writer</h4></div>
+                </div>
+                 <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('social-growth')}>
+                    <div className="bg-blue-500/20 p-3 rounded-full text-blue-400"><TrendingUp size={20} /></div>
+                    <div><h4 className="font-bold text-white">Growth Hub</h4></div>
+                </div>
             </div>
         </div>
     </div>
@@ -566,6 +597,13 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
 
       {activeTool === 'menu' && renderMenu()}
       
+      {/* --- NEW COMPONENTS RENDER --- */}
+      {activeTool === 'profile-studio' && <ProfileStudio />}
+      {activeTool === 'moodboard' && <MoodboardGenerator />}
+      {activeTool === 'notes' && <SmartNotes />}
+      {activeTool === 'pdf-tools' && <PdfTools />}
+      {activeTool === 'social-growth' && <SocialGrowth />}
+
       {/* --- SOCCER TOOL --- */}
       {activeTool === 'soccer' && (
           <SoccerPredictions />

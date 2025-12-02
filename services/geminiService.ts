@@ -404,3 +404,79 @@ export const getSoccerPredictions = async () => {
     throw error;
   }
 }
+
+// --- 9. Smart Notes Assistant ---
+export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewrite' | 'expand' | 'translate', extra?: string): Promise<string> => {
+    const ai = getAiClient();
+    let prompt = "";
+    
+    switch(mode) {
+        case 'summarize': prompt = `Summarize this text into concise bullet points:\n\n${text}`; break;
+        case 'rewrite': prompt = `Rewrite this text to be ${extra || 'professional'}:\n\n${text}`; break;
+        case 'expand': prompt = `Expand on the following ideas with more detail and context:\n\n${text}`; break;
+        case 'translate': prompt = `Translate this text to ${extra || 'English'}:\n\n${text}`; break;
+    }
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+    });
+    return response.text || "";
+}
+
+// --- 10. Social Media Growth ---
+export const generateSocialContent = async (topic: string, type: 'hashtag' | 'idea' | 'reply' | 'timing', context?: string) => {
+    const ai = getAiClient();
+    let prompt = "";
+
+    if (type === 'hashtag') prompt = `Generate 30 high-reach, mix of niche and broad hashtags for a post about: "${topic}". Return strictly the tags separated by space.`;
+    if (type === 'idea') prompt = `Give me 5 viral content ideas (Reels & Posts) for a creator in the "${topic}" niche. Format as list.`;
+    if (type === 'reply') prompt = `Write 3 engaging, authentic replies to this comment: "${context}". Tone: ${topic}. Separate by ||`;
+    if (type === 'timing') prompt = `Suggest the best posting times for "${topic}" niche on Instagram and TikTok. Provide reasoning.`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+    });
+    return response.text || "";
+}
+
+// --- 11. Moodboard Analysis ---
+export const analyzeMoodboard = async (images: string[]) => {
+    const ai = getAiClient();
+    // Use first image for main analysis due to token limits in simplified demo, or map if possible.
+    // For this implementation, we handle single image primarily or description based.
+    // Let's assume we send the first image to extract the "Vibe".
+    
+    const { mimeType, data } = processBase64Image(images[0]);
+    
+    const prompt = `
+      Analyze the aesthetic of this image to create a Moodboard.
+      Identify:
+      1. A creative Theme Name (e.g. "Velvet Hour")
+      2. 5 Vibe Keywords
+      3. A Color Palette (5 hex codes)
+      4. A matching poetic caption
+      
+      Return strict JSON:
+      {
+        "theme": "string",
+        "keywords": ["string",...],
+        "colors": ["#hex",...],
+        "caption": "string"
+      }
+    `;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: {
+            parts: [
+                { inlineData: { mimeType, data } },
+                { text: prompt }
+            ]
+        },
+        config: { responseMimeType: "application/json" }
+    });
+    
+    return JSON.parse(response.text || "{}");
+}
