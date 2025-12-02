@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Layers, Upload, RefreshCw, Download, Palette } from './Icons';
 import { analyzeMoodboard } from '../services/geminiService';
 import { showToast } from './Toast';
@@ -8,6 +8,7 @@ const MoodboardGenerator: React.FC = () => {
     const [image, setImage] = useState<string | null>(null);
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [compositeUrl, setCompositeUrl] = useState<string | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -15,23 +16,150 @@ const MoodboardGenerator: React.FC = () => {
         if(file) {
             const reader = new FileReader();
             reader.onload = () => {
-                setImage(reader.result as string);
-                generateBoard(reader.result as string);
+                const imgStr = reader.result as string;
+                setImage(imgStr);
+                generateBoardData(imgStr);
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const generateBoard = async (img: string) => {
+    const generateBoardData = async (img: string) => {
         setLoading(true);
+        setCompositeUrl(null);
         try {
             const res = await analyzeMoodboard([img]);
             setData(res);
+            // Once data is ready, generate the composite image
+            await renderComposite(img, res);
         } catch(e) {
             showToast("Analysis failed", "error");
         } finally {
             setLoading(false);
         }
+    };
+
+    const renderComposite = async (imgSrc: string, boardData: any) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Poster Size (Portrait)
+        const W = 1080;
+        const H = 1350;
+        canvas.width = W;
+        canvas.height = H;
+
+        // Load Source Image
+        const img = new Image();
+        img.src = imgSrc;
+        await new Promise((resolve) => { img.onload = resolve; });
+
+        // 1. Background
+        ctx.fillStyle = '#f5f5f5'; // Light minimalist background
+        if (boardData.colors && boardData.colors.length > 0) {
+             // Optional: Use the darkest color as BG if desired, but white looks cleaner for moodboards
+             // ctx.fillStyle = boardData.colors[0]; 
+        }
+        ctx.fillRect(0, 0, W, H);
+
+        // 2. Draw Main Image (Top 65%)
+        const imgH = H * 0.65;
+        // Cover fit
+        const scale = Math.max(W / img.width, imgH / img.height);
+        const x = (W / 2) - (img.width / 2) * scale;
+        const y = (imgH / 2) - (img.height / 2) * scale;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(40, 40, W - 80, imgH - 40); // Margins
+        ctx.clip();
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        ctx.restore();
+
+        // 3. Typography Section (Bottom)
+        const textStart = imgH + 60;
+        
+        // Theme Title
+        ctx.fillStyle = '#1a1a1a';
+        ctx.font = 'bold 80px "Inter", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText((boardData.theme || "Aesthetic").toUpperCase(), 50, textStart + 40);
+
+        // Caption
+        ctx.fillStyle = '#666666';
+        ctx.font = 'italic 32px "Inter", serif';
+        ctx.fillText(`"${boardData.caption || ''}"`, 50, textStart + 100);
+
+        // 4. Color Palette (Circles)
+        if (boardData.colors) {
+            const circleY = H - 180;
+            const radius = 50;
+            const gap = 30;
+            
+            boardData.colors.forEach((color: string, i: number) => {
+                const cx = 50 + radius + (i * (radius * 2 + gap));
+                
+                // Shadow
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+                
+                ctx.beginPath();
+                ctx.arc(cx, circleY, radius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.restore();
+
+                // Hex Text
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 20px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(color, cx, circleY + radius + 30);
+            });
+        }
+
+        // 5. Keywords (Pills)
+        if (boardData.keywords) {
+            const kwY = textStart + 160;
+            let currentX = 50;
+            ctx.font = '24px "Inter", sans-serif';
+            
+            boardData.keywords.slice(0, 4).forEach((kw: string) => {
+                const textWidth = ctx.measureText(kw).width;
+                const pillW = textWidth + 40;
+                
+                ctx.fillStyle = '#e0e0e0';
+                ctx.beginPath();
+                ctx.roundRect(currentX, kwY, pillW, 40, 20);
+                ctx.fill();
+
+                ctx.fillStyle = '#000';
+                ctx.textAlign = 'center';
+                ctx.fillText(kw, currentX + pillW/2, kwY + 28);
+
+                currentX += pillW + 20;
+            });
+        }
+        
+        // Brand Footer
+        ctx.fillStyle = '#999';
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText("Generated by SnapAura AI", W - 50, H - 40);
+
+        setCompositeUrl(canvas.toDataURL('image/png'));
+    };
+
+    const downloadBoard = () => {
+        if(!compositeUrl) return;
+        const link = document.createElement('a');
+        link.href = compositeUrl;
+        link.download = `snapaura-moodboard-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Moodboard Saved!", "success");
     };
 
     return (
@@ -49,45 +177,38 @@ const MoodboardGenerator: React.FC = () => {
                     </button>
                 ) : (
                     <div className="space-y-6">
-                        <div className="relative rounded-xl overflow-hidden shadow-2xl">
-                            <img src={image} className="w-full h-48 object-cover" alt="Source" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
-                                <div>
-                                    <h3 className="text-2xl font-black text-white">{data?.theme || "Analyzing..."}</h3>
-                                    <p className="text-sm text-gray-300 italic">"{data?.caption || "..."}"</p>
+                        {/* Result Display */}
+                        <div className="relative rounded-xl overflow-hidden shadow-2xl bg-[#f5f5f5] group">
+                            {compositeUrl ? (
+                                <img src={compositeUrl} className="w-full h-auto object-contain" alt="Moodboard" />
+                            ) : (
+                                // Fallback loading state preview
+                                <div className="h-96 flex items-center justify-center text-gray-400">
+                                    <RefreshCw className="animate-spin text-pink-400" size={32} />
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {loading ? (
-                            <div className="flex justify-center py-10"><RefreshCw className="animate-spin text-pink-400" size={32} /></div>
+                            <div className="text-center">
+                                <p className="text-sm text-gray-400 animate-pulse">Designing your board...</p>
+                            </div>
                         ) : (
-                            <>
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Color Palette</h4>
-                                    <div className="flex h-12 rounded-lg overflow-hidden shadow-lg">
-                                        {data?.colors?.map((c: string, i: number) => (
-                                            <div key={i} className="flex-1" style={{backgroundColor: c}} title={c}></div>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between mt-1 text-[10px] text-gray-500 font-mono">
-                                        {data?.colors?.map((c: string, i: number) => <span key={i}>{c}</span>)}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Vibe Keywords</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {data?.keywords?.map((k: string, i: number) => (
-                                            <span key={i} className="px-3 py-1 bg-white/10 rounded-full text-xs text-white border border-white/10">{k}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                                
-                                <button onClick={() => {setImage(null); setData(null);}} className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-bold transition-all">
-                                    Create New Board
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={downloadBoard}
+                                    className="flex-1 bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-lg"
+                                >
+                                    <Download size={18} /> Download Moodboard
                                 </button>
-                            </>
+                                <button 
+                                    onClick={() => {setImage(null); setData(null); setCompositeUrl(null);}} 
+                                    className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-colors"
+                                    title="New Board"
+                                >
+                                    <RefreshCw size={20} />
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}

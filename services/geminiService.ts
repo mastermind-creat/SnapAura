@@ -410,11 +410,14 @@ export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewri
     const ai = getAiClient();
     let prompt = "";
     
+    // Enforce Markdown structure in all prompts
+    const styleGuide = "\n\nFormat your response in clean Markdown. Use **Bold** for key terms, *Bullet Points* for lists, and ### Headers for sections where appropriate. Keep it structured and easy to read.";
+
     switch(mode) {
-        case 'summarize': prompt = `Summarize this text into concise bullet points:\n\n${text}`; break;
-        case 'rewrite': prompt = `Rewrite this text to be ${extra || 'professional'}:\n\n${text}`; break;
-        case 'expand': prompt = `Expand on the following ideas with more detail and context:\n\n${text}`; break;
-        case 'translate': prompt = `Translate this text to ${extra || 'English'}:\n\n${text}`; break;
+        case 'summarize': prompt = `Summarize this text into concise, structured bullet points:${styleGuide}\n\nTEXT:\n${text}`; break;
+        case 'rewrite': prompt = `Rewrite this text to be ${extra || 'professional'}. Maintain the meaning but improve the flow and vocabulary:${styleGuide}\n\nTEXT:\n${text}`; break;
+        case 'expand': prompt = `Expand on the following ideas with more detail, context, and examples:${styleGuide}\n\nTEXT:\n${text}`; break;
+        case 'translate': prompt = `Translate this text to ${extra || 'English'}. Ensure natural phrasing:${styleGuide}\n\nTEXT:\n${text}`; break;
     }
 
     const response = await ai.models.generateContent({
@@ -428,11 +431,15 @@ export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewri
 export const generateSocialContent = async (topic: string, type: 'hashtag' | 'idea' | 'reply' | 'timing', context?: string) => {
     const ai = getAiClient();
     let prompt = "";
+    const styleGuide = "\n\nFormat the output in clean Markdown. Use **Bold** for hooks/headings and bullet points for lists.";
 
     if (type === 'hashtag') prompt = `Generate 30 high-reach, mix of niche and broad hashtags for a post about: "${topic}". Return strictly the tags separated by space.`;
-    if (type === 'idea') prompt = `Give me 5 viral content ideas (Reels & Posts) for a creator in the "${topic}" niche. Format as list.`;
-    if (type === 'reply') prompt = `Write 3 engaging, authentic replies to this comment: "${context}". Tone: ${topic}. Separate by ||`;
-    if (type === 'timing') prompt = `Suggest the best posting times for "${topic}" niche on Instagram and TikTok. Provide reasoning.`;
+    
+    if (type === 'idea') prompt = `Give me 5 viral content ideas (Reels & Posts) for a creator in the "${topic}" niche.${styleGuide} For each idea include:\n- **Hook**\n- **Concept**\n- **Why it works**`;
+    
+    if (type === 'reply') prompt = `Write 3 engaging, authentic replies to this comment: "${context}". Tone: ${topic}. Separate each reply by '||'.`;
+    
+    if (type === 'timing') prompt = `Suggest the best posting times for the "${topic}" niche on Instagram and TikTok.${styleGuide} Provide specific days/times and the reasoning based on general audience behavior.`;
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -444,10 +451,6 @@ export const generateSocialContent = async (topic: string, type: 'hashtag' | 'id
 // --- 11. Moodboard Analysis ---
 export const analyzeMoodboard = async (images: string[]) => {
     const ai = getAiClient();
-    // Use first image for main analysis due to token limits in simplified demo, or map if possible.
-    // For this implementation, we handle single image primarily or description based.
-    // Let's assume we send the first image to extract the "Vibe".
-    
     const { mimeType, data } = processBase64Image(images[0]);
     
     const prompt = `

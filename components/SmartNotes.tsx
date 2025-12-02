@@ -1,8 +1,11 @@
 
 import React, { useState } from 'react';
-import { Feather, RefreshCw, Copy, CheckCircle, FileText, Languages, BookOpen } from './Icons';
+import { Feather, RefreshCw, Copy, FileText, Languages, BookOpen, Trash2 } from './Icons';
 import { generateSmartNote } from '../services/geminiService';
 import { showToast } from './Toast';
+
+// Use global marked
+declare const marked: any;
 
 type Mode = 'summarize' | 'rewrite' | 'expand' | 'translate';
 
@@ -43,7 +46,7 @@ const SmartNotes: React.FC = () => {
                     ].map(m => (
                         <button 
                             key={m.id} 
-                            onClick={() => setMode(m.id as Mode)}
+                            onClick={() => { setMode(m.id as Mode); setResult(''); }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${mode === m.id ? 'bg-yellow-500 text-black' : 'bg-white/5 text-gray-400'}`}
                         >
                             <m.icon size={14} /> {m.label}
@@ -51,12 +54,19 @@ const SmartNotes: React.FC = () => {
                     ))}
                 </div>
 
-                <textarea 
-                    value={text} 
-                    onChange={e => setText(e.target.value)} 
-                    placeholder="Paste your text here..." 
-                    className="w-full h-32 bg-black/30 border border-white/10 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none resize-none mb-4"
-                />
+                <div className="relative">
+                    <textarea 
+                        value={text} 
+                        onChange={e => setText(e.target.value)} 
+                        placeholder="Paste your text here..." 
+                        className="w-full h-32 bg-black/30 border border-white/10 rounded-xl p-4 text-white text-sm focus:border-yellow-500 outline-none resize-none mb-4"
+                    />
+                    {text && (
+                        <button onClick={() => setText('')} className="absolute top-2 right-2 p-1 text-gray-500 hover:text-white">
+                            <Trash2 size={14} />
+                        </button>
+                    )}
+                </div>
 
                 {mode === 'translate' && (
                     <input 
@@ -72,6 +82,7 @@ const SmartNotes: React.FC = () => {
                         onChange={e => setExtra(e.target.value)}
                         className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm mb-4"
                     >
+                        <option value="">Select Tone...</option>
                         <option value="professional">Professional</option>
                         <option value="casual">Casual</option>
                         <option value="academic">Academic</option>
@@ -88,15 +99,19 @@ const SmartNotes: React.FC = () => {
                 </button>
 
                 {result && (
-                    <div className="mt-6 bg-white/5 p-4 rounded-xl border border-white/10 relative group">
-                        <button 
-                            onClick={() => {navigator.clipboard.writeText(result); showToast("Copied!", "success")}}
-                            className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg text-gray-400 hover:text-white transition-colors"
-                        >
-                            <Copy size={16} />
-                        </button>
-                        <div className="prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed whitespace-pre-wrap">
-                            {result}
+                    <div className="mt-6 animate-fade-in-up">
+                        <div className="flex justify-between items-center mb-2 px-1">
+                            <h3 className="text-xs font-bold text-gray-500 uppercase">AI Output</h3>
+                            <button onClick={() => {navigator.clipboard.writeText(result); showToast("Copied!", "success")}} className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-300">
+                                <Copy size={12} /> Copy
+                            </button>
+                        </div>
+                        <div className="bg-white/5 p-5 rounded-xl border border-white/10 relative">
+                             {/* Markdown Rendering */}
+                             <div 
+                                className="prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(result) : result }}
+                            />
                         </div>
                     </div>
                 )}

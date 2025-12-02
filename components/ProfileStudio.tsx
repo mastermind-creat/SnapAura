@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { UserCheck, Upload, Wand2, Download, RefreshCw, Layers } from './Icons';
+import { UserCheck, Upload, Wand2, Download, RefreshCw, Layers, Sparkles, Zap } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -18,27 +18,49 @@ const ProfileStudio: React.FC = () => {
         { id: 'cinematic', label: 'Cinematic', prompt: 'Make this a cinematic movie character portrait, dramatic lighting, teal and orange color grading.' }
     ];
 
+    const RETOUCH_OPTS = [
+        { id: 'light', label: 'Fix Lighting', icon: Zap, prompt: 'Fix the lighting in this portrait. Make it balanced, professional studio lighting, remove harsh shadows.' },
+        { id: 'smooth', label: 'Smooth Skin', icon: Sparkles, prompt: 'Retouch the skin in this portrait to look smooth and natural. Remove blemishes but keep skin texture.' },
+        { id: 'bokeh', label: 'Blur Background', icon: Layers, prompt: 'Keep the person in focus but apply a strong professional bokeh blur to the background.' }
+    ];
+
     const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if(file) {
             const reader = new FileReader();
-            reader.onload = () => setImage(reader.result as string);
+            reader.onload = () => {
+                setImage(reader.result as string);
+                setProcessed(null);
+            }
             reader.readAsDataURL(file);
         }
     };
 
-    const generateProfile = async (prompt: string) => {
-        if(!image) return;
+    const processImage = async (prompt: string) => {
+        const src = processed || image;
+        if(!src) return;
+        
         setIsProcessing(true);
         try {
-            const res = await editImageWithPrompt(image, prompt + " Keep facial features recognizable.");
+            const res = await editImageWithPrompt(src, prompt + " Keep facial features recognizable and high quality.");
             setProcessed(res);
-            showToast("Profile generated!", "success");
+            showToast("Update complete!", "success");
         } catch(e) {
-            showToast("Failed to generate", "error");
+            showToast("Failed to process", "error");
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    const handleDownload = () => {
+        if (!processed && !image) return;
+        const link = document.createElement('a');
+        link.href = processed || image!;
+        link.download = `snapaura-profile-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Saved to Photos", "success");
     };
 
     return (
@@ -56,8 +78,9 @@ const ProfileStudio: React.FC = () => {
                         <span className="text-sm font-bold">Upload Selfie</span>
                     </button>
                 ) : (
-                    <div className="space-y-4">
-                        <div className="relative h-64 w-64 mx-auto rounded-full overflow-hidden border-4 border-white/10 shadow-2xl">
+                    <div className="space-y-6">
+                        {/* Main Preview */}
+                        <div className="relative h-64 w-64 mx-auto rounded-full overflow-hidden border-4 border-white/10 shadow-2xl group">
                             <img src={processed || image} className="w-full h-full object-cover" alt="Profile" />
                             {isProcessing && (
                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
@@ -66,31 +89,56 @@ const ProfileStudio: React.FC = () => {
                             )}
                         </div>
                         
-                        {!processed && (
-                            <div className="grid grid-cols-2 gap-2">
+                        {/* Themes Grid */}
+                        <div className="space-y-2">
+                             <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest text-left ml-1">Select Theme</h4>
+                             <div className="grid grid-cols-2 gap-2">
                                 {THEMES.map(t => (
                                     <button 
                                         key={t.id} 
-                                        onClick={() => generateProfile(t.prompt)}
+                                        onClick={() => processImage(t.prompt)}
                                         disabled={isProcessing}
-                                        className="bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-500/50 py-3 rounded-xl text-xs font-bold text-gray-300 hover:text-indigo-300 transition-all active:scale-95"
+                                        className="bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-500/50 py-3 rounded-xl text-xs font-bold text-gray-300 hover:text-indigo-300 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {t.label}
                                     </button>
                                 ))}
                             </div>
-                        )}
+                        </div>
 
-                        {processed && (
-                            <div className="flex gap-2">
-                                <a href={processed} download="snapaura-profile.png" className="flex-1 bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                    <Download size={16} /> Save
-                                </a>
-                                <button onClick={() => {setProcessed(null); setImage(null);}} className="p-3 bg-white/10 rounded-xl text-white">
-                                    <RefreshCw size={20} />
-                                </button>
-                            </div>
-                        )}
+                        {/* Quick Retouch */}
+                        <div className="space-y-2">
+                             <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest text-left ml-1">Quick Adjustments</h4>
+                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                 {RETOUCH_OPTS.map(opt => (
+                                     <button
+                                        key={opt.id}
+                                        onClick={() => processImage(opt.prompt)}
+                                        disabled={isProcessing}
+                                        className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-black/30 rounded-lg text-xs font-bold text-gray-300 hover:bg-white/10 border border-white/5 transition-all active:scale-95 disabled:opacity-50"
+                                     >
+                                         <opt.icon size={14} className="text-indigo-400"/> {opt.label}
+                                     </button>
+                                 ))}
+                             </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-2 border-t border-white/10">
+                            <button 
+                                onClick={handleDownload}
+                                className="flex-1 bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-lg"
+                            >
+                                <Download size={18} /> Save Image
+                            </button>
+                            <button 
+                                onClick={() => {setProcessed(null); setImage(null);}} 
+                                className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-colors"
+                                title="Reset"
+                            >
+                                <RefreshCw size={20} />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
