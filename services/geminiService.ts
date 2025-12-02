@@ -483,3 +483,147 @@ export const analyzeMoodboard = async (images: string[]) => {
     
     return JSON.parse(response.text || "{}");
 }
+
+// --- 12. Football Intelligence Hub ---
+
+export const getLiveMatchDetails = async () => {
+  const ai = getAiClient();
+  const prompt = `
+    Find live football matches happening right now. 
+    If no major matches are live, find the most recent completed major match results.
+    Return a list of up to 3 matches.
+    For each match, include score, minute, scorers, and a short "AI Commentary" summary.
+    
+    Return strict JSON:
+    [
+      {
+        "id": "string",
+        "home": "string",
+        "away": "string",
+        "score": "string (e.g. 2-1)",
+        "status": "string (e.g. 65' or FT)",
+        "events": "string (summary of goals/cards)",
+        "commentary": "string (AI analysis of the flow)"
+      }
+    ]
+  `;
+  
+  try {
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: { tools: [{ googleSearch: {} }] }
+      });
+      return cleanAndParseJSON(response.text || "[]");
+  } catch (e) {
+      console.error(e);
+      throw e;
+  }
+};
+
+export const analyzePlayerPerformance = async (playerName: string) => {
+    const ai = getAiClient();
+    const prompt = `
+      Search for current season stats and recent form (last 5 games) for football player: "${playerName}".
+      Analyze their strengths, weaknesses, playstyle, and injury status.
+      Provide a Risk Score (0-10) based on rotation risk or injury.
+      
+      Return strict JSON:
+      {
+        "name": "string",
+        "team": "string",
+        "position": "string",
+        "image": "string (optional url or null)",
+        "form": "string (e.g. W-L-D-W-W)",
+        "stats": { "goals": number, "assists": number, "mins": number },
+        "analysis": {
+          "strengths": ["string"],
+          "weaknesses": ["string"],
+          "style": "string"
+        },
+        "riskScore": number,
+        "availability": "string"
+      }
+    `;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview', // Use Pro for complex reasoning
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] }
+        });
+        return cleanAndParseJSON(response.text || "{}");
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const getFantasyTips = async () => {
+    const ai = getAiClient();
+    const prompt = `
+      Based on upcoming football fixtures and player form, suggest Fantasy Football picks.
+      Identify:
+      1. Top Picks (Premium players in form)
+      2. Value Picks (Cheap players performing well)
+      3. Differentials (Low ownership, high potential)
+      4. Captaincy suggestion with reasoning.
+      
+      Do NOT provide gambling odds. Focus on points potential.
+      
+      Return strict JSON:
+      {
+        "gameweek": "string",
+        "topPicks": [{ "name": "string", "team": "string", "reason": "string" }],
+        "valuePicks": [{ "name": "string", "team": "string", "cost": "string" }],
+        "differentials": [{ "name": "string", "team": "string", "ownership": "string" }],
+        "captain": { "name": "string", "reason": "string" }
+      }
+    `;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] }
+        });
+        return cleanAndParseJSON(response.text || "{}");
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const getYesterdayAccuracy = async () => {
+    const ai = getAiClient();
+    const prompt = `
+      Find results for major football matches played yesterday.
+      For each match, determine what the general pre-match expectation (prediction) was based on form/odds.
+      Compare it to the actual result.
+      Generate an "Accuracy Score" (0-100) representing how predictable the result was.
+      Explain why the result happened (e.g. Red card changed game, favorite dominated).
+      
+      Return strict JSON:
+      [
+        {
+          "match": "Home vs Away",
+          "result": "string (e.g. 1-2)",
+          "prediction": "string (e.g. Home Win expected)",
+          "accuracyScore": number,
+          "reasoning": "string"
+        }
+      ]
+    `;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] }
+        });
+        return cleanAndParseJSON(response.text || "[]");
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};

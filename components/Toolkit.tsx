@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy, UserCheck, Layers, FileText, FileDigit, Music, Hash, Clock, MessageSquare, BookOpen, Feather } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy, UserCheck, Layers, FileText, FileDigit, Music, Hash, Clock, MessageSquare, BookOpen, Feather, Shirt } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 import SoccerPredictions from './SoccerPredictions';
@@ -9,9 +9,10 @@ import MoodboardGenerator from './MoodboardGenerator';
 import SmartNotes from './SmartNotes';
 import SocialGrowth from './SocialGrowth';
 import PdfTools from './PdfTools';
+import FootballHub from './FootballHub';
 
 // Define tool types for better state management
-type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit' | 'soccer' | 'profile-studio' | 'moodboard' | 'notes' | 'social-growth' | 'pdf-tools';
+type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit' | 'soccer' | 'profile-studio' | 'moodboard' | 'notes' | 'social-growth' | 'pdf-tools' | 'football-hub';
 
 interface ToolkitProps {
   onOpenSettings: () => void;
@@ -509,9 +510,15 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
         {/* Section: Sports & Trends */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Sports & Trends</h3>
-            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('soccer')}>
-                <div className="bg-green-500/20 p-3 rounded-full text-green-400"><Trophy size={20} /></div>
-                <div><h4 className="font-bold text-white">Soccer Predictions</h4><p className="text-xs text-gray-400">Match analysis & stats</p></div>
+            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5 mb-3" onClick={() => setActiveTool('football-hub')}>
+                <div className="bg-green-500/20 p-3 rounded-full text-green-400"><Shirt size={20} /></div>
+                <div><h4 className="font-bold text-white">Football Intel Hub</h4><p className="text-xs text-gray-400">Live, Stats, Fantasy & AI</p></div>
+                <ArrowRight className="ml-auto text-gray-500" size={16} />
+            </div>
+            
+             <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('soccer')}>
+                <div className="bg-green-500/20 p-3 rounded-full text-green-400 opacity-60"><Trophy size={20} /></div>
+                <div><h4 className="font-bold text-white">Simple Predictions</h4><p className="text-xs text-gray-400">Classic View</p></div>
                 <ArrowRight className="ml-auto text-gray-500" size={16} />
             </div>
         </div>
@@ -603,6 +610,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       {activeTool === 'notes' && <SmartNotes />}
       {activeTool === 'pdf-tools' && <PdfTools />}
       {activeTool === 'social-growth' && <SocialGrowth />}
+      {activeTool === 'football-hub' && <FootballHub />}
 
       {/* --- SOCCER TOOL --- */}
       {activeTool === 'soccer' && (

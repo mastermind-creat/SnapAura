@@ -32,7 +32,7 @@ import {
   Coins,
   DollarSign,
   Activity,
-  RefreshCcw,
+  RefreshCcw, 
   Type,
   Layers,
   Sliders,
@@ -105,7 +105,12 @@ import {
   Hash,
   Clock,
   MessageSquare,
-  Lightbulb
+  Lightbulb,
+  Shirt,
+  BarChart,
+  CalendarCheck,
+  Search,
+  History
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -227,5 +232,10 @@ export {
   Hash,
   Clock,
   MessageSquare,
-  Lightbulb
+  Lightbulb,
+  Shirt,
+  BarChart,
+  CalendarCheck,
+  Search,
+  History
 };
