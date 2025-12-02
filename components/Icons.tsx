@@ -91,7 +91,11 @@ import {
   Wifi,
   Lock,
   Unlock,
-  Star
+  Star,
+  Trophy,
+  Target,
+  TrendingDown,
+  Percent
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -140,7 +144,7 @@ export {
   Coins,
   DollarSign,
   Activity,
-  RefreshCcw,
+  RefreshCcw, 
   Type,
   Layers,
   Sliders,
@@ -199,5 +203,9 @@ export {
   Wifi,
   Lock,
   Unlock,
-  Star
+  Star,
+  Trophy,
+  Target,
+  TrendingDown,
+  Percent
 };

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { ImageSize } from "../types";
 
@@ -77,15 +78,20 @@ const cleanAndParseJSON = (text: string) => {
   try {
     const firstBrace = text.indexOf('{');
     const lastBrace = text.lastIndexOf('}');
-
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        const jsonCandidate = text.substring(firstBrace, lastBrace + 1);
-        try {
-            return JSON.parse(jsonCandidate);
-        } catch (innerError) {}
+    const firstBracket = text.indexOf('[');
+    const lastBracket = text.lastIndexOf(']');
+    
+    // Check if it's an array or object and extract accordingly
+    let jsonCandidate = text;
+    if (firstBracket !== -1 && lastBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+       // It's likely an array
+       jsonCandidate = text.substring(firstBracket, lastBracket + 1);
+    } else if (firstBrace !== -1 && lastBrace !== -1) {
+       // It's likely an object
+       jsonCandidate = text.substring(firstBrace, lastBrace + 1);
     }
 
-    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleaned = jsonCandidate.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
     console.error("JSON Parse Error on text:", text);
@@ -342,3 +348,59 @@ export const getCurrencyData = async (amount: string, from: string, to: string) 
     throw error;
   }
 };
+
+// --- 8. Soccer Predictions ---
+export const getSoccerPredictions = async () => {
+  const ai = getAiClient();
+  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  
+  const prompt = `
+    Find the major soccer matches scheduled for today, ${today}.
+    Select the top 5 most popular or significant matches.
+    For EACH match, perform a detailed statistical analysis considering:
+    - Recent team form (last 5 games)
+    - Head-to-head history
+    - Goals scored/conceded context
+    - Key injuries or news
+    
+    Based on this data, provide probability-based predictions (NOT betting advice).
+    Calculate a 'SnapAura Confidence Score' (0-100) based on how clear the data is.
+    
+    Return strict JSON in this format:
+    [
+      {
+        "id": "match1",
+        "homeTeam": "string",
+        "awayTeam": "string",
+        "time": "string (e.g. 20:00 GMT)",
+        "league": "string",
+        "probabilities": {
+          "home": number (percentage 0-100),
+          "draw": number (percentage 0-100),
+          "away": number (percentage 0-100)
+        },
+        "metrics": {
+          "over2_5": number (percentage 0-100),
+          "btts": number (percentage 0-100)
+        },
+        "confidenceScore": number (0-100),
+        "analysis": "A detailed paragraph analyzing form, stats, and explaining the prediction."
+      }
+    ]
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { tools: [{ googleSearch: {} }] },
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No data returned");
+    return cleanAndParseJSON(text);
+  } catch (error) {
+    console.error("Soccer Prediction Error:", error);
+    throw error;
+  }
+}

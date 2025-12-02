@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
+import SoccerPredictions from './SoccerPredictions';
 
 // Define tool types for better state management
-type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit';
+type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit' | 'soccer';
 
 interface ToolkitProps {
   onOpenSettings: () => void;
@@ -479,6 +480,16 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
 
   const renderMenu = () => (
     <div className="grid grid-cols-1 gap-6 animate-fade-in-up">
+        {/* Section: Sports & Trends */}
+        <div>
+            <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Sports & Trends</h3>
+            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('soccer')}>
+                <div className="bg-green-500/20 p-3 rounded-full text-green-400"><Trophy size={20} /></div>
+                <div><h4 className="font-bold text-white">Soccer Predictions</h4><p className="text-xs text-gray-400">Match analysis & stats</p></div>
+                <ArrowRight className="ml-auto text-gray-500" size={16} />
+            </div>
+        </div>
+
         {/* Section: Essentials */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Essentials</h3>
@@ -508,7 +519,7 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
         {/* Section: Social */}
         <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Social Growth</h3>
-            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all" onClick={() => setActiveTool('bio')}>
+            <div className="glass-panel p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:bg-white/5 active:scale-95 transition-all border border-white/5" onClick={() => setActiveTool('bio')}>
                 <div className="bg-pink-500/20 p-3 rounded-full text-pink-400"><Sparkles size={20} /></div>
                 <div><h4 className="font-bold text-white">AI Bio Writer</h4><p className="text-xs text-gray-400">Perfect your profile</p></div>
                 <ArrowRight className="ml-auto text-gray-500" size={16} />
@@ -554,6 +565,11 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       </div>
 
       {activeTool === 'menu' && renderMenu()}
+      
+      {/* --- SOCCER TOOL --- */}
+      {activeTool === 'soccer' && (
+          <SoccerPredictions />
+      )}
 
       {/* --- QR SCANNER --- */}
       {activeTool === 'qr-scan' && (
