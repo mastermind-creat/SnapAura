@@ -13,6 +13,9 @@ import {
 } from '../services/geminiService';
 import { showToast } from './Toast';
 
+// Access marked from global scope
+declare const marked: any;
+
 type FootballTab = 'live' | 'player' | 'fantasy' | 'accuracy';
 
 const FootballHub: React.FC = () => {
@@ -173,39 +176,56 @@ const PlayerAnalyzer = () => {
                             <h2 className="text-2xl font-bold text-white">{data.name}</h2>
                             <p className="text-sm text-gray-400">{data.position} • {data.team}</p>
                         </div>
-                        <div className={`p-3 rounded-xl text-center ${data.riskScore > 5 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                            <span className="block text-xs font-bold uppercase">Risk</span>
-                            <span className="block text-xl font-black">{data.riskScore}/10</span>
+                        <div className="text-right">
+                            <span className="text-[10px] text-gray-500 uppercase font-bold">Availability</span>
+                            <div className={`text-xs font-bold px-2 py-1 rounded ${data.availability === 'Fit' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                {data.availability}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-white/5 p-3 rounded-xl border border-white/5 text-center">
+                            <span className="block text-xs text-gray-500 uppercase mb-1">Impact Score</span>
+                            <div className={`text-3xl font-black ${data.impactScore >= 8 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {data.impactScore}<span className="text-sm text-gray-500">/10</span>
+                            </div>
+                        </div>
+                        <div className="bg-white/5 p-3 rounded-xl border border-white/5 text-center">
+                            <span className="block text-xs text-gray-500 uppercase mb-1">Recent Form</span>
+                            <div className="text-lg font-mono font-bold text-white tracking-widest">
+                                {data.form}
+                            </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mb-4">
-                        <div className="bg-white/5 p-2 rounded-lg text-center">
-                            <span className="block text-xs text-gray-500">Goals</span>
-                            <span className="block text-lg font-bold text-white">{data.stats?.goals || 0}</span>
+                        <div className="bg-black/30 p-2 rounded-lg text-center">
+                            <span className="block text-[10px] text-gray-500">Goals</span>
+                            <span className="block text-sm font-bold text-white">{data.stats?.goals || 0}</span>
                         </div>
-                        <div className="bg-white/5 p-2 rounded-lg text-center">
-                            <span className="block text-xs text-gray-500">Assists</span>
-                            <span className="block text-lg font-bold text-white">{data.stats?.assists || 0}</span>
+                        <div className="bg-black/30 p-2 rounded-lg text-center">
+                            <span className="block text-[10px] text-gray-500">Assists</span>
+                            <span className="block text-sm font-bold text-white">{data.stats?.assists || 0}</span>
                         </div>
-                        <div className="bg-white/5 p-2 rounded-lg text-center">
-                            <span className="block text-xs text-gray-500">Form</span>
-                            <span className="block text-sm font-mono font-bold text-green-400">{data.form}</span>
+                        <div className="bg-black/30 p-2 rounded-lg text-center">
+                            <span className="block text-[10px] text-gray-500">Mins</span>
+                            <span className="block text-sm font-bold text-white">{data.stats?.mins || 0}</span>
                         </div>
                     </div>
 
                     <div className="space-y-3">
                         <div>
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-1">Strengths</h4>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Strengths</h4>
                             <div className="flex flex-wrap gap-1">
                                 {data.analysis?.strengths?.map((s: string, i: number) => (
-                                    <span key={i} className="text-[10px] bg-green-500/10 text-green-300 px-2 py-1 rounded-full border border-green-500/20">{s}</span>
+                                    <span key={i} className="text-[10px] bg-blue-500/10 text-blue-300 px-2 py-1 rounded-full border border-blue-500/20">{s}</span>
                                 ))}
                             </div>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-1">Playstyle</h4>
-                            <p className="text-xs text-gray-300 bg-black/20 p-2 rounded-lg leading-relaxed">{data.analysis?.style}</p>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-1">Analysis</h4>
+                            <p className="text-xs text-gray-300 bg-white/5 p-3 rounded-lg leading-relaxed border border-white/5">{data.analysis?.style}</p>
                         </div>
                     </div>
                 </div>
@@ -253,7 +273,7 @@ const FantasyOptimizer = () => {
 
             {/* Top Picks */}
             <div>
-                <h4 className="text-xs font-bold text-green-400 uppercase mb-2 ml-1">Top Picks</h4>
+                <h4 className="text-xs font-bold text-green-400 uppercase mb-2 ml-1">Safe Picks (High Ownership)</h4>
                 <div className="space-y-2">
                     {tips.topPicks?.map((p: any, i: number) => (
                         <div key={i} className="glass-panel p-3 rounded-xl flex items-center justify-between border border-white/5">
@@ -261,23 +281,44 @@ const FantasyOptimizer = () => {
                                 <div className="font-bold text-white text-sm">{p.name}</div>
                                 <div className="text-[10px] text-gray-500">{p.team}</div>
                             </div>
-                            <div className="text-[10px] text-green-300 bg-green-500/10 px-2 py-1 rounded">{p.reason}</div>
+                            <div className="text-right">
+                                <div className="text-[10px] text-green-400 font-bold">{p.expectedPoints} pts</div>
+                                <div className="text-[9px] text-gray-500">Exp.</div>
+                            </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Differentials */}
-            <div>
-                <h4 className="text-xs font-bold text-purple-400 uppercase mb-2 ml-1">Differentials</h4>
-                <div className="grid grid-cols-2 gap-2">
-                     {tips.differentials?.map((p: any, i: number) => (
-                        <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5">
-                            <div className="font-bold text-white text-xs">{p.name}</div>
-                            <div className="text-[10px] text-gray-500 mb-1">{p.team}</div>
-                            <div className="text-[9px] text-purple-300">{p.ownership} Owned</div>
-                        </div>
-                    ))}
+            {/* Value & Differentials */}
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <h4 className="text-xs font-bold text-blue-400 uppercase mb-2 ml-1">Value Gems</h4>
+                    <div className="space-y-2">
+                        {tips.valuePicks?.map((p: any, i: number) => (
+                            <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <div className="font-bold text-white text-xs">{p.name}</div>
+                                <div className="flex justify-between mt-1">
+                                    <span className="text-[9px] text-gray-500">{p.cost}</span>
+                                    <span className="text-[9px] text-blue-300 font-bold">{p.valueRating}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <h4 className="text-xs font-bold text-purple-400 uppercase mb-2 ml-1">High Risk</h4>
+                    <div className="space-y-2">
+                        {tips.differentials?.map((p: any, i: number) => (
+                            <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <div className="font-bold text-white text-xs">{p.name}</div>
+                                <div className="flex justify-between mt-1">
+                                    <span className="text-[9px] text-gray-500">{p.ownership}</span>
+                                    <span className="text-[9px] text-purple-300 font-bold">{p.riskLevel}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
@@ -321,19 +362,19 @@ const AccuracyReview = () => {
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-3 text-xs">
-                        <div>
-                            <span className="block text-gray-500 uppercase font-bold text-[10px]">Prediction</span>
-                            <span className="text-gray-300">{r.prediction}</span>
+                    <div className="flex gap-4 mb-3 text-xs bg-black/20 p-2 rounded-lg">
+                        <div className="flex-1 border-r border-white/10 pr-2">
+                            <span className="block text-gray-500 uppercase font-bold text-[9px] mb-1">Prediction</span>
+                            <span className="text-gray-300 font-medium">{r.prediction}</span>
                         </div>
-                        <div className="text-right">
-                            <span className="block text-gray-500 uppercase font-bold text-[10px]">Actual</span>
+                        <div className="flex-1 pl-2">
+                            <span className="block text-gray-500 uppercase font-bold text-[9px] mb-1">Actual</span>
                             <span className="text-white font-bold">{r.result}</span>
                         </div>
                     </div>
 
-                    <div className="bg-black/20 p-3 rounded-lg text-xs text-gray-400 leading-relaxed border border-white/5">
-                        <span className="font-bold text-gray-300">Analysis:</span> {r.reasoning}
+                    <div className="text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-2 mt-2">
+                        <span className="font-bold text-gray-300">Why:</span> {r.reasoning}
                     </div>
                 </div>
             ))}

@@ -42,7 +42,6 @@ const getAiClient = () => {
 export const validateApiKey = async (apiKey: string): Promise<boolean> => {
     try {
         const ai = new GoogleGenAI({ apiKey });
-        // Attempt a minimal generation to test the key
         await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts: [{ text: 'ping' }] },
@@ -56,7 +55,6 @@ export const validateApiKey = async (apiKey: string): Promise<boolean> => {
 
 // Helper: Extract raw base64 and mimeType from Data URL
 const processBase64Image = (base64String: string) => {
-  // Remove any whitespace
   const cleanString = base64String.trim();
   const match = cleanString.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
   
@@ -67,7 +65,6 @@ const processBase64Image = (base64String: string) => {
     };
   }
   
-  // If it's already raw base64, assume png but this is risky
   return {
     mimeType: 'image/png',
     data: cleanString
@@ -81,13 +78,10 @@ const cleanAndParseJSON = (text: string) => {
     const firstBracket = text.indexOf('[');
     const lastBracket = text.lastIndexOf(']');
     
-    // Check if it's an array or object and extract accordingly
     let jsonCandidate = text;
     if (firstBracket !== -1 && lastBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
-       // It's likely an array
        jsonCandidate = text.substring(firstBracket, lastBracket + 1);
     } else if (firstBrace !== -1 && lastBrace !== -1) {
-       // It's likely an object
        jsonCandidate = text.substring(firstBrace, lastBrace + 1);
     }
 
@@ -99,6 +93,15 @@ const cleanAndParseJSON = (text: string) => {
   }
 };
 
+// --- GLOBAL STRUCTURE GUIDE ---
+const STRUCTURE_GUIDE = `
+FORMATTING RULES:
+1. **Direct Answer**: Start with a concise, bold summary of the result.
+2. **Breakdown**: Use clean bullet points or mini-sections for details.
+3. **Insights**: Explain *why* this matters in simple terms.
+4. **Confidence Score**: End with a confidence percentage (0-100%) if applicable.
+5. **Tone**: Friendly, sharp, trustworthy, no jargon without explanation.
+`;
 
 // --- 1. Image Analysis & Caption Generation ---
 export const analyzeImageAndGenerateCaptions = async (base64Image: string): Promise<any> => {
@@ -259,12 +262,19 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 // --- 5. Chatbot ---
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string, systemInstruction?: string) => {
     const ai = getAiClient();
-    // Use Flash for standard chat, robust and fast
+    
+    // Combine the Persona instruction with the Global Structure Guide
+    const combinedSystemInstruction = `
+      ${systemInstruction || "You are SnapAura, a helpful, witty AI assistant."}
+      ${STRUCTURE_GUIDE}
+      Ensure all responses are visually clean, easy to scan, and suitable for beginners.
+    `;
+
     const chatSession = ai.chats.create({
         model: 'gemini-2.5-flash',
         history: history,
         config: {
-            systemInstruction: systemInstruction || "You are SnapAura, a helpful, witty, and aesthetic AI assistant for a photo editing app. You help users with photography tips, caption ideas, and navigating the app. Format your responses with Markdown: use **bold** for emphasis, lists for steps, and keep it concise."
+            systemInstruction: combinedSystemInstruction
         }
     });
 
@@ -357,16 +367,15 @@ export const getSoccerPredictions = async () => {
   const prompt = `
     Find the major soccer matches scheduled for today, ${today}.
     Select the top 5 most popular or significant matches.
-    For EACH match, perform a detailed statistical analysis considering:
-    - Recent team form (last 5 games)
-    - Head-to-head history
-    - Goals scored/conceded context
-    - Key injuries or news
+    For EACH match, perform a detailed statistical analysis.
     
-    Based on this data, provide probability-based predictions (NOT betting advice).
-    Calculate a 'SnapAura Confidence Score' (0-100) based on how clear the data is.
+    Format the "analysis" field in clean Markdown:
+    1. **Direct Answer**: Brief summary of the likely outcome.
+    2. **Key Stats**: Form (Last 5), Head-to-Head, Injuries.
+    3. **Momentum**: Who is currently stronger?
+    4. **Prediction**: Explicit win/draw/loss probability.
     
-    Return strict JSON in this format:
+    Return strict JSON:
     [
       {
         "id": "match1",
@@ -375,16 +384,16 @@ export const getSoccerPredictions = async () => {
         "time": "string (e.g. 20:00 GMT)",
         "league": "string",
         "probabilities": {
-          "home": number (percentage 0-100),
-          "draw": number (percentage 0-100),
-          "away": number (percentage 0-100)
+          "home": number (0-100),
+          "draw": number (0-100),
+          "away": number (0-100)
         },
         "metrics": {
-          "over2_5": number (percentage 0-100),
-          "btts": number (percentage 0-100)
+          "over2_5": number (0-100),
+          "btts": number (0-100)
         },
         "confidenceScore": number (0-100),
-        "analysis": "A detailed paragraph analyzing form, stats, and explaining the prediction."
+        "analysis": "Markdown formatted string"
       }
     ]
   `;
@@ -411,7 +420,10 @@ export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewri
     let prompt = "";
     
     // Enforce Markdown structure in all prompts
-    const styleGuide = "\n\nFormat your response in clean Markdown. Use **Bold** for key terms, *Bullet Points* for lists, and ### Headers for sections where appropriate. Keep it structured and easy to read.";
+    const styleGuide = `
+    ${STRUCTURE_GUIDE}
+    Output must be clean Markdown. Use **Bold** for key terms, *Bullet Points* for lists, and ### Headers for sections.
+    `;
 
     switch(mode) {
         case 'summarize': prompt = `Summarize this text into concise, structured bullet points:${styleGuide}\n\nTEXT:\n${text}`; break;
@@ -431,7 +443,10 @@ export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewri
 export const generateSocialContent = async (topic: string, type: 'hashtag' | 'idea' | 'reply' | 'timing', context?: string) => {
     const ai = getAiClient();
     let prompt = "";
-    const styleGuide = "\n\nFormat the output in clean Markdown. Use **Bold** for hooks/headings and bullet points for lists.";
+    const styleGuide = `
+    ${STRUCTURE_GUIDE}
+    Format the output in clean Markdown. Use **Bold** for hooks/headings and bullet points for lists.
+    `;
 
     if (type === 'hashtag') prompt = `Generate 30 high-reach, mix of niche and broad hashtags for a post about: "${topic}". Return strictly the tags separated by space.`;
     
@@ -492,7 +507,11 @@ export const getLiveMatchDetails = async () => {
     Find live football matches happening right now. 
     If no major matches are live, find the most recent completed major match results.
     Return a list of up to 3 matches.
-    For each match, include score, minute, scorers, and a short "AI Commentary" summary.
+    
+    For "commentary", adhere to this structure:
+    **Direct Answer:** One sentence summary of the game state.
+    **Momentum:** Who is attacking?
+    **Key Event:** Last major action.
     
     Return strict JSON:
     [
@@ -503,7 +522,7 @@ export const getLiveMatchDetails = async () => {
         "score": "string (e.g. 2-1)",
         "status": "string (e.g. 65' or FT)",
         "events": "string (summary of goals/cards)",
-        "commentary": "string (AI analysis of the flow)"
+        "commentary": "string (Structured AI analysis)"
       }
     ]
   `;
@@ -526,7 +545,7 @@ export const analyzePlayerPerformance = async (playerName: string) => {
     const prompt = `
       Search for current season stats and recent form (last 5 games) for football player: "${playerName}".
       Analyze their strengths, weaknesses, playstyle, and injury status.
-      Provide a Risk Score (0-10) based on rotation risk or injury.
+      Calculate an "Impact Score" (0-10) based on their influence on the game.
       
       Return strict JSON:
       {
@@ -539,10 +558,11 @@ export const analyzePlayerPerformance = async (playerName: string) => {
         "analysis": {
           "strengths": ["string"],
           "weaknesses": ["string"],
-          "style": "string"
+          "style": "string (One short paragraph description)"
         },
-        "riskScore": number,
-        "availability": "string"
+        "riskScore": number (0-10, based on injury/rotation),
+        "impactScore": number (0-10, based on performance),
+        "availability": "string (e.g. Fit, Injured, Suspended)"
       }
     `;
     
@@ -563,20 +583,19 @@ export const getFantasyTips = async () => {
     const ai = getAiClient();
     const prompt = `
       Based on upcoming football fixtures and player form, suggest Fantasy Football picks.
-      Identify:
-      1. Top Picks (Premium players in form)
-      2. Value Picks (Cheap players performing well)
-      3. Differentials (Low ownership, high potential)
-      4. Captaincy suggestion with reasoning.
-      
       Do NOT provide gambling odds. Focus on points potential.
+      
+      Identify:
+      1. **Top Picks (Safe)**: High ownership, consistent returners.
+      2. **Value Picks**: Cheap players with good fixtures.
+      3. **Differentials (Risky)**: Low ownership, high ceiling.
       
       Return strict JSON:
       {
         "gameweek": "string",
-        "topPicks": [{ "name": "string", "team": "string", "reason": "string" }],
-        "valuePicks": [{ "name": "string", "team": "string", "cost": "string" }],
-        "differentials": [{ "name": "string", "team": "string", "ownership": "string" }],
+        "topPicks": [{ "name": "string", "team": "string", "reason": "string", "expectedPoints": "string" }],
+        "valuePicks": [{ "name": "string", "team": "string", "cost": "string", "valueRating": "string (e.g. 9/10)" }],
+        "differentials": [{ "name": "string", "team": "string", "ownership": "string", "riskLevel": "High/Med" }],
         "captain": { "name": "string", "reason": "string" }
       }
     `;
@@ -598,10 +617,11 @@ export const getYesterdayAccuracy = async () => {
     const ai = getAiClient();
     const prompt = `
       Find results for major football matches played yesterday.
-      For each match, determine what the general pre-match expectation (prediction) was based on form/odds.
-      Compare it to the actual result.
-      Generate an "Accuracy Score" (0-100) representing how predictable the result was.
-      Explain why the result happened (e.g. Red card changed game, favorite dominated).
+      For each match:
+      1. Determine what the general pre-match expectation was (Prediction).
+      2. Compare it to the Actual Result.
+      3. Calculate an "Accuracy Score" (0-100).
+      4. Explain the outcome in "Reasoning".
       
       Return strict JSON:
       [
@@ -610,7 +630,7 @@ export const getYesterdayAccuracy = async () => {
           "result": "string (e.g. 1-2)",
           "prediction": "string (e.g. Home Win expected)",
           "accuracyScore": number,
-          "reasoning": "string"
+          "reasoning": "string (Brief explanation: e.g. Red card changed game)"
         }
       ]
     `;
