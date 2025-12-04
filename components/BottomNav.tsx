@@ -17,34 +17,20 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
-      {/* Premium Glass Container */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-xl border-t border-white/10"></div>
-      
-      {/* Glow Effect Top Border */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>
-
-      <div className="relative flex justify-around items-center px-2 py-3 pb-safe">
+    <div className="fixed bottom-6 left-4 right-4 z-50">
+      <div className="bg-[#292d3e] shadow-neu rounded-2xl flex justify-around items-center px-2 py-3">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className="group relative flex flex-col items-center justify-center w-14 h-12"
+              className={`group relative flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ${
+                  isActive ? 'shadow-neu-pressed text-primary scale-95' : 'text-gray-500 hover:text-gray-300'
+              }`}
             >
-              {/* Active Glow Behind Icon */}
-              {isActive && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-secondary/30 rounded-full blur-md"></div>
-              )}
-              
-              <div className={`transition-all duration-300 ${isActive ? 'text-white scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'text-gray-500 group-hover:text-gray-300'}`}>
-                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              </div>
-              
-              <span className={`text-[9px] font-medium tracking-wide mt-1 transition-all duration-300 ${isActive ? 'text-secondary translate-y-0 opacity-100' : 'text-gray-500 translate-y-1 opacity-0'}`}>
-                {item.label}
-              </span>
+              <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              {isActive && <div className="w-1 h-1 rounded-full bg-primary mt-1"></div>}
             </button>
           );
         })}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import Studio from './components/Studio';
@@ -9,12 +8,19 @@ import Toolkit from './components/Toolkit';
 import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
-import { Tab } from './types';
+import Profile from './components/Profile';
+import Auth from './components/Auth';
+import { Tab, UserProfile } from './types';
 import { Smartphone, Download } from './components/Icons';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Modal States
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -77,8 +83,29 @@ const App: React.FC = () => {
       setShowSettingsModal(true);
   };
 
+  const handleUserIconClick = () => {
+      if (isAuthenticated) {
+          setActiveTab(Tab.PROFILE);
+      } else {
+          setShowAuthModal(true);
+      }
+  };
+
+  const handleLogin = (userData: UserProfile) => {
+      setUser(userData);
+      setIsAuthenticated(true);
+      setShowAuthModal(false);
+  };
+
+  const handleLogout = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+      setActiveTab(Tab.HOME);
+      setShowSettingsModal(false);
+  };
+
   return (
-    <div className="fixed inset-0 w-full max-w-md mx-auto bg-gradient-to-b from-[#0f0f11] via-[#1a1a20] to-[#0f0f11] shadow-2xl shadow-black overflow-hidden flex flex-col">
+    <div className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
       {/* Toast System */}
       <ToastContainer />
@@ -101,9 +128,13 @@ const App: React.FC = () => {
         canClose={!isKeyRequired} 
       />
 
-      {/* Background Decoration */}
-      <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
+      {/* Auth Modal (Overlay) */}
+      {showAuthModal && (
+          <Auth 
+            onLogin={handleLogin} 
+            onClose={() => setShowAuthModal(false)} 
+          />
+      )}
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">
@@ -113,7 +144,9 @@ const App: React.FC = () => {
                     image={currentImage} 
                     setImage={setCurrentImage} 
                     onOpenSettings={handleOpenSettings}
+                    onUserClick={handleUserIconClick}
                     setActiveTab={setActiveTab}
+                    isAuthenticated={isAuthenticated}
                   />
                 )}
                 
@@ -136,6 +169,14 @@ const App: React.FC = () => {
                 {activeTab === Tab.TOOLKIT && (
                   <Toolkit onOpenSettings={handleOpenSettings} />
                 )}
+
+                {activeTab === Tab.PROFILE && (
+                    <Profile 
+                        user={user} 
+                        onLogout={handleLogout}
+                        onOpenSettings={handleOpenSettings}
+                    />
+                )}
             </>
       </main>
 
@@ -143,23 +184,23 @@ const App: React.FC = () => {
         <>
             {showInstallBanner && (
                 <div className="absolute bottom-[80px] left-4 right-4 z-50 animate-fade-in-up">
-                <div className="glass-panel p-4 rounded-2xl flex items-center justify-between border-t border-white/20 bg-black/80 backdrop-blur-xl shadow-2xl">
+                <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="bg-white/10 p-2 rounded-xl">
-                            <Smartphone size={24} className="text-white" />
+                        <div className="text-white shadow-neu-pressed p-2 rounded-xl">
+                            <Smartphone size={24} />
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-white">Install SnapAura</h3>
-                            <p className="text-xs text-gray-400">Add to home screen for full experience</p>
+                            <p className="text-xs text-gray-400">Add to home screen</p>
                         </div>
                     </div>
                     <button 
                         onClick={handleInstallClick}
-                        className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-1"
+                        className="text-white bg-[#292d3e] shadow-neu hover:shadow-neu-pressed px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
                     >
                         <Download size={14} /> Install
                     </button>
-                    <button onClick={() => setShowInstallBanner(false)} className="absolute -top-2 -right-2 bg-black/50 rounded-full p-1 text-white"><span className="sr-only">Close</span>&times;</button>
+                    <button onClick={() => setShowInstallBanner(false)} className="absolute -top-2 -right-2 bg-neu-dark rounded-full p-1 text-white shadow-neu"><span className="sr-only">Close</span>&times;</button>
                 </div>
                 </div>
             )}
