@@ -49,21 +49,21 @@ const PdfTools: React.FC = () => {
     };
 
     return (
-        <div className="space-y-4 animate-fade-in-up">
-            <div className="glass-panel p-6 rounded-2xl border-t-4 border-red-500">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="bg-red-500/20 p-3 rounded-full text-red-400"><FileText size={24} /></div>
-                    <h2 className="text-xl font-bold text-white">PDF Tools</h2>
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-red-400"><FileText size={24} /></div>
+                    <h2 className="text-xl font-bold text-gray-200">PDF Tools</h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                    <button onClick={() => fileRef.current?.click()} className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 text-left">
-                        <ImagePlus className="text-red-400 mb-2" size={24} />
-                        <h4 className="font-bold text-white text-sm">Image to PDF</h4>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <button onClick={() => fileRef.current?.click()} className="p-5 bg-[#292d3e] shadow-neu rounded-2xl active:shadow-neu-pressed transition-all text-left group">
+                        <ImagePlus className="text-red-400 mb-3 group-hover:scale-110 transition-transform" size={24} />
+                        <h4 className="font-bold text-gray-200 text-sm">Image to PDF</h4>
                         <p className="text-[10px] text-gray-500">Combine photos</p>
                     </button>
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10 opacity-50 cursor-not-allowed text-left">
-                        <FileDigit className="text-gray-500 mb-2" size={24} />
+                    <div className="p-5 bg-[#292d3e] shadow-neu rounded-2xl opacity-50 cursor-not-allowed text-left">
+                        <FileDigit className="text-gray-500 mb-3" size={24} />
                         <h4 className="font-bold text-gray-400 text-sm">PDF to Text</h4>
                         <p className="text-[10px] text-gray-600">Coming Soon</p>
                     </div>
@@ -71,12 +71,12 @@ const PdfTools: React.FC = () => {
 
                 {images.length > 0 && (
                     <div className="space-y-4">
-                        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                        <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar px-1">
                             {images.map((img, i) => (
-                                <div key={i} className="relative w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-white/20 group">
-                                    <img src={img} className="w-full h-full object-cover" alt={`Page ${i+1}`} />
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xs font-bold">{i+1}</div>
-                                    <button onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div key={i} className="relative w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden shadow-neu-pressed bg-[#1e212d] group">
+                                    <img src={img} className="w-full h-full object-cover opacity-80" alt={`Page ${i+1}`} />
+                                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white z-10 pointer-events-none">{i+1}</div>
+                                    <button onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 shadow-lg cursor-pointer hover:scale-110 transition-transform">
                                         <Minimize size={10} className="text-white"/>
                                     </button>
                                 </div>
@@ -86,11 +86,11 @@ const PdfTools: React.FC = () => {
                         <button 
                             onClick={generatePdf} 
                             disabled={isGenerating}
-                            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                            className="w-full bg-[#292d3e] text-red-400 shadow-neu hover:text-red-300 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:shadow-neu-pressed"
                         >
                             {isGenerating ? <RefreshCw className="animate-spin" /> : <Download />} Download PDF
                         </button>
-                        <button onClick={() => setImages([])} className="w-full text-xs text-red-400 hover:text-red-300">Clear All</button>
+                        <button onClick={() => setImages([])} className="w-full text-xs text-gray-500 hover:text-gray-300 py-2">Clear All</button>
                     </div>
                 )}
             </div>

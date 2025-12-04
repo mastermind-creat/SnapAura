@@ -56,11 +56,7 @@ const MoodboardGenerator: React.FC = () => {
         await new Promise((resolve) => { img.onload = resolve; });
 
         // 1. Background
-        ctx.fillStyle = '#f5f5f5'; // Light minimalist background
-        if (boardData.colors && boardData.colors.length > 0) {
-             // Optional: Use the darkest color as BG if desired, but white looks cleaner for moodboards
-             // ctx.fillStyle = boardData.colors[0]; 
-        }
+        ctx.fillStyle = '#f5f5f5'; 
         ctx.fillRect(0, 0, W, H);
 
         // 2. Draw Main Image (Top 65%)
@@ -163,47 +159,43 @@ const MoodboardGenerator: React.FC = () => {
     };
 
     return (
-        <div className="space-y-4 animate-fade-in-up">
-            <div className="glass-panel p-6 rounded-2xl border-t-4 border-pink-500">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="bg-pink-500/20 p-3 rounded-full text-pink-400"><Layers size={24} /></div>
-                    <h2 className="text-xl font-bold text-white">Moodboard AI</h2>
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-pink-400"><Layers size={24} /></div>
+                    <h2 className="text-xl font-bold text-gray-200">Moodboard AI</h2>
                 </div>
 
                 {!image ? (
-                    <button onClick={() => fileRef.current?.click()} className="w-full h-40 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:bg-white/5 transition-all">
+                    <button onClick={() => fileRef.current?.click()} className="w-full h-40 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-pink-400 transition-all">
                         <Upload size={32} />
                         <span className="font-bold">Upload Inspiration Image</span>
                     </button>
                 ) : (
                     <div className="space-y-6">
                         {/* Result Display */}
-                        <div className="relative rounded-xl overflow-hidden shadow-2xl bg-[#f5f5f5] group">
+                        <div className="relative rounded-xl overflow-hidden shadow-neu bg-[#f5f5f5] group min-h-[300px] flex items-center justify-center">
                             {compositeUrl ? (
                                 <img src={compositeUrl} className="w-full h-auto object-contain" alt="Moodboard" />
                             ) : (
-                                // Fallback loading state preview
-                                <div className="h-96 flex items-center justify-center text-gray-400">
+                                <div className="flex flex-col items-center gap-3">
                                     <RefreshCw className="animate-spin text-pink-400" size={32} />
+                                    <p className="text-sm text-gray-500 font-bold animate-pulse">Designing aesthetic...</p>
                                 </div>
                             )}
                         </div>
 
-                        {loading ? (
-                            <div className="text-center">
-                                <p className="text-sm text-gray-400 animate-pulse">Designing your board...</p>
-                            </div>
-                        ) : (
-                            <div className="flex gap-2">
+                        {loading ? null : (
+                            <div className="flex gap-4">
                                 <button 
                                     onClick={downloadBoard}
-                                    className="flex-1 bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-lg"
+                                    className="flex-1 bg-[#292d3e] text-pink-400 shadow-neu py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
                                 >
                                     <Download size={18} /> Download Moodboard
                                 </button>
                                 <button 
                                     onClick={() => {setImage(null); setData(null); setCompositeUrl(null);}} 
-                                    className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-colors"
+                                    className="p-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 hover:text-white active:shadow-neu-pressed transition-all"
                                     title="New Board"
                                 >
                                     <RefreshCw size={20} />

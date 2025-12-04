@@ -51,116 +51,112 @@ const SoccerPredictions: React.FC = () => {
   };
 
   const getConfidenceColor = (score: number) => {
-    if (score >= 80) return 'text-green-400 bg-green-500/20';
-    if (score >= 60) return 'text-yellow-400 bg-yellow-500/20';
-    return 'text-red-400 bg-red-500/20';
+    if (score >= 80) return 'text-green-400';
+    if (score >= 60) return 'text-yellow-400';
+    return 'text-red-400';
   };
 
   return (
-    <div className="space-y-4 animate-fade-in-up pb-24">
+    <div className="space-y-6 animate-fade-in-up pb-24">
       {/* Header Card */}
-      <div className="glass-panel p-6 rounded-2xl relative overflow-hidden border-t-4 border-green-500">
+      <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl relative overflow-hidden">
         <div className="relative z-10 flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2 mb-2">
                <Trophy className="text-yellow-400" size={24} />
-               <h2 className="text-xl font-bold text-white">Match Day AI</h2>
+               <h2 className="text-xl font-bold text-gray-200">Match Day AI</h2>
             </div>
-            <p className="text-sm text-gray-400 max-w-[80%]">
+            <p className="text-sm text-gray-500 max-w-[80%]">
               AI-powered analysis based on form, xG metrics, and head-to-head stats.
             </p>
           </div>
           <button 
             onClick={fetchPredictions}
             disabled={isLoading}
-            className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors active:scale-95"
+            className="p-3 bg-[#292d3e] shadow-neu rounded-full hover:text-green-400 transition-all active:shadow-neu-pressed"
           >
-            <RefreshCw size={20} className={isLoading ? "animate-spin text-green-400" : "text-white"} />
+            <RefreshCw size={20} className={isLoading ? "animate-spin text-green-400" : "text-gray-400"} />
           </button>
-        </div>
-        {/* Decorative BG */}
-        <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-            <Activity size={120} />
         </div>
       </div>
 
       {/* Loading Skeleton */}
       {isLoading && matches.length === 0 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
               {[1,2,3].map(i => (
-                  <div key={i} className="glass-panel h-32 rounded-2xl animate-pulse bg-white/5"></div>
+                  <div key={i} className="bg-[#292d3e] shadow-neu h-32 rounded-2xl animate-pulse"></div>
               ))}
           </div>
       )}
 
       {/* Matches List */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {matches.map((match, idx) => (
-          <div key={idx} className="glass-panel rounded-2xl overflow-hidden border border-white/5 transition-all">
+          <div key={idx} className="bg-[#292d3e] shadow-neu rounded-2xl overflow-hidden transition-all">
              
              {/* Header / Summary View */}
              <div 
                 onClick={() => setExpandedId(expandedId === match.id ? null : match.id)}
-                className="p-5 cursor-pointer hover:bg-white/5 transition-colors"
+                className="p-6 cursor-pointer active:shadow-neu-pressed transition-all"
              >
-                <div className="flex justify-between items-center mb-3 text-xs text-gray-500 uppercase font-bold tracking-wider">
+                <div className="flex justify-between items-center mb-4 text-xs text-gray-500 uppercase font-bold tracking-wider">
                     <span>{match.league}</span>
                     <span className="flex items-center gap-1"><Calendar size={12}/> {match.time}</span>
                 </div>
 
-                <div className="flex justify-between items-center gap-4 mb-4">
-                    <span className="text-lg font-bold text-white flex-1 text-right">{match.homeTeam}</span>
-                    <div className="bg-white/10 px-3 py-1 rounded-lg text-xs font-mono font-bold text-gray-300">VS</div>
-                    <span className="text-lg font-bold text-white flex-1 text-left">{match.awayTeam}</span>
+                <div className="flex justify-between items-center gap-4 mb-5">
+                    <span className="text-lg font-bold text-gray-200 flex-1 text-right">{match.homeTeam}</span>
+                    <div className="bg-[#292d3e] shadow-neu-pressed px-3 py-1 rounded-lg text-xs font-mono font-bold text-gray-400">VS</div>
+                    <span className="text-lg font-bold text-gray-200 flex-1 text-left">{match.awayTeam}</span>
                 </div>
 
                 {/* Win Probabilities Bar */}
-                <div className="flex h-2 rounded-full overflow-hidden bg-black/50 mb-3">
+                <div className="flex h-3 rounded-full overflow-hidden bg-[#1e212d] shadow-neu-pressed mb-3">
                     <div className="bg-green-500 h-full" style={{width: `${match.probabilities.home}%`}}></div>
                     <div className="bg-gray-500 h-full" style={{width: `${match.probabilities.draw}%`}}></div>
                     <div className="bg-blue-500 h-full" style={{width: `${match.probabilities.away}%`}}></div>
                 </div>
                 
-                <div className="flex justify-between text-[10px] text-gray-400 font-mono">
+                <div className="flex justify-between text-[10px] text-gray-400 font-mono font-bold">
                     <span className="text-green-400">{match.probabilities.home}% Home</span>
                     <span>{match.probabilities.draw}% Draw</span>
                     <span className="text-blue-400">{match.probabilities.away}% Away</span>
                 </div>
 
                 {/* Chevron visual cue */}
-                <div className="flex justify-center mt-2">
-                    <ChevronRight size={16} className={`text-gray-600 transition-transform duration-300 ${expandedId === match.id ? 'rotate-90' : 'rotate-0'}`} />
+                <div className="flex justify-center mt-3">
+                    <ChevronRight size={16} className={`text-gray-500 transition-transform duration-300 ${expandedId === match.id ? 'rotate-90' : 'rotate-0'}`} />
                 </div>
              </div>
 
              {/* Expanded Analysis */}
              {expandedId === match.id && (
-                 <div className="px-5 pb-5 pt-0 border-t border-white/5 bg-black/20 animate-fade-in-up">
-                     <div className="grid grid-cols-2 gap-3 my-4">
-                         <div className="bg-white/5 p-3 rounded-xl flex items-center justify-between border border-white/5">
-                             <span className="text-xs text-gray-400">Over 2.5 Goals</span>
-                             <span className={`text-sm font-bold ${match.metrics.over2_5 > 50 ? 'text-green-400' : 'text-red-400'}`}>{match.metrics.over2_5}%</span>
+                 <div className="px-6 pb-6 pt-2 border-t border-[#1e212d] bg-[#292d3e] animate-fade-in-up">
+                     <div className="grid grid-cols-2 gap-4 my-4">
+                         <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex items-center justify-between">
+                             <span className="text-xs text-gray-500 font-bold">Over 2.5 Goals</span>
+                             <span className={`text-sm font-black ${match.metrics.over2_5 > 50 ? 'text-green-400' : 'text-red-400'}`}>{match.metrics.over2_5}%</span>
                          </div>
-                         <div className="bg-white/5 p-3 rounded-xl flex items-center justify-between border border-white/5">
-                             <span className="text-xs text-gray-400">Both Score</span>
-                             <span className={`text-sm font-bold ${match.metrics.btts > 50 ? 'text-green-400' : 'text-red-400'}`}>{match.metrics.btts}%</span>
+                         <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex items-center justify-between">
+                             <span className="text-xs text-gray-500 font-bold">Both Score</span>
+                             <span className={`text-sm font-black ${match.metrics.btts > 50 ? 'text-green-400' : 'text-red-400'}`}>{match.metrics.btts}%</span>
                          </div>
                      </div>
 
                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-bold text-white flex items-center gap-2"><Target size={14} className="text-primary"/> AI Analysis</h4>
-                            <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${getConfidenceColor(match.confidenceScore)}`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-bold text-gray-300 flex items-center gap-2"><Target size={14} className="text-green-400"/> AI Analysis</h4>
+                            <span className={`text-[10px] bg-[#292d3e] shadow-neu px-3 py-1 rounded-full font-bold uppercase ${getConfidenceColor(match.confidenceScore)}`}>
                                 {match.confidenceScore}% Confidence
                             </span>
                         </div>
-                        <p className="text-sm text-gray-300 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
+                        <p className="text-xs text-gray-400 leading-relaxed bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl">
                             {match.analysis}
                         </p>
                      </div>
                      
-                     <div className="text-[10px] text-gray-600 text-center italic">
-                         * Probabilities based on statistical data. Not financial advice.
+                     <div className="text-[9px] text-gray-600 text-center italic">
+                         * Probabilities based on stats. Not financial advice.
                      </div>
                  </div>
              )}
@@ -168,9 +164,9 @@ const SoccerPredictions: React.FC = () => {
         ))}
         
         {matches.length === 0 && !isLoading && (
-            <div className="text-center text-gray-500 py-10">
+            <div className="text-center text-gray-500 py-10 bg-[#292d3e] shadow-neu rounded-2xl">
                 <p>No major matches found for today.</p>
-                <button onClick={fetchPredictions} className="mt-2 text-primary font-bold text-sm">Retry Search</button>
+                <button onClick={fetchPredictions} className="mt-4 text-green-400 font-bold text-sm bg-[#292d3e] shadow-neu px-4 py-2 rounded-xl active:shadow-neu-pressed">Retry Search</button>
             </div>
         )}
       </div>

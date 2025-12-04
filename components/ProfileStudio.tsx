@@ -64,41 +64,43 @@ const ProfileStudio: React.FC = () => {
     };
 
     return (
-        <div className="space-y-4 animate-fade-in-up">
-            <div className="glass-panel p-6 rounded-2xl text-center border-t-4 border-indigo-500">
-                <div className="bg-indigo-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-400">
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center relative overflow-hidden">
+                <div className="w-16 h-16 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mx-auto mb-4 text-indigo-400">
                     <UserCheck size={32} />
                 </div>
-                <h2 className="text-xl font-bold text-white">Profile Studio</h2>
-                <p className="text-sm text-gray-400 mb-6">Turn selfies into pro headshots</p>
+                <h2 className="text-xl font-bold text-gray-200">Profile Studio</h2>
+                <p className="text-sm text-gray-500 mb-6">Turn selfies into pro headshots</p>
 
                 {!image ? (
-                    <button onClick={() => fileRef.current?.click()} className="w-full py-8 border-2 border-dashed border-white/20 rounded-xl hover:bg-white/5 transition-all flex flex-col items-center gap-2 text-gray-400">
+                    <button onClick={() => fileRef.current?.click()} className="w-full py-8 bg-[#292d3e] shadow-neu rounded-xl active:shadow-neu-pressed transition-all flex flex-col items-center gap-2 text-gray-400 hover:text-indigo-400">
                         <Upload size={24} />
                         <span className="text-sm font-bold">Upload Selfie</span>
                     </button>
                 ) : (
                     <div className="space-y-6">
                         {/* Main Preview */}
-                        <div className="relative h-64 w-64 mx-auto rounded-full overflow-hidden border-4 border-white/10 shadow-2xl group">
-                            <img src={processed || image} className="w-full h-full object-cover" alt="Profile" />
-                            {isProcessing && (
-                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                                    <RefreshCw className="animate-spin text-white" size={32} />
-                                </div>
-                            )}
+                        <div className="relative h-64 w-64 mx-auto rounded-full overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 group">
+                            <div className="w-full h-full rounded-full overflow-hidden relative">
+                                <img src={processed || image} className="w-full h-full object-cover" alt="Profile" />
+                                {isProcessing && (
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                        <RefreshCw className="animate-spin text-indigo-400" size={32} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         
                         {/* Themes Grid */}
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest text-left ml-1">Select Theme</h4>
-                             <div className="grid grid-cols-2 gap-2">
+                             <div className="grid grid-cols-2 gap-3">
                                 {THEMES.map(t => (
                                     <button 
                                         key={t.id} 
                                         onClick={() => processImage(t.prompt)}
                                         disabled={isProcessing}
-                                        className="bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-500/50 py-3 rounded-xl text-xs font-bold text-gray-300 hover:text-indigo-300 transition-all active:scale-95 disabled:opacity-50"
+                                        className="bg-[#292d3e] shadow-neu active:shadow-neu-pressed py-3 rounded-xl text-xs font-bold text-gray-400 hover:text-indigo-400 transition-all disabled:opacity-50"
                                     >
                                         {t.label}
                                     </button>
@@ -107,33 +109,33 @@ const ProfileStudio: React.FC = () => {
                         </div>
 
                         {/* Quick Retouch */}
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest text-left ml-1">Quick Adjustments</h4>
-                             <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                             <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar px-1">
                                  {RETOUCH_OPTS.map(opt => (
                                      <button
                                         key={opt.id}
                                         onClick={() => processImage(opt.prompt)}
                                         disabled={isProcessing}
-                                        className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-black/30 rounded-lg text-xs font-bold text-gray-300 hover:bg-white/10 border border-white/5 transition-all active:scale-95 disabled:opacity-50"
+                                        className="flex-shrink-0 flex items-center gap-2 px-4 py-3 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-xl text-xs font-bold text-gray-400 hover:text-indigo-400 transition-all disabled:opacity-50"
                                      >
-                                         <opt.icon size={14} className="text-indigo-400"/> {opt.label}
+                                         <opt.icon size={14}/> {opt.label}
                                      </button>
                                  ))}
                              </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-2 pt-2 border-t border-white/10">
+                        <div className="flex gap-4 pt-2">
                             <button 
                                 onClick={handleDownload}
-                                className="flex-1 bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-lg"
+                                className="flex-1 bg-[#292d3e] text-indigo-400 shadow-neu py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
                             >
                                 <Download size={18} /> Save Image
                             </button>
                             <button 
                                 onClick={() => {setProcessed(null); setImage(null);}} 
-                                className="p-3 bg-white/10 rounded-xl text-white hover:bg-white/20 transition-colors"
+                                className="p-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 hover:text-red-400 active:shadow-neu-pressed transition-all"
                                 title="Reset"
                             >
                                 <RefreshCw size={20} />
