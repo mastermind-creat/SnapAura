@@ -98,42 +98,42 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
   };
 
   const suggestions = [
-    "Remove the background",
-    "Add fireworks in the sky",
-    "Turn this into an anime sketch",
-    "Make it look like a cyberpunk city"
+    "Remove background",
+    "Add fireworks",
+    "Anime sketch style",
+    "Cyberpunk city"
   ];
 
   if (!image) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-center relative">
+      <div className="h-full flex flex-col items-center justify-center p-8 text-center relative bg-[#292d3e]">
         <div className="absolute top-4 right-4">
              <button 
                  onClick={onOpenSettings}
-                 className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                 className="text-gray-400 hover:text-white p-3 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all"
                  title="Settings"
              >
                  <Settings size={20} />
              </button>
         </div>
-        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 animate-float">
-            <Wand2 size={32} className="text-gray-500" />
+        <div className="w-20 h-20 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-6 animate-float">
+            <Wand2 size={32} className="text-gray-400" />
         </div>
-        <h2 className="text-xl font-bold text-gray-300">No Image Selected</h2>
-        <p className="text-gray-500 mt-2">Go to the Studio tab to upload a photo first.</p>
+        <h2 className="text-xl font-bold text-gray-200">No Image Selected</h2>
+        <p className="text-gray-500 mt-2 text-sm">Go to the Studio tab to upload a photo first.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 pb-40 space-y-6 h-full overflow-y-auto hide-scrollbar relative">
-      <div className="flex justify-between items-center">
-         <h1 className="text-xl font-bold text-white flex items-center gap-2">
+    <div className="p-4 pb-40 space-y-6 h-full overflow-y-auto hide-scrollbar relative bg-[#292d3e]">
+      <div className="flex justify-between items-center sticky top-0 z-30 bg-[#292d3e] py-2">
+         <h1 className="text-xl font-bold text-gray-200 flex items-center gap-2">
             <Wand2 className="text-primary" /> Magic Editor
          </h1>
          <button 
              onClick={onOpenSettings}
-             className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+             className="text-gray-400 hover:text-white p-3 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all"
              title="Settings"
          >
              <Settings size={20} />
@@ -141,10 +141,10 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
       </div>
       
       {/* Image Preview & Comparison Slider */}
-      <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50 group shadow-lg select-none">
+      <div className="relative rounded-2xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 select-none group">
          {/* If we have original image and it differs from current, show slider UI */}
          {originalImage && originalImage !== image && !isProcessing ? (
-             <div className="relative w-full h-auto min-h-[300px] touch-pan-y">
+             <div className="relative w-full h-auto min-h-[300px] touch-pan-y rounded-xl overflow-hidden">
                  {/* Background (Edited) */}
                  <img src={image} className="w-full h-full object-contain pointer-events-none" alt="Edited" />
                  
@@ -178,58 +178,60 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
                  </div>
              </div>
          ) : (
-            <>
+            <div className="rounded-xl overflow-hidden relative min-h-[250px] bg-[#1e212d] flex items-center justify-center">
                 <img src={image} alt="To Edit" className="w-full h-auto max-h-[50vh] object-contain mx-auto" />
                 {isProcessing && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center flex-col gap-3 z-10">
-                        <RefreshCw className="animate-spin text-primary" size={32} />
-                        <span className="text-sm font-medium animate-pulse">Gemini is painting...</span>
+                    <div className="absolute inset-0 bg-[#292d3e]/80 flex items-center justify-center flex-col gap-3 z-10">
+                        <div className="w-16 h-16 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center">
+                            <RefreshCw className="animate-spin text-primary" size={24} />
+                        </div>
+                        <span className="text-sm font-bold text-gray-300 animate-pulse">Gemini is painting...</span>
                     </div>
                 )}
-            </>
+            </div>
          )}
       </div>
       
       {originalImage && originalImage !== image && (
-          <p className="text-center text-[10px] text-gray-500 uppercase tracking-widest">Slide to compare</p>
+          <p className="text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold">Slide to compare</p>
       )}
 
       {/* Aesthetic Filters */}
       <div className="space-y-3">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 flex items-center gap-1">
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 flex items-center gap-1">
               <Sparkles size={12} /> Instant Aesthetics
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
               {filters.map((f) => (
                   <button
                       key={f.id}
                       onClick={() => handleEdit(f.prompt)}
                       disabled={isProcessing}
-                      className="relative overflow-hidden group rounded-xl p-3 border border-white/5 bg-white/5 hover:bg-white/10 transition-all active:scale-95 text-left h-20 flex flex-col justify-end"
+                      className="relative overflow-hidden group rounded-2xl bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all h-20 p-2 flex flex-col justify-end border border-[#292d3e]"
                   >
-                      <div className={`absolute top-0 right-0 w-12 h-12 bg-gradient-to-br ${f.color} opacity-20 blur-xl group-hover:opacity-40 transition-opacity`}></div>
-                      <span className="text-xs font-medium relative z-10">{f.name}</span>
+                      <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${f.color} opacity-20 blur-xl group-hover:opacity-40 transition-opacity rounded-full -mr-6 -mt-6`}></div>
+                      <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-200 relative z-10 uppercase tracking-wide">{f.name}</span>
                   </button>
               ))}
           </div>
       </div>
 
       {/* Manual Prompt */}
-      <div className="glass-panel p-4 rounded-xl space-y-4">
+      <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl space-y-4">
         <div>
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Custom Prompt</label>
-            <div className="flex gap-2 mt-2">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Custom Prompt</label>
+            <div className="flex gap-3 mt-2">
                 <input
                     type="text"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Ex: Add a neon sign..."
-                    className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                    className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:text-primary transition-colors"
                 />
                 <button
                     onClick={() => handleEdit()}
                     disabled={!prompt || isProcessing}
-                    className="bg-primary hover:bg-primary/80 text-white p-3 rounded-xl disabled:opacity-50 transition-colors active:scale-95 shadow-lg shadow-primary/20"
+                    className="bg-[#292d3e] shadow-neu text-primary hover:text-secondary p-3 rounded-xl disabled:opacity-50 transition-all active:shadow-neu-pressed"
                 >
                     <Zap size={20} />
                 </button>
@@ -237,13 +239,13 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
         </div>
 
         <div>
-            <p className="text-xs text-gray-500 mb-2">Creative ideas:</p>
+            <p className="text-[10px] font-bold text-gray-500 mb-2 uppercase">Ideas:</p>
             <div className="flex flex-wrap gap-2">
                 {suggestions.map((s, i) => (
                     <button
                         key={i}
                         onClick={() => setPrompt(s)}
-                        className="text-[10px] bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-gray-300 transition-colors active:scale-95 border border-white/5"
+                        className="text-[10px] font-bold bg-[#292d3e] shadow-neu px-3 py-2 rounded-lg text-gray-400 active:shadow-neu-pressed hover:text-primary transition-all"
                     >
                         {s}
                     </button>
@@ -254,18 +256,18 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
       
       {/* Sticky Bottom Action Bar */}
       <div className="fixed bottom-20 left-4 right-4 z-40 animate-fade-in-up">
-           <div className="max-w-md mx-auto glass-panel p-2 rounded-2xl border border-white/10 shadow-2xl flex gap-2 bg-black/80 backdrop-blur-xl">
+           <div className="max-w-md mx-auto bg-[#292d3e] p-2 rounded-2xl shadow-neu flex gap-3 border border-[#292d3e]">
                <button
                    onClick={handleRevert}
                    disabled={!originalImage || originalImage === image}
-                   className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 disabled:opacity-30 transition-colors"
+                   className="p-3.5 rounded-xl bg-[#292d3e] shadow-neu text-gray-400 hover:text-red-400 disabled:opacity-30 transition-all active:shadow-neu-pressed"
                    title="Revert to Original"
                >
                    <RotateCcw size={20} />
                </button>
                <button
                    onClick={handleDownload}
-                   className="flex-1 bg-white text-black font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                   className="flex-1 bg-[#292d3e] text-primary font-bold py-3.5 rounded-xl shadow-neu active:shadow-neu-pressed transition-all flex items-center justify-center gap-2 hover:text-secondary"
                >
                    <Download size={18} /> Download Image
                </button>

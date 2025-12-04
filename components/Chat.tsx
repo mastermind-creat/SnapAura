@@ -39,7 +39,7 @@ const PERSONAS: Persona[] = [
     role: 'Vibe & Style Expert',
     icon: Sparkles,
     color: 'text-pink-400',
-    bg: 'bg-pink-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are an Aesthetic Coach. Always start with a Direct Answer in bold. Then use bullet points for editing tips, filters, or curation advice. Use trendy language but keep it structured. End with a confidence score."
   },
   {
@@ -48,7 +48,7 @@ const PERSONAS: Persona[] = [
     role: 'Pro Photographer',
     icon: Camera,
     color: 'text-blue-400',
-    bg: 'bg-blue-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are a professional Photography Mentor. Structure your answer: Direct Answer first, then Technical Breakdown (ISO, Aperture, Lighting) in bullets. Keep explanations simple for beginners. End with a confidence score."
   },
   {
@@ -57,7 +57,7 @@ const PERSONAS: Persona[] = [
     role: 'Growth Hacker',
     icon: TrendingUp,
     color: 'text-purple-400',
-    bg: 'bg-purple-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are a Social Media Strategist. Start with a Direct Strategy summary. Then break down the 'Why' and 'How' using bullets. Focus on engagement and growth. End with a confidence score."
   },
   {
@@ -66,7 +66,7 @@ const PERSONAS: Persona[] = [
     role: 'Relationship Guru',
     icon: Heart,
     color: 'text-red-400',
-    bg: 'bg-red-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are a Relationship & Vibe Advisor. Give a Direct Answer first. Then offer perspective in a warm, empathetic breakdown. Avoid rambling. End with a 'Vibe Check' score (0-100%)."
   },
   {
@@ -75,7 +75,7 @@ const PERSONAS: Persona[] = [
     role: 'Focus Expert',
     icon: Briefcase,
     color: 'text-orange-400',
-    bg: 'bg-orange-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are a Productivity Coach. Be sharp and concise. Direct Answer first. Then actionable steps in a list. No fluff. End with a 'Success Probability' score."
   },
   {
@@ -84,7 +84,7 @@ const PERSONAS: Persona[] = [
     role: 'Sports Expert',
     icon: Trophy,
     color: 'text-green-400',
-    bg: 'bg-green-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are a Football Analyst. Start with the Bottom Line (Direct Answer). Then break down Stats, Form, and Tactics using bullets. Be objective. End with a Confidence Score."
   },
   {
@@ -93,7 +93,7 @@ const PERSONAS: Persona[] = [
     role: 'Companion',
     icon: Smile,
     color: 'text-yellow-400',
-    bg: 'bg-yellow-500/20',
+    bg: 'bg-[#292d3e] shadow-neu',
     systemPrompt: "You are a friendly chat companion. Keep it casual but structured. Answer directly, then expand if needed. Be fun. End with a 'Fun Score'."
   }
 ];
@@ -547,15 +547,15 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       let content: React.ReactNode = msg.text;
       
-      if (msg.role === 'model') content = <div className="prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(msg.text) : msg.text }}></div>;
-      else if (msg.type === 'image') content = <div className="space-y-2"><div className="relative group"><img src={msg.text} alt="Shared" className="rounded-lg max-w-full max-h-60 border border-white/10" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg"><a href={msg.text} download={msg.fileName || 'image.png'} className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-md"><DownloadCloud size={24} /></a></div></div>{msg.fileName && <p className="text-[10px] opacity-70 truncate max-w-[200px]">{msg.fileName}</p>}</div>;
-      else if (msg.type === 'audio') content = <div className="flex items-center gap-2 min-w-[150px]"><div className="bg-white/20 p-2 rounded-full"><Play size={16} fill="white" /></div><audio controls src={msg.text} className="h-8 w-48" /></div>;
-      else if (msg.type === 'file') content = <div className="flex items-center gap-3 bg-black/20 p-3 rounded-xl border border-white/5"><div className="bg-blue-500/20 p-2.5 rounded-lg text-blue-400"><FileText size={24} /></div><div className="flex flex-col overflow-hidden mr-2"><span className="text-sm font-bold truncate max-w-[140px] text-white">{msg.fileName || 'File'}</span><span className="text-[10px] opacity-60 text-gray-300">{msg.fileSize || 'Unknown size'}</span></div><a href={msg.text} download={msg.fileName || 'download'} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"><Download size={18} /></a></div>;
+      if (msg.role === 'model') content = <div className="prose prose-invert prose-sm max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(msg.text) : msg.text }}></div>;
+      else if (msg.type === 'image') content = <div className="space-y-2"><div className="relative group"><img src={msg.text} alt="Shared" className="rounded-xl max-w-full max-h-60 shadow-lg" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl"><a href={msg.text} download={msg.fileName || 'image.png'} className="p-3 bg-[#292d3e] shadow-neu rounded-full text-white"><DownloadCloud size={20} /></a></div></div>{msg.fileName && <p className="text-[10px] opacity-70 truncate max-w-[200px]">{msg.fileName}</p>}</div>;
+      else if (msg.type === 'audio') content = <div className="flex items-center gap-2 min-w-[150px]"><div className="bg-[#292d3e] shadow-neu p-2 rounded-full"><Play size={16} className="text-primary" /></div><audio controls src={msg.text} className="h-8 w-48" /></div>;
+      else if (msg.type === 'file') content = <div className="flex items-center gap-3 bg-[#292d3e] p-3 rounded-xl shadow-neu-pressed"><div className="text-blue-400"><FileText size={24} /></div><div className="flex flex-col overflow-hidden mr-2"><span className="text-sm font-bold truncate max-w-[140px] text-gray-200">{msg.fileName || 'File'}</span><span className="text-[10px] opacity-60 text-gray-400">{msg.fileSize || 'Unknown size'}</span></div><a href={msg.text} download={msg.fileName || 'download'} className="p-2 bg-[#292d3e] shadow-neu hover:text-primary rounded-full text-gray-400 transition-colors"><Download size={18} /></a></div>;
 
       return (
           <div className="relative group/msg">
               {msg.replyTo && (
-                  <div className="text-[10px] bg-black/20 p-2 rounded-lg mb-1 border-l-2 border-white/50 opacity-80 truncate">
+                  <div className="text-[10px] bg-black/20 p-2 rounded-lg mb-1 border-l-2 border-primary opacity-80 truncate">
                       <span className="font-bold mr-1">{msg.replyTo.sender}:</span>
                       {msg.replyTo.type === 'text' ? msg.replyTo.text : `[${msg.replyTo.type}]`}
                   </div>
@@ -564,17 +564,17 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
               {msg.reactions && Object.keys(msg.reactions).length > 0 && (
                   <div className="flex gap-1 mt-1 flex-wrap">
                       {Object.entries(msg.reactions).map(([emoji, count]) => (
-                          <span key={emoji} className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{emoji} {count}</span>
+                          <span key={emoji} className="text-[10px] bg-[#292d3e] shadow-neu px-2 py-0.5 rounded-full text-gray-300">{emoji} {count}</span>
                       ))}
                   </div>
               )}
               {/* Message Actions (Hover/Tap) */}
               {!msg.isDeleted && mode === 'p2p' && (
                   <div className={`absolute -right-8 top-0 flex flex-col gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.role === 'me' ? '-left-8 right-auto' : ''}`}>
-                      <button onClick={() => setReplyingTo(msg)} className="p-1 bg-black/50 rounded-full hover:bg-blue-500 text-white"><Reply size={12}/></button>
-                      <button onClick={() => sendAction('react', { msgId: msg.id, emoji: '❤️' })} className="p-1 bg-black/50 rounded-full hover:bg-red-500 text-white"><Heart size={12}/></button>
-                      <button onClick={() => sendAction('react', { msgId: msg.id, emoji: '😂' })} className="p-1 bg-black/50 rounded-full hover:bg-yellow-500 text-white"><SmilePlus size={12}/></button>
-                      {msg.role === 'me' && <button onClick={() => sendAction('delete', { msgId: msg.id })} className="p-1 bg-black/50 rounded-full hover:bg-red-600 text-white"><Trash size={12}/></button>}
+                      <button onClick={() => setReplyingTo(msg)} className="p-1 bg-[#292d3e] shadow-neu rounded-full hover:text-blue-500 text-gray-400"><Reply size={12}/></button>
+                      <button onClick={() => sendAction('react', { msgId: msg.id, emoji: '❤️' })} className="p-1 bg-[#292d3e] shadow-neu rounded-full hover:text-red-500 text-gray-400"><Heart size={12}/></button>
+                      <button onClick={() => sendAction('react', { msgId: msg.id, emoji: '😂' })} className="p-1 bg-[#292d3e] shadow-neu rounded-full hover:text-yellow-500 text-gray-400"><SmilePlus size={12}/></button>
+                      {msg.role === 'me' && <button onClick={() => sendAction('delete', { msgId: msg.id })} className="p-1 bg-[#292d3e] shadow-neu rounded-full hover:text-red-600 text-gray-400"><Trash size={12}/></button>}
                   </div>
               )}
           </div>
@@ -582,39 +582,39 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   };
 
   return (
-    <div className="h-full flex flex-col relative bg-[#0f0f11]">
+    <div className="h-full flex flex-col relative bg-[#292d3e]">
       {/* Header */}
-      <div className="p-4 bg-black/40 backdrop-blur-md sticky top-0 z-30 flex justify-between items-center border-b border-white/10">
+      <div className="p-3 bg-[#292d3e] sticky top-0 z-30 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
             {mode === 'ai' ? (
                 <div className="flex items-center gap-3">
                    {selectedPersona ? (
                        <div className="flex items-center gap-3" onClick={clearPersona}>
-                           <div className={`p-2 rounded-full ${selectedPersona.bg} ${selectedPersona.color}`}>
-                               <selectedPersona.icon size={20} />
+                           <div className={`p-2 rounded-full bg-[#292d3e] shadow-neu ${selectedPersona.color}`}>
+                               <selectedPersona.icon size={18} />
                            </div>
                            <div>
-                               <h1 className="font-bold text-white leading-tight">{selectedPersona.name}</h1>
-                               <p className="text-[10px] text-gray-400">{selectedPersona.role}</p>
+                               <h1 className="font-bold text-gray-200 leading-tight text-sm">{selectedPersona.name}</h1>
+                               <p className="text-[10px] text-gray-500">{selectedPersona.role}</p>
                            </div>
-                           <button className="text-gray-500 ml-2 hover:text-white"><XCircle size={14}/></button>
+                           <button className="text-gray-500 ml-2 hover:text-red-400 active:scale-90 transition-transform"><XCircle size={16}/></button>
                        </div>
                    ) : (
                        <>
-                           <div className="p-2 bg-blue-500/20 text-blue-400 rounded-full"><Sparkles size={20} /></div>
-                           <h1 className="text-lg font-bold text-white">SnapAura AI</h1>
+                           <div className="p-2 bg-[#292d3e] shadow-neu text-blue-400 rounded-full"><Sparkles size={18} /></div>
+                           <h1 className="text-lg font-bold text-gray-200">SnapAura AI</h1>
                        </>
                    )}
                 </div>
             ) : (
                 <div className="flex items-center gap-3">
-                   <div className="p-2 bg-green-500/20 text-green-400 rounded-full relative">
-                       <ShieldCheck size={20} />
+                   <div className="p-2 bg-[#292d3e] shadow-neu text-green-400 rounded-full relative">
+                       <ShieldCheck size={18} />
                        {activeConnections > 0 && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>}
                    </div>
                    <div>
-                       <h1 className="text-lg font-bold text-white">Secure Chat</h1>
-                       <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                       <h1 className="text-sm font-bold text-gray-200">Secure Chat</h1>
+                       <p className="text-[10px] text-gray-500 flex items-center gap-1">
                            <Radio size={10} className={activeConnections > 0 ? "text-green-500" : "text-gray-500"} />
                            {activeConnections} Peers Online
                        </p>
@@ -625,32 +625,32 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
         
         <div className="flex gap-2">
             {mode === 'p2p' && isHost && (
-                <button onClick={() => setShowAdmin(!showAdmin)} className="p-2 hover:bg-white/10 rounded-full text-gray-400">
-                    <MoreVertical size={20} />
+                <button onClick={() => setShowAdmin(!showAdmin)} className="p-2.5 bg-[#292d3e] shadow-neu rounded-full text-gray-400 active:shadow-neu-pressed">
+                    <MoreVertical size={18} />
                 </button>
             )}
-            <div className="bg-white/5 p-1 rounded-lg flex border border-white/5">
-                <button onClick={() => setMode('ai')} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${mode === 'ai' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-400'}`}>AI</button>
-                <button onClick={() => setMode('p2p')} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${mode === 'p2p' ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400'}`}>P2P</button>
+            <div className="bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl flex">
+                <button onClick={() => setMode('ai')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'ai' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>AI</button>
+                <button onClick={() => setMode('p2p')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'p2p' ? 'bg-[#292d3e] text-green-400 shadow-neu' : 'text-gray-500'}`}>P2P</button>
             </div>
             <button 
                  onClick={onOpenSettings}
-                 className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors active:scale-90"
+                 className="text-gray-400 hover:text-white p-2.5 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-colors"
              >
-                 <Settings size={20} />
+                 <Settings size={18} />
              </button>
         </div>
       </div>
 
       {/* Admin Panel (Host Only) */}
       {showAdmin && mode === 'p2p' && (
-          <div className="bg-black/80 backdrop-blur-md p-4 border-b border-white/10 animate-fade-in-up">
-              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Connected Users</h3>
+          <div className="bg-[#292d3e] p-4 shadow-neu-pressed animate-fade-in-up">
+              <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Connected Users</h3>
               <div className="space-y-2">
                   {connectedUsersRef.current.map(u => (
-                      <div key={u.id} className="flex justify-between items-center bg-white/5 p-2 rounded-lg">
-                          <span className="text-sm text-white">{u.name} <span className="text-xs text-gray-500">({u.id.substr(0,4)})</span></span>
-                          <button onClick={() => kickUser(u.id)} className="text-red-400 hover:text-red-300 p-1 bg-red-500/10 rounded"><UserMinus size={14}/></button>
+                      <div key={u.id} className="flex justify-between items-center bg-[#292d3e] shadow-neu p-2 rounded-lg">
+                          <span className="text-sm text-gray-200">{u.name} <span className="text-xs text-gray-500">({u.id.substr(0,4)})</span></span>
+                          <button onClick={() => kickUser(u.id)} className="text-red-400 hover:text-red-300 p-1 bg-[#292d3e] shadow-neu rounded active:shadow-neu-pressed"><UserMinus size={14}/></button>
                       </div>
                   ))}
                   {connectedUsersRef.current.length === 0 && <p className="text-xs text-gray-500 italic">No active peers</p>}
@@ -666,21 +666,20 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
             <>
                 {!selectedPersona && aiMessages.length === 0 ? (
                     <div className="mt-4 animate-fade-in-up">
-                        <h2 className="text-xl font-bold text-white mb-2 text-center">Choose an Assistant</h2>
-                        <p className="text-sm text-gray-400 text-center mb-6">Select a persona to guide your creative journey.</p>
-                        <div className="grid grid-cols-2 gap-3">
+                        <h2 className="text-xl font-bold text-gray-200 mb-2 text-center">Choose an Assistant</h2>
+                        <p className="text-sm text-gray-500 text-center mb-6">Select a persona to guide your creative journey.</p>
+                        <div className="grid grid-cols-2 gap-4">
                             {PERSONAS.map(p => (
                                 <button 
                                     key={p.id}
                                     onClick={() => selectPersona(p)}
-                                    className="bg-white/5 hover:bg-white/10 border border-white/5 p-4 rounded-2xl text-left transition-all active:scale-95 group relative overflow-hidden"
+                                    className="bg-[#292d3e] shadow-neu p-4 rounded-2xl text-left transition-all active:shadow-neu-pressed group relative overflow-hidden"
                                 >
-                                    <div className={`absolute top-0 right-0 p-10 ${p.bg} rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity`}></div>
-                                    <div className={`w-10 h-10 rounded-full ${p.bg} ${p.color} flex items-center justify-center mb-3`}>
+                                    <div className={`w-10 h-10 rounded-full bg-[#292d3e] shadow-neu ${p.color} flex items-center justify-center mb-3`}>
                                         <p.icon size={20} />
                                     </div>
-                                    <h3 className="font-bold text-white text-sm">{p.name}</h3>
-                                    <p className="text-[10px] text-gray-400 mt-1">{p.role}</p>
+                                    <h3 className="font-bold text-gray-200 text-sm">{p.name}</h3>
+                                    <p className="text-[10px] text-gray-500 mt-1">{p.role}</p>
                                 </button>
                             ))}
                         </div>
@@ -690,10 +689,10 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                         {aiMessages.map((msg) => (
                           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
                             <div 
-                              className={`max-w-[85%] p-3.5 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                              className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
                                 msg.role === 'user' 
-                                  ? 'bg-blue-600 text-white rounded-br-none' 
-                                  : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5'
+                                  ? 'bg-[#292d3e] text-blue-400 shadow-neu rounded-br-none border border-blue-500/10' 
+                                  : 'bg-[#292d3e] text-gray-300 shadow-neu rounded-bl-none'
                               }`}
                             >
                                {renderMessageContent(msg)}
@@ -704,7 +703,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                                         const u = new SpeechSynthesisUtterance(msg.text);
                                         window.speechSynthesis.speak(u);
                                     }}
-                                    className="ml-2 self-end text-gray-500 hover:text-white"
+                                    className="ml-2 self-end text-gray-500 hover:text-primary transition-colors"
                                 >
                                     <Volume2 size={14} />
                                 </button>
@@ -713,7 +712,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                         ))}
                         {aiLoading && (
                           <div className="flex justify-start">
-                            <div className="bg-white/5 px-4 py-3 rounded-2xl rounded-bl-none flex gap-1 items-center border border-white/5">
+                            <div className="bg-[#292d3e] shadow-neu px-4 py-3 rounded-2xl rounded-bl-none flex gap-1 items-center">
                               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
                               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
                               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-150"></span>
@@ -729,54 +728,54 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
         {mode === 'p2p' && (
             <>
                 {p2pState === 'username' && (
-                    <div className="flex flex-col items-center justify-center h-full space-y-6 p-6 text-center animate-fade-in-up">
-                        <div className="bg-green-500/20 p-6 rounded-full text-green-400 ring-4 ring-green-500/10">
+                    <div className="flex flex-col items-center justify-center h-full space-y-8 p-6 text-center animate-fade-in-up">
+                        <div className="bg-[#292d3e] shadow-neu p-6 rounded-full text-green-400">
                             <ShieldCheck size={48} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white">Encrypted Chat</h2>
-                            <p className="text-gray-400 text-sm mt-2">Serverless. Private. Secure.</p>
+                            <h2 className="text-2xl font-bold text-gray-200">Encrypted Chat</h2>
+                            <p className="text-gray-500 text-sm mt-2">Serverless. Private. Secure.</p>
                         </div>
                         <input 
                             value={username} 
                             onChange={e => setUsername(e.target.value)}
                             placeholder="Enter Display Name"
-                            className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-center focus:border-green-500 outline-none"
+                            className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl px-4 py-4 text-gray-200 text-center outline-none"
                             autoFocus
                         />
-                        <button onClick={initPeer} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all">
+                        <button onClick={initPeer} className="w-full bg-[#292d3e] text-green-400 font-bold py-4 rounded-xl shadow-neu active:shadow-neu-pressed transition-all">
                             Start Secure Session
                         </button>
                     </div>
                 )}
 
                 {p2pState === 'setup' && (
-                    <div className="glass-panel p-6 rounded-2xl space-y-6 text-center animate-fade-in-up m-auto mt-10">
-                         <h3 className="text-lg font-bold text-white">Invite Friends</h3>
-                         <div className="bg-black/30 p-4 rounded-xl border border-white/10 flex items-center justify-between gap-3">
+                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 text-center animate-fade-in-up m-auto mt-10">
+                         <h3 className="text-lg font-bold text-gray-200">Invite Friends</h3>
+                         <div className="bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl flex items-center justify-between gap-3">
                              <div className="text-left overflow-hidden">
                                  <p className="text-[10px] text-gray-500 uppercase font-bold">Your Session ID</p>
                                  <p className="text-2xl font-mono text-green-400 font-bold tracking-widest">{myPeerId}</p>
                              </div>
                              <div className="flex gap-2">
-                                <button onClick={() => {navigator.clipboard.writeText(myPeerId); showToast("ID Copied", "success")}} className="p-2 bg-white/10 rounded-lg hover:bg-white/20"><Copy size={20}/></button>
-                                <button onClick={handleCopyLink} className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30"><LinkIcon size={20}/></button>
+                                <button onClick={() => {navigator.clipboard.writeText(myPeerId); showToast("ID Copied", "success")}} className="p-3 bg-[#292d3e] shadow-neu rounded-lg hover:text-green-400 active:shadow-neu-pressed"><Copy size={20}/></button>
+                                <button onClick={handleCopyLink} className="p-3 bg-[#292d3e] shadow-neu text-blue-400 rounded-lg hover:text-blue-500 active:shadow-neu-pressed"><LinkIcon size={20}/></button>
                              </div>
                          </div>
                          
                          <div className="relative">
-                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
-                             <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#1a1a20] px-2 text-gray-500 font-bold">Or Join Session</span></div>
+                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#292d3e] shadow-sm"></div></div>
+                             <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#292d3e] px-2 text-gray-500 font-bold">Or Join Session</span></div>
                          </div>
 
-                         <div className="flex gap-2">
+                         <div className="flex gap-3">
                              <input 
                                 value={targetPeerId} 
                                 onChange={e => setTargetPeerId(e.target.value)}
                                 placeholder="Enter Friend's ID..."
-                                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-green-500"
+                                className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-xl px-4 py-3 text-gray-200 text-sm outline-none"
                              />
-                             <button onClick={connectToPeer} disabled={isConnecting} className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-xl font-bold border border-white/10">
+                             <button onClick={connectToPeer} disabled={isConnecting} className="bg-[#292d3e] shadow-neu text-green-400 px-4 rounded-xl font-bold active:shadow-neu-pressed transition-all">
                                  {isConnecting ? <RefreshCw className="animate-spin" /> : <LogIn />}
                              </button>
                          </div>
@@ -786,18 +785,18 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                 {p2pState === 'connected' && (
                     <>
                         <div className="text-center py-2">
-                            <span className="text-[10px] bg-green-500/10 text-green-400 px-3 py-1 rounded-full border border-green-500/20">
+                            <span className="text-[10px] bg-[#292d3e] shadow-neu text-green-400 px-4 py-1.5 rounded-full font-bold">
                                 End-to-End Encrypted
                             </span>
                         </div>
                         {p2pMessages.map((msg) => (
                            <div key={msg.id} className={`flex flex-col ${msg.role === 'me' ? 'items-end' : 'items-start'} animate-fade-in-up`}>
-                               {msg.role !== 'me' && msg.sender && <span className="text-[10px] text-gray-500 mb-1 ml-1">{msg.sender}</span>}
+                               {msg.role !== 'me' && msg.sender && <span className="text-[10px] text-gray-500 mb-1 ml-1 font-bold">{msg.sender}</span>}
                                <div 
-                                className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm ${
+                                className={`max-w-[85%] p-3 rounded-2xl text-sm ${
                                     msg.role === 'me' 
-                                    ? 'bg-green-600 text-white rounded-br-none' 
-                                    : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5'
+                                    ? 'bg-[#292d3e] text-green-400 shadow-neu rounded-br-none' 
+                                    : 'bg-[#292d3e] text-gray-300 shadow-neu rounded-bl-none'
                                 }`}
                                >
                                    {renderMessageContent(msg)}
@@ -814,12 +813,12 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       {/* Input Area */}
       {((mode === 'ai') || (mode === 'p2p' && p2pState === 'connected')) && (
-          <div className="p-4 bg-black/80 backdrop-blur-xl border-t border-white/10 fixed bottom-[72px] left-0 right-0 max-w-md mx-auto z-20">
+          <div className="p-3 bg-[#292d3e] fixed bottom-[72px] left-0 right-0 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.1)] border-t border-[#292d3e]">
               
               {/* Reply Preview */}
               {replyingTo && (
-                  <div className="flex justify-between items-center bg-white/5 p-2 rounded-lg mb-2 border-l-2 border-blue-500">
-                      <div className="text-xs text-gray-300 truncate">
+                  <div className="flex justify-between items-center bg-[#292d3e] shadow-neu-pressed p-2 rounded-lg mb-2 border-l-2 border-blue-500 mx-2">
+                      <div className="text-xs text-gray-400 truncate">
                           <span className="font-bold text-blue-400 mr-2">Replying to {replyingTo.sender}:</span>
                           {replyingTo.text}
                       </div>
@@ -829,40 +828,40 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
               {/* Attachment Preview */}
               {attachment && (
-                  <div className="flex items-center gap-3 bg-white/5 p-2 rounded-xl mb-2 border border-white/10">
+                  <div className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-2 rounded-xl mb-2 mx-2">
                       {attachment.type === 'image' ? <ImageIcon size={16} className="text-pink-400"/> : <FileText size={16} className="text-blue-400"/>}
-                      <span className="text-xs text-white truncate flex-1">{attachment.name}</span>
+                      <span className="text-xs text-gray-300 truncate flex-1">{attachment.name}</span>
                       <span className="text-[10px] text-gray-500">{attachment.size}</span>
-                      <button onClick={() => setAttachment(null)}><XCircle size={16} className="text-gray-400 hover:text-white"/></button>
+                      <button onClick={() => setAttachment(null)}><XCircle size={16} className="text-gray-400 hover:text-red-400"/></button>
                   </div>
               )}
 
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 px-1">
                   {/* Media Actions */}
                   {mode === 'p2p' && (
-                      <div className="flex gap-1 mb-1.5">
-                           <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors">
-                               <Paperclip size={20} />
+                      <div className="flex gap-2 mb-1.5">
+                           <button onClick={() => fileInputRef.current?.click()} className="p-2.5 text-gray-400 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed hover:text-primary transition-all">
+                               <Paperclip size={18} />
                            </button>
-                           <button onClick={isRecording ? stopRecording : startRecording} className={`p-2 rounded-full transition-colors ${isRecording ? 'text-red-500 bg-red-500/10 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}>
-                               {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                           <button onClick={isRecording ? stopRecording : startRecording} className={`p-2.5 rounded-full shadow-neu transition-all active:shadow-neu-pressed ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 bg-[#292d3e] hover:text-red-400'}`}>
+                               {isRecording ? <StopCircle size={18} /> : <Mic size={18} />}
                            </button>
                       </div>
                   )}
 
                   {mode === 'ai' && (
-                      <button onClick={handleAiVoiceInput} className={`p-2 mb-1.5 rounded-full transition-colors ${isAiListening ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}>
-                          <Mic size={20} />
+                      <button onClick={handleAiVoiceInput} className={`p-2.5 mb-1.5 rounded-full shadow-neu transition-all active:shadow-neu-pressed ${isAiListening ? 'text-red-500 animate-pulse' : 'text-gray-400 bg-[#292d3e] hover:text-primary'}`}>
+                          <Mic size={18} />
                       </button>
                   )}
 
-                  <div className="flex-1 bg-white/5 rounded-2xl border border-white/10 flex items-center pr-2">
+                  <div className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-2xl flex items-center pr-2">
                       <textarea
                           ref={textareaRef}
                           value={mode === 'ai' ? aiInput : p2pInput}
                           onChange={(e) => mode === 'ai' ? setAiInput(e.target.value) : setP2pInput(e.target.value)}
                           placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Message SnapAura...") : "Message secure peer..."}
-                          className="w-full bg-transparent border-none text-white px-4 py-3 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
+                          className="w-full bg-transparent border-none text-gray-200 px-4 py-3 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
                           rows={1}
                           onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) {
@@ -876,7 +875,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                   <button 
                       onClick={mode === 'ai' ? handleAiSend : handleP2pSend}
                       disabled={mode === 'ai' ? (!aiInput.trim() || aiLoading) : (!p2pInput.trim() && !attachment)}
-                      className="mb-1 p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all"
+                      className="mb-1 p-3 bg-[#292d3e] shadow-neu rounded-2xl text-primary active:shadow-neu-pressed disabled:opacity-50 disabled:shadow-none transition-all"
                   >
                       {aiLoading ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} />}
                   </button>
