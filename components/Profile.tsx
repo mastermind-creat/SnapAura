@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, LogOut, Settings, Camera, ImageIcon, MessageCircle, Star, ShieldCheck } from './Icons';
 import { UserProfile } from '../types';
 
@@ -10,6 +10,15 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => {
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+      const loadAvatar = () => setAvatar(localStorage.getItem('SNAPAURA_AVATAR'));
+      loadAvatar();
+      window.addEventListener('avatar-update', loadAvatar);
+      return () => window.removeEventListener('avatar-update', loadAvatar);
+  }, []);
+
   if (!user) return null;
 
   return (
@@ -30,7 +39,11 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
             <div className="flex flex-col items-center text-center relative z-10">
                 <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu p-1 mb-4 flex items-center justify-center">
                     <div className="w-full h-full rounded-full bg-[#292d3e] shadow-neu-pressed flex items-center justify-center overflow-hidden">
-                        <User size={40} className="text-gray-400" />
+                        {avatar ? (
+                            <img src={avatar} className="w-full h-full object-cover" alt="Profile" />
+                        ) : (
+                            <User size={40} className="text-gray-400" />
+                        )}
                     </div>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-200 mb-1">{user.name}</h2>

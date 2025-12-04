@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Share2, Download, Type, Layers, Sliders, Film, LogOut, ImageIcon, Settings, WhatsApp, Briefcase, User } from './Icons';
 import { analyzeImageAndGenerateCaptions, rewriteCaption, editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
@@ -34,12 +35,20 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
   const [rewriting, setRewriting] = useState(false);
   const [autoEnhancing, setAutoEnhancing] = useState(false);
   const [generatingCard, setGeneratingCard] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
   
   // Design State
   const [activeTab, setInternalTab] = useState<'analyze' | 'design' | 'effects'>('analyze');
   const [activeFilter, setActiveFilter] = useState<FilterType>('none');
   const [captionStyle, setCaptionStyle] = useState<CaptionStyle>('modern');
   const [activeEffect, setActiveEffect] = useState<EffectType>('none');
+
+  useEffect(() => {
+      const loadAvatar = () => setAvatar(localStorage.getItem('SNAPAURA_AVATAR'));
+      loadAvatar();
+      window.addEventListener('avatar-update', loadAvatar);
+      return () => window.removeEventListener('avatar-update', loadAvatar);
+  }, []);
 
   // Helper to trigger confetti
   const fireConfetti = () => {
@@ -353,14 +362,20 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
              <div className="flex gap-4 pointer-events-auto animate-fade-in-up delay-100">
                  <button 
                     onClick={onUserClick} 
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 active:shadow-neu-pressed hover:scale-105 border border-white/5 ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 active:shadow-neu-pressed hover:scale-105 border border-white/5 overflow-hidden ${
                         isAuthenticated 
                         ? 'bg-[#292d3e] text-electric-blue shadow-[0_0_15px_rgba(0,243,255,0.3)]' 
                         : 'bg-[#292d3e] text-gray-400 shadow-neu'
                     }`}
                  >
-                     <User size={18} />
-                     {!isAuthenticated && <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full shadow-glow"></div>}
+                     {isAuthenticated && avatar ? (
+                         <img src={avatar} alt="Me" className="w-full h-full object-cover" />
+                     ) : (
+                         <>
+                            <User size={18} />
+                            {!isAuthenticated && <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full shadow-glow"></div>}
+                         </>
+                     )}
                  </button>
                  <button 
                     onClick={onOpenSettings} 

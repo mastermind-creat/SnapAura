@@ -141,6 +141,9 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // User Avatar State
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
   // Refs for PeerJS
   const peerInstance = useRef<any>(null);
   const connectionsRef = useRef<any[]>([]); // Store all connections (Host maintains list)
@@ -156,6 +159,17 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
         setAiMessages([{ id: 'init-p', role: 'model', text: `Hi! I'm your **${persona.name}**. How can I help you today?` }]);
       }
     }
+  }, []);
+
+  // Load User Avatar
+  useEffect(() => {
+      const loadAvatar = () => {
+          const stored = localStorage.getItem('SNAPAURA_AVATAR');
+          setUserAvatar(stored);
+      };
+      loadAvatar();
+      window.addEventListener('avatar-update', loadAvatar);
+      return () => window.removeEventListener('avatar-update', loadAvatar);
   }, []);
 
   useEffect(() => {
@@ -297,7 +311,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
           setActiveConnections(prev => connectionsRef.current.length);
           setP2pState('connected');
           
-          // Send welcome message and sync history (optional, currently just welcome)
+          // Send welcome message
           conn.send({
               type: 'system',
               text: `Connected to ${username} (Host)`,
@@ -687,23 +701,29 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                 ) : (
                     <>
                         {aiMessages.map((msg) => (
-                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
+                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up items-end gap-2`}>
+                            {/* Avatar for User in AI Chat */}
+                            {msg.role === 'user' && userAvatar && (
+                                <img src={userAvatar} alt="Me" className="w-8 h-8 rounded-full border border-white/10 order-2 object-cover" />
+                            )}
+                            
                             <div 
                               className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
                                 msg.role === 'user' 
-                                  ? 'bg-[#292d3e] text-blue-400 shadow-neu rounded-br-none border border-blue-500/10' 
+                                  ? 'bg-[#292d3e] text-blue-400 shadow-neu rounded-br-none border border-blue-500/10 order-1' 
                                   : 'bg-[#292d3e] text-gray-300 shadow-neu rounded-bl-none'
                               }`}
                             >
                                {renderMessageContent(msg)}
                             </div>
+                            
                             {msg.role === 'model' && (
                                 <button 
                                     onClick={() => {
                                         const u = new SpeechSynthesisUtterance(msg.text);
                                         window.speechSynthesis.speak(u);
                                     }}
-                                    className="ml-2 self-end text-gray-500 hover:text-primary transition-colors"
+                                    className="self-end text-gray-500 hover:text-primary transition-colors"
                                 >
                                     <Volume2 size={14} />
                                 </button>
@@ -792,15 +812,23 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                         {p2pMessages.map((msg) => (
                            <div key={msg.id} className={`flex flex-col ${msg.role === 'me' ? 'items-end' : 'items-start'} animate-fade-in-up`}>
                                {msg.role !== 'me' && msg.sender && <span className="text-[10px] text-gray-500 mb-1 ml-1 font-bold">{msg.sender}</span>}
-                               <div 
-                                className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                                    msg.role === 'me' 
-                                    ? 'bg-[#292d3e] text-green-400 shadow-neu rounded-br-none' 
-                                    : 'bg-[#292d3e] text-gray-300 shadow-neu rounded-bl-none'
-                                }`}
-                               >
-                                   {renderMessageContent(msg)}
+                               
+                               <div className="flex items-end gap-2">
+                                   {msg.role === 'me' && userAvatar && (
+                                       <img src={userAvatar} alt="Me" className="w-6 h-6 rounded-full border border-white/10 order-2 object-cover" />
+                                   )}
+                                   
+                                   <div 
+                                    className={`p-3 rounded-2xl text-sm ${
+                                        msg.role === 'me' 
+                                        ? 'bg-[#292d3e] text-green-400 shadow-neu rounded-br-none order-1' 
+                                        : 'bg-[#292d3e] text-gray-300 shadow-neu rounded-bl-none'
+                                    }`}
+                                   >
+                                       {renderMessageContent(msg)}
+                                   </div>
                                </div>
+                               
                                <span className="text-[9px] text-gray-600 mt-1 px-1">{new Date(msg.timestamp || 0).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                            </div>
                         ))}

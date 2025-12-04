@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { UserCheck, Upload, Wand2, Download, RefreshCw, Layers, Sparkles, Zap } from './Icons';
+import { UserCheck, Upload, Wand2, Download, RefreshCw, Layers, Sparkles, Zap, CheckCircle } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -61,6 +61,32 @@ const ProfileStudio: React.FC = () => {
         link.click();
         document.body.removeChild(link);
         showToast("Saved to Photos", "success");
+    };
+
+    const handleSetAvatar = () => {
+        const src = processed || image;
+        if(!src) return;
+
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            // Square crop center logic
+            const size = Math.min(img.width, img.height);
+            canvas.width = 200;
+            canvas.height = 200;
+            
+            if(ctx) {
+                // sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
+                ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, 200, 200);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                localStorage.setItem('SNAPAURA_AVATAR', dataUrl);
+                // Dispatch event to update UI globally
+                window.dispatchEvent(new Event('avatar-update'));
+                showToast("Profile Picture Updated!", "success");
+            }
+        };
     };
 
     return (
@@ -126,20 +152,29 @@ const ProfileStudio: React.FC = () => {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-4 pt-2">
+                        <div className="space-y-3">
                             <button 
-                                onClick={handleDownload}
-                                className="flex-1 bg-[#292d3e] text-indigo-400 shadow-neu py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
+                                onClick={handleSetAvatar}
+                                className="w-full bg-[#292d3e] text-green-400 shadow-neu py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
                             >
-                                <Download size={18} /> Save Image
+                                <CheckCircle size={18} /> Set as Profile Picture
                             </button>
-                            <button 
-                                onClick={() => {setProcessed(null); setImage(null);}} 
-                                className="p-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 hover:text-red-400 active:shadow-neu-pressed transition-all"
-                                title="Reset"
-                            >
-                                <RefreshCw size={20} />
-                            </button>
+                            
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={handleDownload}
+                                    className="flex-1 bg-[#292d3e] text-indigo-400 shadow-neu py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
+                                >
+                                    <Download size={18} /> Save
+                                </button>
+                                <button 
+                                    onClick={() => {setProcessed(null); setImage(null);}} 
+                                    className="px-6 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 hover:text-red-400 active:shadow-neu-pressed transition-all"
+                                    title="Reset"
+                                >
+                                    <RefreshCw size={20} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
