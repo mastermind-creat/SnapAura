@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy, UserCheck, Layers, FileText, FileDigit, Music, Hash, Clock, MessageSquare, BookOpen, Feather, Shirt } from './Icons';
+import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy, UserCheck, Layers, FileText, FileDigit, Music, Hash, Clock, MessageSquare, BookOpen, Feather, Shirt, Download } from './Icons';
 import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 import SoccerPredictions from './SoccerPredictions';
@@ -21,7 +22,6 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
   const [activeTool, setActiveTool] = useState<ToolType>('menu');
   const [isUploading, setIsUploading] = useState(false);
 
-  // ... (Keep existing state logic exactly as is, omitted for brevity, will assume preserved logic when implementing UI) ...
   // --- SOCIAL TOOLS STATE ---
   const [longUrl, setLongUrl] = useState('');
   const [shortUrl, setShortUrl] = useState('');
@@ -482,6 +482,44 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
       return /^(http|https):\/\/[^ "]+$/.test(text);
   };
 
+  // Reusable Upload UI for Neumorphic consistency
+  const renderUploadUI = (icon: any, label: string, onClick: () => void) => (
+      <div className="space-y-6 animate-fade-in-up">
+           <div className="bg-[#292d3e] shadow-neu p-8 rounded-2xl flex flex-col items-center text-center space-y-6">
+                <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400">
+                    {React.createElement(icon, { size: 40 })}
+                </div>
+                <div>
+                    <h2 className="text-xl font-bold text-gray-200">{label}</h2>
+                    <p className="text-sm text-gray-500 mt-2">Upload a photo to start processing</p>
+                </div>
+                <button 
+                    onClick={onClick}
+                    className="w-full bg-[#292d3e] text-primary shadow-neu py-4 rounded-xl font-bold active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
+                >
+                    <Upload size={18} /> Upload Image
+                </button>
+           </div>
+           
+           {/* If Puzzle tool, show presets */}
+           {activeTool === 'puzzle' && (
+               <div>
+                   <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Or try a preset</h3>
+                   <div className="grid grid-cols-3 gap-3">
+                       {PUZZLE_PRESETS.map((p, i) => (
+                           <button 
+                                key={i}
+                                onClick={() => handlePresetSelect(p.url)}
+                                className="aspect-square rounded-xl bg-cover bg-center shadow-neu active:scale-95 transition-transform"
+                                style={{backgroundImage: `url(${p.url})`}}
+                           />
+                       ))}
+                   </div>
+               </div>
+           )}
+      </div>
+  );
+
   const renderMenu = () => (
     <div className="grid grid-cols-1 gap-6 animate-fade-in-up">
         {/* New Feature: Profile Studio & Moodboard */}
@@ -829,7 +867,272 @@ const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
          </div>
       )}
       
-      {/* ... Other tools follow same neumorphic pattern ... */}
+      {/* --- QR GEN --- */}
+      {activeTool === 'qr' && (
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                 <input value={qrText} onChange={e => setQrText(e.target.value)} placeholder="Enter text or URL..." className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-300 outline-none" />
+                 <button onClick={handleGenerateQR} className="w-full bg-[#292d3e] text-purple-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
+                     Generate Code
+                 </button>
+            </div>
+            {qrUrl && (
+                <div className="bg-[#292d3e] shadow-neu p-8 rounded-2xl flex flex-col items-center animate-fade-in-up">
+                    <img src={qrUrl} alt="QR Code" className="w-48 h-48 rounded-lg shadow-lg mb-4" />
+                    <button onClick={() => {const a = document.createElement('a'); a.href = qrUrl; a.download = 'qr.png'; a.click();}} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-white">
+                        <Download size={16} /> Download
+                    </button>
+                </div>
+            )}
+        </div>
+      )}
+      
+      {/* --- BIO WRITER --- */}
+      {activeTool === 'bio' && (
+          <div className="space-y-6 animate-fade-in-up">
+              <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                  <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} placeholder="Describe yourself (e.g. Gamer, Tech Enthusiast, Coffee Lover)..." className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-300 outline-none h-32 resize-none" />
+                  <button onClick={handleGenerateBio} disabled={isWritingBio} className="w-full bg-[#292d3e] text-pink-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex justify-center items-center gap-2">
+                       {isWritingBio ? <RefreshCw className="animate-spin" /> : <Sparkles />} Generate Bios
+                  </button>
+              </div>
+              <div className="space-y-3">
+                  {bios.map((bio, i) => (
+                      <div key={i} className="bg-[#292d3e] shadow-neu p-4 rounded-xl relative group">
+                          <p className="text-gray-300 pr-8">{bio}</p>
+                          <button onClick={() => {navigator.clipboard.writeText(bio); showToast("Copied!", "success")}} className="absolute top-4 right-4 text-gray-500 hover:text-white"><Copy size={16}/></button>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      )}
+
+      {/* --- UNIT CONVERTER --- */}
+      {activeTool === 'unit' && (
+        <div className="space-y-6 animate-fade-in-up">
+             <div className="flex bg-[#292d3e] shadow-neu-pressed rounded-xl p-1 mb-4">
+                 {['length', 'mass', 'temp'].map(c => (
+                     <button key={c} onClick={() => setUnitCategory(c as any)} className={`flex-1 py-2 text-xs font-bold rounded-lg capitalize ${unitCategory === c ? 'bg-[#292d3e] shadow-neu text-teal-400' : 'text-gray-500'}`}>{c}</button>
+                 ))}
+             </div>
+             
+             <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-5">
+                 <input type="number" value={unitVal} onChange={e => setUnitVal(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-2xl font-bold text-center text-gray-200 outline-none" />
+                 <div className="flex items-center gap-3">
+                     <select value={unitFrom} onChange={e => setUnitFrom(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu p-3 rounded-xl text-gray-300 font-bold outline-none text-center">
+                         {unitCategory === 'length' && ['m','km','cm','mm','ft','mi','in','yd'].map(u => <option key={u} value={u}>{u}</option>)}
+                         {unitCategory === 'mass' && ['kg','g','mg','lb','oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                         {unitCategory === 'temp' && ['C','F','K'].map(u => <option key={u} value={u}>{u}</option>)}
+                     </select>
+                     <ArrowRight className="text-gray-500" />
+                     <select value={unitTo} onChange={e => setUnitTo(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu p-3 rounded-xl text-gray-300 font-bold outline-none text-center">
+                         {unitCategory === 'length' && ['m','km','cm','mm','ft','mi','in','yd'].map(u => <option key={u} value={u}>{u}</option>)}
+                         {unitCategory === 'mass' && ['kg','g','mg','lb','oz'].map(u => <option key={u} value={u}>{u}</option>)}
+                         {unitCategory === 'temp' && ['C','F','K'].map(u => <option key={u} value={u}>{u}</option>)}
+                     </select>
+                 </div>
+                 <button onClick={handleUnitConvert} className="w-full bg-[#292d3e] text-teal-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">Convert</button>
+             </div>
+
+             {unitResult && (
+                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center animate-fade-in-up">
+                     <h2 className="text-4xl font-black text-gray-200">{unitResult} <span className="text-lg text-gray-500 font-medium">{unitTo}</span></h2>
+                 </div>
+             )}
+        </div>
+      )}
+
+      {/* --- PHOTO UTILS --- */}
+      
+      {/* 1. COMPRESS */}
+      {activeTool === 'compress' && (
+          !utilImage ? renderUploadUI(Minimize, "Image Compressor", () => utilFileInputRef.current?.click()) : (
+            <div className="space-y-6 animate-fade-in-up">
+                 <div className="relative rounded-xl overflow-hidden shadow-neu-pressed bg-[#1e212d] max-h-80 flex items-center justify-center">
+                     <img src={processedImage || utilImage} className="max-w-full max-h-full object-contain" alt="Preview" />
+                 </div>
+                 
+                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                     <div className="flex justify-between">
+                         <span className="text-xs font-bold text-gray-500 uppercase">Quality</span>
+                         <span className="text-xs font-bold text-cyan-400">{compressQuality}%</span>
+                     </div>
+                     <input type="range" min="10" max="100" value={compressQuality} onChange={e => setCompressQuality(parseInt(e.target.value))} className="w-full accent-cyan-400" />
+                     
+                     {processedMeta && (
+                         <div className="flex justify-between items-center text-xs font-mono bg-[#292d3e] shadow-neu-pressed p-3 rounded-lg text-gray-400">
+                             <span>New Size: <b className="text-green-400">{processedMeta.size}</b></span>
+                             <span>{processedMeta.dimensions}</span>
+                         </div>
+                     )}
+
+                     <button onClick={handleCompress} className="w-full bg-[#292d3e] text-cyan-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex items-center justify-center gap-2">
+                         <Minimize size={18} /> Compress Image
+                     </button>
+                     
+                     {processedImage && (
+                        <a href={processedImage} download="compressed.jpg" className="block w-full bg-[#292d3e] text-green-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all text-center">
+                            Download Result
+                        </a>
+                     )}
+                     <button onClick={() => {setUtilImage(null); setProcessedImage(null);}} className="w-full text-xs text-gray-500 py-2">Start Over</button>
+                 </div>
+            </div>
+          )
+      )}
+
+      {/* 2. RESIZE */}
+      {activeTool === 'resize' && (
+          !utilImage ? renderUploadUI(Maximize, "Image Resizer", () => utilFileInputRef.current?.click()) : (
+            <div className="space-y-6 animate-fade-in-up">
+                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-5">
+                     <div className="grid grid-cols-2 gap-4">
+                         <div>
+                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Width</label>
+                             <input type="number" value={resizeWidth} onChange={e => {setResizeWidth(parseInt(e.target.value)); if(maintainAspect) setResizeHeight(Math.round(parseInt(e.target.value) / aspectRatio));}} className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-gray-200 outline-none" />
+                         </div>
+                         <div>
+                             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Height</label>
+                             <input type="number" value={resizeHeight} onChange={e => {setResizeHeight(parseInt(e.target.value)); if(maintainAspect) setResizeWidth(Math.round(parseInt(e.target.value) * aspectRatio));}} className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-gray-200 outline-none" />
+                         </div>
+                     </div>
+                     
+                     <div className="flex items-center justify-between px-2">
+                         <span className="text-xs text-gray-500 font-bold">Maintain Aspect Ratio</span>
+                         <button onClick={() => setMaintainAspect(!maintainAspect)} className={`text-indigo-400 transition-transform ${maintainAspect ? '' : 'opacity-50'}`}>
+                             {maintainAspect ? <Lock size={20} /> : <Unlock size={20} />}
+                         </button>
+                     </div>
+
+                     <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                         {[{l:'Story', w:1080, h:1920}, {l:'Post', w:1080, h:1080}, {l:'HD', w:1280, h:720}].map((p, i) => (
+                             <button key={i} onClick={() => {setResizeWidth(p.w); setResizeHeight(p.h);}} className="px-3 py-1 bg-[#292d3e] shadow-neu rounded-lg text-xs font-bold text-gray-400 whitespace-nowrap active:shadow-neu-pressed">{p.l}</button>
+                         ))}
+                     </div>
+
+                     <button onClick={handleResize} className="w-full bg-[#292d3e] text-indigo-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
+                         Resize Now
+                     </button>
+
+                     {processedImage && (
+                        <a href={processedImage} download="resized.png" className="block w-full bg-[#292d3e] text-green-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all text-center">
+                            Download
+                        </a>
+                     )}
+                     <button onClick={() => {setUtilImage(null); setProcessedImage(null);}} className="w-full text-xs text-gray-500 py-2">Start Over</button>
+                 </div>
+            </div>
+          )
+      )}
+
+      {/* 3. PALETTE */}
+      {activeTool === 'palette' && (
+          !utilImage ? renderUploadUI(Palette, "Color Extractor", () => utilFileInputRef.current?.click()) : (
+              <div className="space-y-6 animate-fade-in-up">
+                  <div className="relative rounded-xl overflow-hidden shadow-neu-pressed max-h-60 bg-[#1e212d] flex items-center justify-center">
+                      <img src={utilImage} className="max-w-full max-h-full object-contain" alt="Source" />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                      {extractedColors.map((color, i) => (
+                          <div key={i} className="bg-[#292d3e] shadow-neu p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-95 transition-transform" onClick={() => {navigator.clipboard.writeText(color); showToast("Copied hex!", "success")}}>
+                              <div className="w-10 h-10 rounded-full shadow-inner border border-white/10" style={{backgroundColor: color}}></div>
+                              <span className="text-xs font-mono font-bold text-gray-400">{color}</span>
+                          </div>
+                      ))}
+                  </div>
+                  <button onClick={() => setUtilImage(null)} className="w-full text-xs text-gray-500 py-2 mt-4">New Image</button>
+              </div>
+          )
+      )}
+
+      {/* 4. MEME */}
+      {activeTool === 'meme' && (
+          !utilImage ? renderUploadUI(Smile, "Meme Maker", () => utilFileInputRef.current?.click()) : (
+              <div className="space-y-6 animate-fade-in-up">
+                  <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                      <input value={memeTop} onChange={e => setMemeTop(e.target.value)} placeholder="Top Text" className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-center font-bold text-gray-200 outline-none uppercase" />
+                      <input value={memeBottom} onChange={e => setMemeBottom(e.target.value)} placeholder="Bottom Text" className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-center font-bold text-gray-200 outline-none uppercase" />
+                      
+                      <button onClick={renderMeme} className="w-full bg-[#292d3e] text-red-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
+                          Generate Meme
+                      </button>
+                  </div>
+                  
+                  {memeCanvasUrl && (
+                      <div className="relative rounded-xl overflow-hidden shadow-neu">
+                          <img src={memeCanvasUrl} className="w-full h-auto" alt="Meme" />
+                          <a href={memeCanvasUrl} download="meme.png" className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg text-white"><Download size={20}/></a>
+                      </div>
+                  )}
+                  <button onClick={() => {setUtilImage(null); setMemeCanvasUrl(null);}} className="w-full text-xs text-gray-500 py-2">Start Over</button>
+              </div>
+          )
+      )}
+
+      {/* 5. METADATA */}
+      {activeTool === 'meta' && (
+          !utilImage ? renderUploadUI(Info, "EXIF Viewer", () => utilFileInputRef.current?.click()) : (
+              <div className="space-y-6 animate-fade-in-up">
+                  <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl">
+                      <h3 className="text-sm font-bold text-gray-200 mb-4 flex items-center gap-2"><Info size={16} className="text-yellow-400"/> Image Details</h3>
+                      <div className="space-y-3 text-xs">
+                          {imageMeta ? Object.entries(imageMeta).slice(0, 10).map(([k, v], i) => (
+                              <div key={i} className="flex justify-between border-b border-gray-800 pb-2">
+                                  <span className="text-gray-500 font-bold capitalize">{k}</span>
+                                  <span className="text-gray-300 font-mono text-right max-w-[150px] truncate">{String(v)}</span>
+                              </div>
+                          )) : <p>Extracting data...</p>}
+                      </div>
+                      <button onClick={() => setUtilImage(null)} className="w-full mt-6 bg-[#292d3e] shadow-neu py-3 rounded-xl text-gray-400 font-bold active:shadow-neu-pressed">Check Another</button>
+                  </div>
+              </div>
+          )
+      )}
+
+      {/* 6. PUZZLE */}
+      {activeTool === 'puzzle' && (
+          !utilImage ? renderUploadUI(Gamepad, "Slide Puzzle", () => utilFileInputRef.current?.click()) : (
+              <div className="space-y-6 animate-fade-in-up text-center">
+                  <div className="inline-block p-1 bg-[#292d3e] shadow-neu rounded-xl">
+                      <div className="grid grid-cols-3 gap-1 w-72 h-72">
+                          {puzzleTiles.map((tileIndex, positionIndex) => (
+                              <div 
+                                key={positionIndex}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, positionIndex)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, positionIndex)}
+                                className={`relative w-full h-full cursor-move overflow-hidden rounded-md transition-transform active:scale-95 ${draggedTileIndex === positionIndex ? 'opacity-50' : ''}`}
+                              >
+                                  <div 
+                                    className="absolute w-[300%] h-[300%]"
+                                    style={{
+                                        backgroundImage: `url(${utilImage})`,
+                                        backgroundSize: '300% 300%',
+                                        backgroundPosition: `${(tileIndex % 3) * 50}% ${Math.floor(tileIndex / 3) * 50}%`,
+                                        left: `-${(positionIndex % 3) * 100}%`,
+                                        top: `-${Math.floor(positionIndex / 3) * 100}%`
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 border border-black/10 pointer-events-none"></div>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+                  
+                  {puzzleWin ? (
+                      <div className="bg-[#292d3e] shadow-neu p-4 rounded-xl text-green-400 font-bold animate-bounce">
+                          🎉 Puzzle Solved!
+                      </div>
+                  ) : (
+                      <p className="text-xs text-gray-500">Drag and drop tiles to swap positions</p>
+                  )}
+
+                  <button onClick={() => {setUtilImage(null); setPuzzleWin(false);}} className="text-xs text-gray-500 underline">Quit Game</button>
+              </div>
+          )
+      )}
       
        {/* Hidden Upload for Util Tools */}
        <input type="file" ref={utilFileInputRef} onChange={handleUtilImageUpload} className="hidden" accept="image/*" />

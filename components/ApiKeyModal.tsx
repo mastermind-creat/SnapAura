@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Key, Save, Eye, EyeOff, ShieldCheck, ExternalLink, Trash2, ClipboardPaste, X, RefreshCw } from './Icons';
 import { Logo } from './Logo';
@@ -77,42 +78,38 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
       {/* Dimmed Background */}
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-fade-in-up"></div>
+      <div className="absolute inset-0 bg-[#292d3e]/95 backdrop-blur-sm animate-fade-in-up"></div>
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-sm bg-[#1a1a20] border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up ring-1 ring-white/5 max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div className="relative w-full max-w-sm bg-[#292d3e] rounded-3xl p-8 shadow-neu animate-fade-in-up max-h-[90vh] overflow-y-auto hide-scrollbar">
         
         {/* Close Button (Top Right) */}
         {canClose && (
             <button 
                 onClick={onClose}
-                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full z-20"
+                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-500 hover:text-red-400 active:shadow-neu-pressed transition-all"
                 title="Close"
             >
-                <X size={20} />
+                <X size={16} />
             </button>
         )}
 
-        {/* Glow Effects */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary opacity-50"></div>
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-[80px]"></div>
-
         {/* Header */}
-        <div className="flex flex-col items-center text-center space-y-4 mb-6 relative z-10">
-          <div className="bg-white/5 p-4 rounded-2xl border border-white/10 shadow-lg">
-            <Logo size={48} />
+        <div className="flex flex-col items-center text-center space-y-6 mb-8 relative z-10">
+          <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center">
+            <Logo size={60} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">API Configuration</h2>
-            <p className="text-sm text-gray-400 mt-1">Connect your Google Gemini API Key.</p>
+            <h2 className="text-xl font-bold text-gray-200">API Access</h2>
+            <p className="text-xs text-gray-500 mt-2 font-medium uppercase tracking-wide">Connect Google Gemini</p>
           </div>
         </div>
 
         {/* Input Area */}
-        <div className="space-y-4 relative z-10">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">
-               <Key size={12} /> API Key
+        <div className="space-y-6 relative z-10">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-gray-500 uppercase ml-3 flex items-center gap-1">
+               <Key size={10} /> Enter API Key
             </label>
             <div className="relative group">
               <input 
@@ -120,26 +117,26 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="AIzaSy..."
-                className="w-full bg-black/40 border border-white/10 rounded-xl pl-4 pr-24 py-3.5 text-white placeholder-gray-600 focus:border-primary focus:outline-none transition-all font-mono text-sm"
+                className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl pl-4 pr-12 py-4 text-gray-300 placeholder-gray-600 focus:outline-none focus:text-primary transition-all font-mono text-sm"
               />
               
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 {key.length === 0 && (
                   <button 
                     onClick={handlePaste}
-                    className="p-1.5 text-gray-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-lg"
+                    className="p-2 text-gray-500 hover:text-primary transition-colors"
                     title="Paste"
                   >
-                    <ClipboardPaste size={16} />
+                    <ClipboardPaste size={18} />
                   </button>
                 )}
                 
                 {key.length > 0 && (
                    <button 
                     onClick={() => setShowKey(!showKey)}
-                    className="p-1.5 text-gray-500 hover:text-white transition-colors"
+                    className="p-2 text-gray-500 hover:text-primary transition-colors"
                   >
-                    {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 )}
               </div>
@@ -147,24 +144,24 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
           </div>
 
           {/* Privacy Note */}
-          <div className="flex gap-3 bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl items-start">
-             <ShieldCheck className="text-blue-400 shrink-0 mt-0.5" size={16} />
-             <p className="text-[10px] text-blue-200 leading-relaxed">
-               Your key is stored <strong>securely on your device</strong> (LocalStorage). It is never sent to our servers.
+          <div className="flex gap-3 bg-[#292d3e] shadow-neu p-4 rounded-xl items-start">
+             <ShieldCheck className="text-green-400 shrink-0 mt-0.5" size={16} />
+             <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+               Your key is stored <strong>locally on your device</strong>. It is never sent to our servers.
              </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-2 space-y-3">
+          <div className="pt-2 space-y-4">
              <button 
                 onClick={handleSave}
                 disabled={isValidating}
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full bg-[#292d3e] text-primary font-bold py-4 rounded-xl shadow-neu active:shadow-neu-pressed hover:text-secondary transition-all flex items-center justify-center gap-2"
              >
                 {isValidating ? (
-                  <><RefreshCw className="animate-spin" size={18} /> Verifying Key...</>
+                  <><RefreshCw className="animate-spin" size={18} /> Verifying...</>
                 ) : (
-                  <><Save size={18} /> Save & Connect</>
+                  <><Save size={18} /> Save Connection</>
                 )}
              </button>
 
@@ -172,7 +169,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
              {key && (
                  <button 
                    onClick={handleDelete}
-                   className="w-full py-3 text-xs font-bold text-red-400 hover:text-red-300 flex items-center justify-center gap-2 hover:bg-red-500/10 rounded-xl transition-colors"
+                   className="w-full py-4 text-xs font-bold text-red-400 hover:text-red-300 flex items-center justify-center gap-2 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-xl transition-all"
                  >
                    <Trash2 size={14} /> Remove Key
                  </button>
@@ -181,19 +178,19 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
              {/* Explicit Skip Option */}
              <button 
                 onClick={handleSkip} 
-                className="w-full text-xs text-gray-500 hover:text-white transition-colors py-2"
+                className="w-full text-[10px] font-bold uppercase tracking-wide text-gray-600 hover:text-gray-400 transition-colors py-2"
              >
                 Continue without API Key
              </button>
           </div>
 
           {/* Helper Links */}
-          <div className="pt-2 border-t border-white/10 space-y-3 text-center">
+          <div className="pt-4 border-t border-[#292d3e] space-y-3 text-center">
             <a 
               href="https://aistudio.google.com/app/apikey" 
               target="_blank" 
               rel="noreferrer"
-              className="flex items-center justify-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors"
+              className="flex items-center justify-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors font-bold"
             >
               Get a key from Google AI Studio <ExternalLink size={10} />
             </a>
