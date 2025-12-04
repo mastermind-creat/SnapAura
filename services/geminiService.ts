@@ -508,10 +508,9 @@ export const getLiveMatchDetails = async () => {
     If no major matches are live, find the most recent completed major match results.
     Return a list of up to 3 matches.
     
-    For "commentary", adhere to this structure:
-    **Direct Answer:** One sentence summary of the game state.
-    **Momentum:** Who is attacking?
-    **Key Event:** Last major action.
+    For "commentary", return a SINGLE STRING formatted with Markdown.
+    Example: "**Direct Answer:** Match is intense. **Momentum:** Home team attacking. **Key Event:** Goal by ..."
+    Do NOT return a nested JSON object for commentary.
     
     Return strict JSON:
     [
@@ -522,7 +521,7 @@ export const getLiveMatchDetails = async () => {
         "score": "string (e.g. 2-1)",
         "status": "string (e.g. 65' or FT)",
         "events": "string (summary of goals/cards)",
-        "commentary": "string (Structured AI analysis)"
+        "commentary": "string"
       }
     ]
   `;

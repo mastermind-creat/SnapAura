@@ -81,16 +81,16 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
       <div className="absolute inset-0 bg-[#292d3e]/95 backdrop-blur-sm animate-fade-in-up"></div>
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-sm bg-[#292d3e] rounded-3xl p-8 shadow-neu animate-fade-in-up max-h-[90vh] overflow-y-auto hide-scrollbar">
+      <div className="relative w-full max-w-sm bg-[#292d3e] rounded-3xl p-8 shadow-neu animate-fade-in-up max-h-[90vh] overflow-y-auto hide-scrollbar border border-white/5">
         
         {/* Close Button (Top Right) */}
         {canClose && (
             <button 
                 onClick={onClose}
-                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-500 hover:text-red-400 active:shadow-neu-pressed transition-all"
+                className="absolute top-6 right-6 w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-500 hover:text-red-400 active:shadow-neu-pressed transition-all"
                 title="Close"
             >
-                <X size={16} />
+                <X size={18} />
             </button>
         )}
 
@@ -100,16 +100,16 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
             <Logo size={60} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-200">API Access</h2>
+            <h2 className="text-2xl font-bold text-gray-200">API Access</h2>
             <p className="text-xs text-gray-500 mt-2 font-medium uppercase tracking-wide">Connect Google Gemini</p>
           </div>
         </div>
 
         {/* Input Area */}
         <div className="space-y-6 relative z-10">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-[10px] font-bold text-gray-500 uppercase ml-3 flex items-center gap-1">
-               <Key size={10} /> Enter API Key
+               <Key size={12} /> Enter API Key
             </label>
             <div className="relative group">
               <input 
@@ -117,14 +117,14 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="AIzaSy..."
-                className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl pl-4 pr-12 py-4 text-gray-300 placeholder-gray-600 focus:outline-none focus:text-primary transition-all font-mono text-sm"
+                className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl pl-5 pr-14 py-4 text-gray-300 placeholder-gray-600 focus:outline-none focus:text-primary transition-all font-mono text-sm tracking-wide"
               />
               
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {key.length === 0 && (
                   <button 
                     onClick={handlePaste}
-                    className="p-2 text-gray-500 hover:text-primary transition-colors"
+                    className="p-2 text-gray-500 hover:text-primary transition-colors rounded-lg hover:bg-black/10"
                     title="Paste"
                   >
                     <ClipboardPaste size={18} />
@@ -134,7 +134,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
                 {key.length > 0 && (
                    <button 
                     onClick={() => setShowKey(!showKey)}
-                    className="p-2 text-gray-500 hover:text-primary transition-colors"
+                    className="p-2 text-gray-500 hover:text-primary transition-colors rounded-lg hover:bg-black/10"
                   >
                     {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -144,7 +144,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
           </div>
 
           {/* Privacy Note */}
-          <div className="flex gap-3 bg-[#292d3e] shadow-neu p-4 rounded-xl items-start">
+          <div className="flex gap-3 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl items-start border border-white/5">
              <ShieldCheck className="text-green-400 shrink-0 mt-0.5" size={16} />
              <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
                Your key is stored <strong>locally on your device</strong>. It is never sent to our servers.
@@ -156,7 +156,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
              <button 
                 onClick={handleSave}
                 disabled={isValidating}
-                className="w-full bg-[#292d3e] text-primary font-bold py-4 rounded-xl shadow-neu active:shadow-neu-pressed hover:text-secondary transition-all flex items-center justify-center gap-2"
+                className="w-full bg-[#292d3e] text-primary font-bold py-4 rounded-xl shadow-neu active:shadow-neu-pressed hover:text-secondary transition-all flex items-center justify-center gap-2 transform active:scale-[0.98]"
              >
                 {isValidating ? (
                   <><RefreshCw className="animate-spin" size={18} /> Verifying...</>
@@ -185,12 +185,12 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isVisible, onClose, canClose 
           </div>
 
           {/* Helper Links */}
-          <div className="pt-4 border-t border-[#292d3e] space-y-3 text-center">
+          <div className="pt-6 border-t border-white/5 space-y-3 text-center">
             <a 
               href="https://aistudio.google.com/app/apikey" 
               target="_blank" 
               rel="noreferrer"
-              className="flex items-center justify-center gap-1 text-[10px] text-gray-500 hover:text-primary transition-colors font-bold"
+              className="flex items-center justify-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
             >
               Get a key from Google AI Studio <ExternalLink size={10} />
             </a>
