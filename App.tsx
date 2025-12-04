@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import Studio from './components/Studio';
@@ -106,8 +105,17 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-full max-w-md mx-auto bg-gradient-to-b from-[#0f0f11] via-[#1a1a20] to-[#0f0f11] shadow-2xl shadow-black overflow-hidden flex flex-col">
+    <div className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
+      {/* Dynamic Alive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Main Gradient Drift */}
+          <div className="absolute inset-0 alive-bg opacity-80"></div>
+          {/* Floating Blobs */}
+          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] animate-drift"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] animate-aurora"></div>
+      </div>
+
       {/* Toast System */}
       <ToastContainer />
       
@@ -136,10 +144,6 @@ const App: React.FC = () => {
             onClose={() => setShowAuthModal(false)} 
           />
       )}
-
-      {/* Background Decoration */}
-      <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[120px] pointer-events-none opacity-30 z-0" />
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck, X } from './Icons';
+import { Globe, Facebook, Twitter, ArrowRight, CheckCircle, RefreshCw, ShieldCheck, X, User, Lock } from './Icons';
 import { showToast } from './Toast';
 
 interface AuthProps {
@@ -62,135 +62,132 @@ const Auth: React.FC<AuthProps> = ({ onLogin, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0f0f11] overflow-hidden animate-fade-in-up">
-       {/* Background Elements */}
-       <div className="absolute inset-0 pointer-events-none z-0">
-           <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse-slow"></div>
-           <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-secondary/20 rounded-full blur-[100px] animate-pulse-slow delay-1000"></div>
+    <div className="fixed inset-0 z-[100] bg-[#292d3e] overflow-hidden animate-fade-in-up flex flex-col items-center justify-center">
+       
+       {/* Background Aesthetics */}
+       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+           <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-20 animate-spin-slow"></div>
        </div>
        
        {/* Close Button */}
        <button 
            onClick={onClose}
-           className="absolute top-6 right-6 z-50 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+           className="absolute top-6 right-6 z-50 w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400 hover:text-red-400 active:shadow-neu-pressed transition-all"
        >
-           <X size={24} />
+           <X size={20} />
        </button>
 
-       {/* Scrollable Container */}
-       <div className="absolute inset-0 overflow-y-auto hide-scrollbar z-10">
-           <div className="min-h-full flex flex-col items-center justify-center p-6 py-12">
+       {/* Main Card */}
+       <div className="w-full max-w-sm px-6 relative z-10">
+           <div className="bg-[#292d3e] shadow-neu rounded-3xl p-8 relative">
                
-               <div className="glass-panel w-full max-w-sm p-8 rounded-3xl border border-white/20 shadow-2xl relative my-auto">
-                   
-                   {/* Header */}
-                   <div className="text-center mb-8">
-                       <div className="inline-block p-4 bg-white/5 rounded-2xl mb-4 border border-white/10 shadow-inner">
-                           <Logo size={48} />
-                       </div>
-                       <h1 className="text-2xl font-black text-white mb-2">
-                           {isLogin ? 'Welcome Back' : 'Join SnapAura'}
-                       </h1>
-                       <p className="text-sm text-gray-400">
-                           {isLogin ? 'Enter your credentials to access your studio.' : 'Start your creative journey today.'}
-                       </p>
+               {/* Header */}
+               <div className="flex flex-col items-center text-center mb-8">
+                   <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-6">
+                       <Logo size={50} />
                    </div>
+                   <h1 className="text-2xl font-black text-gray-200 tracking-tight">
+                       {isLogin ? 'Welcome Back' : 'Join SnapAura'}
+                   </h1>
+                   <p className="text-xs text-gray-500 mt-2 font-medium uppercase tracking-wide">
+                       {isLogin ? 'Sign in to your studio' : 'Create your creative account'}
+                   </p>
+               </div>
 
-                   {/* Form */}
-                   <form onSubmit={handleSubmit} className="space-y-4">
-                       <div className="space-y-4">
+               {/* Form */}
+               <form onSubmit={handleSubmit} className="space-y-5">
+                   <div className="space-y-4">
+                       <div className="relative group">
+                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                               <User size={18} />
+                           </div>
                            <input 
                               type="email" 
                               placeholder="Email Address" 
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
-                              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-primary focus:outline-none transition-colors"
+                              className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl pl-12 pr-4 py-4 text-gray-300 placeholder-gray-500 focus:outline-none focus:text-primary transition-all text-sm font-medium"
                            />
+                       </div>
+                       <div className="relative group">
+                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                               <Lock size={18} />
+                           </div>
                            <input 
                               type="password" 
                               placeholder="Password" 
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
-                              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-primary focus:outline-none transition-colors"
+                              className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl pl-12 pr-4 py-4 text-gray-300 placeholder-gray-500 focus:outline-none focus:text-primary transition-all text-sm font-medium"
                            />
                        </div>
-
-                       {/* Manual Verification Checkbox */}
-                       <div className={`flex justify-center py-2 transition-transform ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
-                           <style>{`
-                             @keyframes shake {
-                               0%, 100% { transform: translateX(0); }
-                               25% { transform: translateX(-5px); }
-                               75% { transform: translateX(5px); }
-                             }
-                           `}</style>
-                           <div 
-                             onClick={() => setIsVerified(!isVerified)}
-                             className={`w-full p-4 rounded-xl border cursor-pointer flex items-center justify-between gap-3 transition-all select-none ${
-                                isVerified 
-                                ? "bg-green-500/10 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" 
-                                : shake 
-                                    ? "bg-red-500/10 border-red-500" 
-                                    : "bg-black/30 border-white/10 hover:bg-white/5"
-                             }`}
-                           >
-                               <div className="flex items-center gap-3">
-                                   <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-colors ${
-                                       isVerified ? "bg-green-500 border-green-500" : shake ? "border-red-500" : "border-gray-500"
-                                   }`}>
-                                       {isVerified && <CheckCircle size={16} className="text-white" />}
-                                   </div>
-                                   <span className={`text-sm font-medium ${isVerified ? "text-green-400" : shake ? "text-red-400" : "text-gray-400"}`}>
-                                       Verify I am human
-                                   </span>
-                               </div>
-                               <ShieldCheck size={18} className={isVerified ? "text-green-500" : shake ? "text-red-500" : "text-gray-600"} />
-                           </div>
-                       </div>
-
-                       <button 
-                          type="submit" 
-                          disabled={loading}
-                          className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-                       >
-                           {loading ? <RefreshCw className="animate-spin" /> : (isLogin ? 'Sign In' : 'Create Account')}
-                           {!loading && <ArrowRight size={18} />}
-                       </button>
-                   </form>
-
-                   {/* Social Login */}
-                   <div className="mt-8">
-                       <div className="relative mb-6">
-                           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
-                           <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#1a1a20] px-2 text-gray-500 font-bold">Or continue with</span></div>
-                       </div>
-                       
-                       <div className="grid grid-cols-3 gap-3">
-                           <button onClick={() => handleSocialLogin('Google')} className="bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-xl flex justify-center items-center transition-all hover:-translate-y-1">
-                               <Globe size={20} className="text-white" />
-                           </button>
-                           <button onClick={() => handleSocialLogin('Twitter')} className="bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-xl flex justify-center items-center transition-all hover:-translate-y-1">
-                               <Twitter size={20} className="text-blue-400" />
-                           </button>
-                           <button onClick={() => handleSocialLogin('Facebook')} className="bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-xl flex justify-center items-center transition-all hover:-translate-y-1">
-                               <Facebook size={20} className="text-blue-600" />
-                           </button>
-                       </div>
                    </div>
 
-                   {/* Toggle */}
-                   <div className="mt-6 text-center pt-4 border-t border-white/10">
-                       <p className="text-sm text-gray-400">
-                           {isLogin ? "Don't have an account? " : "Already have an account? "}
-                           <button onClick={() => setIsLogin(!isLogin)} className="text-white font-bold hover:underline ml-1">
-                               {isLogin ? 'Sign Up' : 'Log In'}
-                           </button>
-                       </p>
+                   {/* Manual Verification Checkbox */}
+                   <div className={`transition-transform duration-300 ${shake ? 'translate-x-[-5px]' : ''}`}>
+                       <button
+                         type="button" 
+                         onClick={() => setIsVerified(!isVerified)}
+                         className={`w-full p-3 rounded-xl flex items-center justify-between gap-3 transition-all select-none group ${
+                            isVerified 
+                            ? "bg-[#292d3e] shadow-neu-pressed" 
+                            : "bg-[#292d3e] shadow-neu hover:scale-[1.01]"
+                         }`}
+                       >
+                           <div className="flex items-center gap-3">
+                               <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                                   isVerified ? "bg-green-400 text-[#292d3e] shadow-none" : "bg-[#292d3e] shadow-neu-pressed"
+                               }`}>
+                                   {isVerified && <CheckCircle size={14} strokeWidth={3} />}
+                               </div>
+                               <span className={`text-xs font-bold uppercase tracking-wider ${isVerified ? "text-green-400" : shake ? "text-red-400" : "text-gray-500 group-hover:text-gray-400"}`}>
+                                   I am human
+                               </span>
+                           </div>
+                           <ShieldCheck size={16} className={isVerified ? "text-green-400" : "text-gray-600"} />
+                       </button>
+                   </div>
+
+                   <button 
+                      type="submit" 
+                      disabled={loading}
+                      className="w-full bg-[#292d3e] text-primary font-bold py-4 rounded-xl shadow-neu active:shadow-neu-pressed hover:text-secondary transition-all flex items-center justify-center gap-2"
+                   >
+                       {loading ? <RefreshCw className="animate-spin" /> : (isLogin ? 'Sign In' : 'Create Account')}
+                       {!loading && <ArrowRight size={18} />}
+                   </button>
+               </form>
+
+               {/* Social Login */}
+               <div className="mt-8">
+                   <div className="flex items-center gap-4 mb-6">
+                       <div className="h-px bg-[#1e212d] flex-1 shadow-[0_1px_0_rgba(255,255,255,0.05)]"></div>
+                       <span className="text-[10px] text-gray-500 font-bold uppercase">Or Connect With</span>
+                       <div className="h-px bg-[#1e212d] flex-1 shadow-[0_1px_0_rgba(255,255,255,0.05)]"></div>
+                   </div>
+                   
+                   <div className="grid grid-cols-3 gap-4">
+                       <button onClick={() => handleSocialLogin('Google')} className="bg-[#292d3e] shadow-neu p-3 rounded-xl flex justify-center items-center transition-all active:shadow-neu-pressed hover:scale-105 text-gray-400 hover:text-white">
+                           <Globe size={20} />
+                       </button>
+                       <button onClick={() => handleSocialLogin('Twitter')} className="bg-[#292d3e] shadow-neu p-3 rounded-xl flex justify-center items-center transition-all active:shadow-neu-pressed hover:scale-105 text-blue-400">
+                           <Twitter size={20} />
+                       </button>
+                       <button onClick={() => handleSocialLogin('Facebook')} className="bg-[#292d3e] shadow-neu p-3 rounded-xl flex justify-center items-center transition-all active:shadow-neu-pressed hover:scale-105 text-blue-600">
+                           <Facebook size={20} />
+                       </button>
                    </div>
                </div>
-               
-               {/* Footer Spacer for mobile scrolling */}
-               <div className="h-8"></div>
+
+               {/* Toggle */}
+               <div className="mt-8 text-center">
+                   <button 
+                    onClick={() => setIsLogin(!isLogin)} 
+                    className="text-xs text-gray-500 font-bold uppercase tracking-wider hover:text-primary transition-colors"
+                   >
+                       {isLogin ? "Create new account" : "Log in to existing account"}
+                   </button>
+               </div>
            </div>
        </div>
     </div>

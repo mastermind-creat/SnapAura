@@ -43,32 +43,44 @@
               'neu-sm': '4px 4px 8px #1e212d, -4px -4px 8px #35394b',
               'neu-pressed': 'inset 6px 6px 12px #1e212d, inset -6px -6px 12px #35394b',
               'neu-pressed-sm': 'inset 3px 3px 6px #1e212d, inset -3px -3px 6px #35394b',
+              'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
             },
             animation: {
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'float': 'float 6s ease-in-out infinite',
+              'float-delayed': 'float 7s ease-in-out 2s infinite',
               'float-slow': 'float 8s ease-in-out infinite',
               'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
               'aurora': 'aurora 10s infinite alternate',
               'spin-slow': 'spin 12s linear infinite',
               'shimmer': 'shimmer 2.5s linear infinite',
+              'drift': 'drift 20s linear infinite',
+              'breathe': 'breathe 5s ease-in-out infinite',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-20px)' },
+                '50%': { transform: 'translateY(-15px)' },
               },
               fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
+                '0%': { opacity: '0', transform: 'translateY(30px) scale(0.95)' },
+                '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
               },
               aurora: {
-                '0%': { transform: 'translate(0, 0) scale(1)' },
-                '100%': { transform: 'translate(20px, -20px) scale(1.1)' },
+                '0%': { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
+                '100%': { transform: 'translate(30px, -20px) scale(1.1) rotate(5deg)' },
               },
               shimmer: {
                 '0%': { backgroundPosition: '-200% 0' },
                 '100%': { backgroundPosition: '200% 0' },
+              },
+              drift: {
+                '0%': { transform: 'translate(0, 0)' },
+                '100%': { transform: 'translate(-50%, -50%)' },
+              },
+              breathe: {
+                '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+                '50%': { opacity: '0.7', transform: 'scale(1.05)' },
               }
             }
           },
@@ -80,7 +92,7 @@
         background-color: #292d3e;
         color: #e2e8f0;
         font-family: 'Inter', sans-serif;
-        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+        overscroll-behavior-y: none;
       }
       .glass-panel {
         background: rgba(255, 255, 255, 0.05);
@@ -88,26 +100,26 @@
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
-      /* Hide Scrollbar */
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .hide-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom, 20px);
-      }
-      /* Grain Effect */
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+      
+      /* Cinematic Grain */
       .grain-overlay {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
       }
-      .animate-shimmer-bg {
-        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
-        background-size: 200% 100%;
+      
+      /* Alive Background */
+      .alive-bg {
+        background: radial-gradient(circle at 50% 50%, #292d3e 0%, #1a1c29 100%);
       }
-      /* Markdown Styles */
+      
+      /* Staggered Animation Utilities */
+      .delay-100 { animation-delay: 100ms; }
+      .delay-200 { animation-delay: 200ms; }
+      .delay-300 { animation-delay: 300ms; }
+      .delay-500 { animation-delay: 500ms; }
+      
       .prose p { margin-bottom: 0.5em; }
       .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
       .prose ol { list-style-type: decimal; padding-left: 1.2em; margin-bottom: 0.5em; }
