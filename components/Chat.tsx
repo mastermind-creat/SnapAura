@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Sparkles, Users, Copy, Link2, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Pause, Download, UserPlus, LogIn, DownloadCloud, Link as LinkIcon, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, Camera, TrendingUp, Briefcase, Smile, Trophy, Grid } from './Icons';
+import { Send, Sparkles, Copy, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Download, LogIn, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, DownloadCloud, Link as LinkIcon, User } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -26,75 +26,68 @@ interface Persona {
   id: string;
   name: string;
   role: string;
-  icon: any;
+  avatar: string;
   color: string;
-  bg: string;
   systemPrompt: string;
 }
 
+// Updated Personas with Unsplash Avatars and Human Prompts
 const PERSONAS: Persona[] = [
   {
     id: 'aesthetic',
     name: 'Aesthetic Coach',
-    role: 'Vibe & Style Expert',
-    icon: Sparkles,
+    role: 'Vibe Curator',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
     color: 'text-pink-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are an Aesthetic Coach. Always start with a Direct Answer in bold. Then use bullet points for editing tips, filters, or curation advice. Use trendy language but keep it structured. End with a confidence score."
+    systemPrompt: "You are a Gen-Z Aesthetic Coach. Talk like a trendy creative director. Be super helpful but chill. Use emojis. Keep advice short and practical. Don't be robotic."
   },
   {
     id: 'photo',
-    name: 'Photography Mentor',
+    name: 'Photo Mentor',
     role: 'Pro Photographer',
-    icon: Camera,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
     color: 'text-blue-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are a professional Photography Mentor. Structure your answer: Direct Answer first, then Technical Breakdown (ISO, Aperture, Lighting) in bullets. Keep explanations simple for beginners. End with a confidence score."
+    systemPrompt: "You are a seasoned photographer. Talk like a mentor. Explain lighting/composition simply. Don't use jargon without explaining. Keep it brief and encouraging."
   },
   {
     id: 'social',
-    name: 'Social Strategist',
-    role: 'Growth Hacker',
-    icon: TrendingUp,
+    name: 'Growth Guru',
+    role: 'Social Strategist',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop',
     color: 'text-purple-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are a Social Media Strategist. Start with a Direct Strategy summary. Then break down the 'Why' and 'How' using bullets. Focus on engagement and growth. End with a confidence score."
+    systemPrompt: "You are a Social Media Strategist. Talk like a growth hacker. Be punchy. Focus on viral hooks and engagement. No fluff. Give clear, actionable steps."
   },
   {
     id: 'vibe',
     name: 'Vibe Advisor',
-    role: 'Relationship Guru',
-    icon: Heart,
+    role: 'Relationship & Mood',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
     color: 'text-red-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are a Relationship & Vibe Advisor. Give a Direct Answer first. Then offer perspective in a warm, empathetic breakdown. Avoid rambling. End with a 'Vibe Check' score (0-100%)."
+    systemPrompt: "You are an empathetic Vibe Advisor. Listen like a best friend. Give warm, real advice. Be supportive but honest. Keep it conversational."
   },
   {
     id: 'productivity',
-    name: 'Productivity Coach',
-    role: 'Focus Expert',
-    icon: Briefcase,
+    name: 'Focus Coach',
+    role: 'Productivity Expert',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop',
     color: 'text-orange-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are a Productivity Coach. Be sharp and concise. Direct Answer first. Then actionable steps in a list. No fluff. End with a 'Success Probability' score."
+    systemPrompt: "You are a no-nonsense Productivity Coach. Be direct and efficient. Bullet points are your friend. Help the user get things done fast."
   },
   {
     id: 'football',
-    name: 'Football Analyst',
-    role: 'Sports Expert',
-    icon: Trophy,
+    name: 'Footy Analyst',
+    role: 'Sports Pundit',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
     color: 'text-green-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are a Football Analyst. Start with the Bottom Line (Direct Answer). Then break down Stats, Form, and Tactics using bullets. Be objective. End with a Confidence Score."
+    systemPrompt: "You are a football pundit. Talk stats and tactics like a fan. Be objective but passionate. Analyze form and key players concisely."
   },
   {
     id: 'friend',
-    name: 'Friendly Chat',
-    role: 'Companion',
-    icon: Smile,
+    name: 'Bestie',
+    role: 'Chat Companion',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop',
     color: 'text-yellow-400',
-    bg: 'bg-[#292d3e] shadow-neu',
-    systemPrompt: "You are a friendly chat companion. Keep it casual but structured. Answer directly, then expand if needed. Be fun. End with a 'Fun Score'."
+    systemPrompt: "You are a friendly chat companion. Just hang out. Be casual, use slang if appropriate. Ask questions. Don't act like an assistant."
   }
 ];
 
@@ -146,8 +139,8 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
   // Refs for PeerJS
   const peerInstance = useRef<any>(null);
-  const connectionsRef = useRef<any[]>([]); // Store all connections (Host maintains list)
-  const connectedUsersRef = useRef<{id: string, name: string}[]>([]); // For admin view
+  const connectionsRef = useRef<any[]>([]); 
+  const connectedUsersRef = useRef<{id: string, name: string}[]>([]); 
 
   // Load Persona from LocalStorage
   useEffect(() => {
@@ -156,7 +149,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       const persona = PERSONAS.find(p => p.id === savedId);
       if (persona) {
         setSelectedPersona(persona);
-        setAiMessages([{ id: 'init-p', role: 'model', text: `Hi! I'm your **${persona.name}**. How can I help you today?` }]);
+        setAiMessages([{ id: 'init-p', role: 'model', text: `Hey! I'm your **${persona.name}**. What's on your mind?` }]);
       }
     }
   }, []);
@@ -178,30 +171,22 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     }
   }, [aiMessages, p2pMessages, mode, attachment, replyingTo]);
 
-  // Clean up Peer on unmount
   useEffect(() => {
     return () => {
       destroyPeer();
     };
   }, []);
 
-  // Heartbeat / Keep-alive & Cleanup
   useEffect(() => {
       const interval = setInterval(() => {
           if (!peerInstance.current) return;
-          
-          // Clean up closed connections
           connectionsRef.current = connectionsRef.current.filter(c => c.open);
           setActiveConnections(connectionsRef.current.length);
-          
-          // Rebuild Admin User List
           const users = connectionsRef.current.map(c => ({
               id: c.peer,
               name: c.metadata?.username || 'Unknown'
           }));
           connectedUsersRef.current = users;
-          
-          // Host sends Ping
           if (isHost) {
               connectionsRef.current.forEach(c => {
                   if(c.open) c.send({ type: 'ping' });
@@ -211,7 +196,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       return () => clearInterval(interval);
   }, [isHost]);
 
-  // Check URL for join link and Auto Connect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const joinId = params.get('join');
@@ -224,7 +208,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
     }
   }, []);
 
-  // Auto-trigger connect if we just set username and have a target
   useEffect(() => {
       if (myPeerId && targetPeerId && p2pState === 'setup' && !isConnecting) {
           connectToPeer();
@@ -234,8 +217,8 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const selectPersona = (persona: Persona) => {
     setSelectedPersona(persona);
     localStorage.setItem('SNAPAURA_PERSONA', persona.id);
-    setAiMessages([{ id: Date.now().toString(), role: 'model', text: `Hello! I'm your **${persona.name}**. Let's get started!` }]);
-    showToast(`${persona.name} Activated`, "success");
+    setAiMessages([{ id: Date.now().toString(), role: 'model', text: `Hi there! I'm ${persona.name}. Let's chat!` }]);
+    showToast(`${persona.name} active`, "success");
   };
 
   const clearPersona = () => {
@@ -298,7 +281,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
   const handleIncomingConnection = (conn: any) => {
       conn.on('open', () => {
-          // Deduplication: Remove existing connection from same user if reconnection
           const newUser = conn.metadata?.username;
           const existingConn = connectionsRef.current.find(c => c.metadata?.username === newUser || c.peer === conn.peer);
           
@@ -311,7 +293,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
           setActiveConnections(prev => connectionsRef.current.length);
           setP2pState('connected');
           
-          // Send welcome message
           conn.send({
               type: 'system',
               text: `Connected to ${username} (Host)`,
@@ -326,7 +307,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       });
       
       conn.on('close', () => {
-          // Handled by heartbeat interval mostly
           showToast("A user disconnected", "info");
       });
   };
@@ -360,17 +340,14 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   };
 
   const handleIncomingData = (data: any, sourceConn: any) => {
-      if (data.type === 'ping') return; // Heartbeat
+      if (data.type === 'ping') return;
       
-      // Handle Actions (Delete, React)
       if (data.type === 'action') {
           handleAction(data);
-          // Relay if Host
           if (isHost) relayToOthers(data, sourceConn);
           return;
       }
 
-      // Standard Message
       let msg: Message = { 
           id: data.id || Date.now().toString(),
           role: 'peer', 
@@ -386,14 +363,12 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       if (data.type !== 'system') {
           setP2pMessages(prev => {
-              // Dedupe
               if (prev.find(m => m.id === msg.id)) return prev;
               return [...prev, msg];
           });
           if (navigator.vibrate) navigator.vibrate(20);
       }
 
-      // Relay if Host
       if (isHost) relayToOthers(data, sourceConn);
   };
 
@@ -422,9 +397,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
   const sendAction = (action: string, payload: any) => {
       const packet = { type: 'action', action, ...payload };
-      // Local Apply
       handleAction(packet);
-      // Send
       connectionsRef.current.forEach(c => c.open && c.send(packet));
   };
 
@@ -451,7 +424,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
           return;
       }
 
-      // Send to ALL
       connectionsRef.current.forEach(conn => { if (conn.open) conn.send(payload); });
 
       setP2pMessages(prev => [...prev, { ...payload, role: 'me', sender: 'Me' } as Message]);
@@ -477,7 +449,6 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       showToast("Session Link Copied!", "success");
   };
 
-  // --- MULTIMEDIA HANDLERS ---
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -541,7 +512,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       const responseText = await sendChatMessage(history, userMsg.text, selectedPersona?.systemPrompt);
       setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: responseText }]);
     } catch (error) {
-      setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Oops, I had a glitch. Try again?" }]);
+      setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Can you say that again? I missed it." }]);
     } finally { setAiLoading(false); }
   };
 
@@ -561,7 +532,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       let content: React.ReactNode = msg.text;
       
-      if (msg.role === 'model') content = <div className="prose prose-invert prose-sm max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(msg.text) : msg.text }}></div>;
+      if (msg.role === 'model') content = <div className="prose prose-invert prose-sm max-w-none text-gray-300 leading-snug" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(msg.text) : msg.text }}></div>;
       else if (msg.type === 'image') content = <div className="space-y-2"><div className="relative group"><img src={msg.text} alt="Shared" className="rounded-xl max-w-full max-h-60 shadow-lg" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl"><a href={msg.text} download={msg.fileName || 'image.png'} className="p-3 bg-[#292d3e] shadow-neu rounded-full text-white"><DownloadCloud size={20} /></a></div></div>{msg.fileName && <p className="text-[10px] opacity-70 truncate max-w-[200px]">{msg.fileName}</p>}</div>;
       else if (msg.type === 'audio') content = <div className="flex items-center gap-2 min-w-[150px]"><div className="bg-[#292d3e] shadow-neu p-2 rounded-full"><Play size={16} className="text-primary" /></div><audio controls src={msg.text} className="h-8 w-48" /></div>;
       else if (msg.type === 'file') content = <div className="flex items-center gap-3 bg-[#292d3e] p-3 rounded-xl shadow-neu-pressed"><div className="text-blue-400"><FileText size={24} /></div><div className="flex flex-col overflow-hidden mr-2"><span className="text-sm font-bold truncate max-w-[140px] text-gray-200">{msg.fileName || 'File'}</span><span className="text-[10px] opacity-60 text-gray-400">{msg.fileSize || 'Unknown size'}</span></div><a href={msg.text} download={msg.fileName || 'download'} className="p-2 bg-[#292d3e] shadow-neu hover:text-primary rounded-full text-gray-400 transition-colors"><Download size={18} /></a></div>;
@@ -582,7 +553,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                       ))}
                   </div>
               )}
-              {/* Message Actions (Hover/Tap) */}
+              {/* Message Actions */}
               {!msg.isDeleted && mode === 'p2p' && (
                   <div className={`absolute -right-8 top-0 flex flex-col gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.role === 'me' ? '-left-8 right-auto' : ''}`}>
                       <button onClick={() => setReplyingTo(msg)} className="p-1 bg-[#292d3e] shadow-neu rounded-full hover:text-blue-500 text-gray-400"><Reply size={12}/></button>
@@ -598,26 +569,25 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   return (
     <div className="h-full flex flex-col relative bg-[#292d3e]">
       {/* Header */}
-      <div className="p-3 bg-[#292d3e] sticky top-0 z-30 flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="p-3 bg-[#292d3e] sticky top-0 z-30 flex flex-col shadow-sm gap-2">
+        <div className="flex justify-between items-center">
             {mode === 'ai' ? (
                 <div className="flex items-center gap-3">
                    {selectedPersona ? (
                        <div className="flex items-center gap-3" onClick={clearPersona}>
-                           <div className={`p-2 rounded-full bg-[#292d3e] shadow-neu ${selectedPersona.color}`}>
-                               <selectedPersona.icon size={18} />
+                           <div className="w-8 h-8 rounded-full overflow-hidden shadow-neu bg-[#292d3e] border border-white/10">
+                               <img src={selectedPersona.avatar} className="w-full h-full object-cover" alt="Avatar" />
                            </div>
                            <div>
                                <h1 className="font-bold text-gray-200 leading-tight text-sm">{selectedPersona.name}</h1>
                                <p className="text-[10px] text-gray-500">{selectedPersona.role}</p>
                            </div>
-                           <button className="text-gray-500 ml-2 hover:text-red-400 active:scale-90 transition-transform"><XCircle size={16}/></button>
                        </div>
                    ) : (
-                       <>
+                       <div className="flex items-center gap-2">
                            <div className="p-2 bg-[#292d3e] shadow-neu text-blue-400 rounded-full"><Sparkles size={18} /></div>
                            <h1 className="text-lg font-bold text-gray-200">SnapAura AI</h1>
-                       </>
+                       </div>
                    )}
                 </div>
             ) : (
@@ -635,30 +605,52 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                    </div>
                 </div>
             )}
-        </div>
-        
-        <div className="flex gap-2">
-            {mode === 'p2p' && isHost && (
-                <button onClick={() => setShowAdmin(!showAdmin)} className="p-2.5 bg-[#292d3e] shadow-neu rounded-full text-gray-400 active:shadow-neu-pressed">
-                    <MoreVertical size={18} />
-                </button>
-            )}
-            <div className="bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl flex">
-                <button onClick={() => setMode('ai')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'ai' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>AI</button>
-                <button onClick={() => setMode('p2p')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'p2p' ? 'bg-[#292d3e] text-green-400 shadow-neu' : 'text-gray-500'}`}>P2P</button>
+            
+            <div className="flex gap-2">
+                {mode === 'p2p' && isHost && (
+                    <button onClick={() => setShowAdmin(!showAdmin)} className="p-2.5 bg-[#292d3e] shadow-neu rounded-full text-gray-400 active:shadow-neu-pressed">
+                        <MoreVertical size={18} />
+                    </button>
+                )}
+                <div className="bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl flex">
+                    <button onClick={() => setMode('ai')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'ai' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>AI</button>
+                    <button onClick={() => setMode('p2p')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'p2p' ? 'bg-[#292d3e] text-green-400 shadow-neu' : 'text-gray-500'}`}>P2P</button>
+                </div>
+                <button 
+                     onClick={onOpenSettings}
+                     className="text-gray-400 hover:text-white p-2.5 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-colors"
+                 >
+                     <Settings size={18} />
+                 </button>
             </div>
-            <button 
-                 onClick={onOpenSettings}
-                 className="text-gray-400 hover:text-white p-2.5 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-colors"
-             >
-                 <Settings size={18} />
-             </button>
         </div>
+
+        {/* Quick Persona Switcher (Horizontal Scroll) */}
+        {mode === 'ai' && (
+            <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2 pt-1 border-t border-[#1e212d]">
+                {PERSONAS.map(p => (
+                    <button 
+                        key={p.id}
+                        onClick={() => selectPersona(p)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all shrink-0 ${
+                            selectedPersona?.id === p.id 
+                            ? 'bg-[#292d3e] shadow-neu-pressed border border-white/5' 
+                            : 'bg-[#292d3e] shadow-neu opacity-70 hover:opacity-100'
+                        }`}
+                    >
+                        <div className="w-5 h-5 rounded-full overflow-hidden">
+                            <img src={p.avatar} className="w-full h-full object-cover" />
+                        </div>
+                        <span className={`text-[10px] font-bold ${selectedPersona?.id === p.id ? p.color : 'text-gray-500'}`}>{p.name}</span>
+                    </button>
+                ))}
+            </div>
+        )}
       </div>
 
       {/* Admin Panel (Host Only) */}
       {showAdmin && mode === 'p2p' && (
-          <div className="bg-[#292d3e] p-4 shadow-neu-pressed animate-fade-in-up">
+          <div className="bg-[#292d3e] p-4 shadow-neu-pressed animate-fade-in-up mx-2 rounded-xl mb-2">
               <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Connected Users</h3>
               <div className="space-y-2">
                   {connectedUsersRef.current.map(u => (
@@ -680,20 +672,21 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
             <>
                 {!selectedPersona && aiMessages.length === 0 ? (
                     <div className="mt-4 animate-fade-in-up">
-                        <h2 className="text-xl font-bold text-gray-200 mb-2 text-center">Choose an Assistant</h2>
-                        <p className="text-sm text-gray-500 text-center mb-6">Select a persona to guide your creative journey.</p>
-                        <div className="grid grid-cols-2 gap-4">
+                        <h2 className="text-lg font-bold text-gray-200 mb-2 text-center">Who do you want to talk to?</h2>
+                        <div className="grid grid-cols-2 gap-3">
                             {PERSONAS.map(p => (
                                 <button 
                                     key={p.id}
                                     onClick={() => selectPersona(p)}
-                                    className="bg-[#292d3e] shadow-neu p-4 rounded-2xl text-left transition-all active:shadow-neu-pressed group relative overflow-hidden"
+                                    className="bg-[#292d3e] shadow-neu p-3 rounded-2xl text-left transition-all active:shadow-neu-pressed flex items-center gap-3 hover:scale-[1.02]"
                                 >
-                                    <div className={`w-10 h-10 rounded-full bg-[#292d3e] shadow-neu ${p.color} flex items-center justify-center mb-3`}>
-                                        <p.icon size={20} />
+                                    <div className="w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex-shrink-0 overflow-hidden border border-white/5">
+                                        <img src={p.avatar} className="w-full h-full object-cover" alt={p.name} />
                                     </div>
-                                    <h3 className="font-bold text-gray-200 text-sm">{p.name}</h3>
-                                    <p className="text-[10px] text-gray-500 mt-1">{p.role}</p>
+                                    <div className="overflow-hidden">
+                                        <h3 className="font-bold text-gray-200 text-xs truncate">{p.name}</h3>
+                                        <p className="text-[9px] text-gray-500 truncate">{p.role}</p>
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -702,9 +695,14 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                     <>
                         {aiMessages.map((msg) => (
                           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up items-end gap-2`}>
-                            {/* Avatar for User in AI Chat */}
+                            {/* Avatar for User or AI */}
                             {msg.role === 'user' && userAvatar && (
                                 <img src={userAvatar} alt="Me" className="w-8 h-8 rounded-full border border-white/10 order-2 object-cover" />
+                            )}
+                            {msg.role === 'model' && selectedPersona && (
+                                <div className="w-8 h-8 rounded-full overflow-hidden shadow-neu border border-white/10 flex-shrink-0">
+                                    <img src={selectedPersona.avatar} alt="AI" className="w-full h-full object-cover" />
+                                </div>
                             )}
                             
                             <div 
@@ -731,7 +729,10 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                           </div>
                         ))}
                         {aiLoading && (
-                          <div className="flex justify-start">
+                          <div className="flex justify-start items-center gap-2">
+                             <div className="w-8 h-8 rounded-full overflow-hidden shadow-neu border border-white/10 flex-shrink-0">
+                                {selectedPersona && <img src={selectedPersona.avatar} alt="AI" className="w-full h-full object-cover" />}
+                             </div>
                             <div className="bg-[#292d3e] shadow-neu px-4 py-3 rounded-2xl rounded-bl-none flex gap-1 items-center">
                               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
                               <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-75"></span>
@@ -888,7 +889,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                           ref={textareaRef}
                           value={mode === 'ai' ? aiInput : p2pInput}
                           onChange={(e) => mode === 'ai' ? setAiInput(e.target.value) : setP2pInput(e.target.value)}
-                          placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Message SnapAura...") : "Message secure peer..."}
+                          placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Type a message...") : "Message secure peer..."}
                           className="w-full bg-transparent border-none text-gray-200 px-4 py-3 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
                           rows={1}
                           onKeyDown={(e) => {

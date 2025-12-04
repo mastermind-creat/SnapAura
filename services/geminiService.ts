@@ -93,7 +93,7 @@ const cleanAndParseJSON = (text: string) => {
   }
 };
 
-// --- GLOBAL STRUCTURE GUIDE ---
+// --- GLOBAL STRUCTURE GUIDE (For Tools) ---
 const STRUCTURE_GUIDE = `
 FORMATTING RULES:
 1. **Direct Answer**: Start with a concise, bold summary of the result.
@@ -101,6 +101,16 @@ FORMATTING RULES:
 3. **Insights**: Explain *why* this matters in simple terms.
 4. **Confidence Score**: End with a confidence percentage (0-100%) if applicable.
 5. **Tone**: Friendly, sharp, trustworthy, no jargon without explanation.
+`;
+
+// --- HUMAN CHAT GUIDE (For Personas) ---
+const HUMAN_CHAT_GUIDE = `
+BEHAVIORAL RULES:
+1. **Be Human**: Chat like a real person (friend, coach, expert). Never say "As an AI".
+2. **Be Concise**: Keep texts short and punchy, like a WhatsApp message. Only use long form if asked to explain deeply.
+3. **Structure**: Use spacing for readability, but avoid rigid document formatting unless necessary.
+4. **Engage**: Be witty, empathetic, or professional based on your persona.
+5. **Progressive Disclosure**: Give the main answer first. Ask if they want more details before dumping text.
 `;
 
 // --- 1. Image Analysis & Caption Generation ---
@@ -263,11 +273,12 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string, systemInstruction?: string) => {
     const ai = getAiClient();
     
-    // Combine the Persona instruction with the Global Structure Guide
+    // Choose the right guide: Human Guide for personas, Structure Guide for general/tools
+    const guide = systemInstruction ? HUMAN_CHAT_GUIDE : STRUCTURE_GUIDE;
+
     const combinedSystemInstruction = `
       ${systemInstruction || "You are SnapAura, a helpful, witty AI assistant."}
-      ${STRUCTURE_GUIDE}
-      Ensure all responses are visually clean, easy to scan, and suitable for beginners.
+      ${guide}
     `;
 
     const chatSession = ai.chats.create({
