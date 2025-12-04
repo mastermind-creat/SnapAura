@@ -33,6 +33,12 @@
                 light: "#35394b",
                 dark: "#1e212d",
               },
+              electric: {
+                pink: "#ff0099",
+                green: "#39ff14",
+                blue: "#00f3ff",
+                purple: "#bc13fe",
+              },
               glass: "rgba(255, 255, 255, 0.1)",
               glassBorder: "rgba(255, 255, 255, 0.2)",
               primary: "#8b5cf6",
@@ -44,6 +50,9 @@
               'neu-pressed': 'inset 6px 6px 12px #1e212d, inset -6px -6px 12px #35394b',
               'neu-pressed-sm': 'inset 3px 3px 6px #1e212d, inset -3px -3px 6px #35394b',
               'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
+              'neon-blue': '0 0 10px #00f3ff, 0 0 20px #00f3ff',
+              'neon-pink': '0 0 10px #ff0099, 0 0 20px #ff0099',
+              'neon-green': '0 0 10px #39ff14, 0 0 20px #39ff14',
             },
             animation: {
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -56,6 +65,10 @@
               'shimmer': 'shimmer 2.5s linear infinite',
               'drift': 'drift 20s linear infinite',
               'breathe': 'breathe 5s ease-in-out infinite',
+              'laser-x': 'laserX 4s linear infinite',
+              'laser-y': 'laserY 6s linear infinite',
+              'grid-move': 'gridMove 20s linear infinite',
+              'rotate-glow': 'rotateGlow 4s linear infinite',
             },
             keyframes: {
               float: {
@@ -81,6 +94,24 @@
               breathe: {
                 '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
                 '50%': { opacity: '0.7', transform: 'scale(1.05)' },
+              },
+              laserX: {
+                '0%': { left: '-100%', opacity: '0' },
+                '50%': { opacity: '1' },
+                '100%': { left: '200%', opacity: '0' }
+              },
+              laserY: {
+                '0%': { top: '-100%', opacity: '0' },
+                '50%': { opacity: '1' },
+                '100%': { top: '200%', opacity: '0' }
+              },
+              gridMove: {
+                '0%': { transform: 'perspective(500px) rotateX(60deg) translateY(0)' },
+                '100%': { transform: 'perspective(500px) rotateX(60deg) translateY(50px)' }
+              },
+              rotateGlow: {
+                '0%': { transform: 'rotate(0deg)', filter: 'hue-rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)', filter: 'hue-rotate(360deg)' }
               }
             }
           },

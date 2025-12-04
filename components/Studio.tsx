@@ -316,21 +316,35 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
       }
   };
 
-  // LANDING PAGE VIEW (CINEMATIC)
+  // LANDING PAGE VIEW (CINEMATIC + NEON)
   if (!image) {
     return (
       <div className="relative h-full flex flex-col items-center overflow-hidden bg-[#292d3e]">
         
-        {/* CINEMATIC BACKGROUND ELEMENTS */}
+        {/* --- FUTURISTIC BACKGROUND LAYERS --- */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            {/* Drifting Blobs */}
-            <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-[80px] animate-pulse-slow"></div>
-            <div className="absolute bottom-[-20%] right-[-20%] w-[120%] h-[120%] bg-gradient-to-tl from-secondary/10 to-transparent rounded-full blur-[80px] animate-aurora"></div>
+            {/* 1. Cyber Grid Floor (Perspective) */}
+            <div className="absolute -bottom-1/2 -left-1/2 w-[200%] h-[100%] opacity-20"
+                 style={{ 
+                     backgroundImage: 'linear-gradient(#00f3ff 1px, transparent 1px), linear-gradient(90deg, #00f3ff 1px, transparent 1px)', 
+                     backgroundSize: '40px 40px',
+                     transform: 'perspective(500px) rotateX(60deg)',
+                     animation: 'gridMove 20s linear infinite'
+                 }}>
+            </div>
+
+            {/* 2. Electric Pink Laser (Horizontal Scan) */}
+            <div className="absolute top-[20%] h-[2px] w-full bg-gradient-to-r from-transparent via-[#ff0099] to-transparent opacity-80 blur-[2px] animate-laser-x"></div>
             
-            {/* Particles - Simple CSS implementation */}
-            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/20 rounded-full animate-float blur-[1px]"></div>
-            <div className="absolute top-3/4 right-1/3 w-3 h-3 bg-primary/20 rounded-full animate-float-delayed blur-[1px]"></div>
-            <div className="absolute bottom-1/4 left-1/2 w-1 h-1 bg-secondary/30 rounded-full animate-float-slow"></div>
+            {/* 3. Electric Blue Laser (Vertical Scan) */}
+            <div className="absolute left-[30%] w-[2px] h-full bg-gradient-to-b from-transparent via-[#00f3ff] to-transparent opacity-60 blur-[2px] animate-laser-y delay-500"></div>
+
+            {/* 4. Green Pulse Orb (Deep Glow) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#39ff14] rounded-full blur-[100px] opacity-10 animate-pulse-slow"></div>
+            
+            {/* 5. Floating Particles */}
+            <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-[#00f3ff] rounded-full animate-float blur-[1px]"></div>
+            <div className="absolute bottom-1/3 right-1/4 w-2 h-2 bg-[#ff0099] rounded-full animate-float-delayed blur-[1px]"></div>
         </div>
 
         {/* TOP BAR */}
@@ -339,9 +353,9 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
              <div className="flex gap-4 pointer-events-auto animate-fade-in-up delay-100">
                  <button 
                     onClick={onUserClick} 
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 active:shadow-neu-pressed hover:scale-105 ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 active:shadow-neu-pressed hover:scale-105 border border-white/5 ${
                         isAuthenticated 
-                        ? 'bg-[#292d3e] text-primary shadow-neu' 
+                        ? 'bg-[#292d3e] text-electric-blue shadow-[0_0_15px_rgba(0,243,255,0.3)]' 
                         : 'bg-[#292d3e] text-gray-400 shadow-neu'
                     }`}
                  >
@@ -350,7 +364,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
                  </button>
                  <button 
                     onClick={onOpenSettings} 
-                    className="w-10 h-10 rounded-full bg-[#292d3e] shadow-neu text-gray-400 flex items-center justify-center transition-all duration-300 active:shadow-neu-pressed hover:text-white hover:scale-105"
+                    className="w-10 h-10 rounded-full bg-[#292d3e] shadow-neu text-gray-400 flex items-center justify-center transition-all duration-300 active:shadow-neu-pressed hover:text-white hover:scale-105 border border-white/5"
                  >
                      <Settings size={18} />
                  </button>
@@ -363,65 +377,75 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
             {/* HERO SECTION */}
             <div className="flex flex-col items-center text-center space-y-8 w-full">
                 
-                {/* Logo Raised Element with Breathing Glow */}
+                {/* Rotating Neon Logo Container */}
                 <div className="relative group cursor-default animate-fade-in-up">
-                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-breathe opacity-50 group-hover:opacity-80 transition-opacity duration-1000"></div>
-                    <div className="w-32 h-32 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-2 relative z-10 transition-transform duration-700 hover:scale-[1.02]">
-                        <Logo size={80} className="drop-shadow-lg" />
+                    {/* Spinning Gradient Ring */}
+                    <div className="absolute inset-[-10px] rounded-full bg-gradient-to-tr from-[#00f3ff] via-[#ff0099] to-[#39ff14] opacity-40 blur-md animate-rotate-glow"></div>
+                    
+                    <div className="w-36 h-36 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-2 relative z-10 border-2 border-white/5 transition-transform duration-700 hover:scale-[1.02]">
+                        <Logo size={80} className="drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
                     </div>
                 </div>
 
-                {/* Identity Text */}
+                {/* Identity Text with Neon Shadow */}
                 <div className="space-y-3 animate-fade-in-up delay-100">
-                    <h1 className="text-4xl font-black tracking-tight text-gray-200 drop-shadow-md">
+                    <h1 className="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-gray-300 drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]">
                         SnapAura
                     </h1>
-                    <p className="text-sm font-medium text-gray-500 tracking-[0.2em] uppercase">
+                    <p className="text-xs font-bold text-[#00f3ff] tracking-[0.3em] uppercase drop-shadow-[0_0_8px_rgba(0,243,255,0.5)]">
                         AI Creative Studio
                     </p>
                 </div>
 
-                {/* MAIN CTA Button (Neumorphic + Glow) */}
+                {/* MAIN CTA Button (Cyber-Neumorphic) */}
                 <div className="w-full px-4 pt-4 animate-fade-in-up delay-200">
                      <button 
                         onClick={() => fileInputRef.current?.click()}
-                        className="group w-full rounded-2xl bg-[#292d3e] shadow-neu p-6 flex items-center justify-between transition-all duration-500 active:shadow-neu-pressed hover:scale-[1.02] relative overflow-hidden"
+                        className="group w-full rounded-2xl bg-[#292d3e] shadow-neu p-1 relative overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                      >
-                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:animate-shimmer"></div>
-                         <div className="flex items-center gap-4 relative z-10">
-                             <div className="w-12 h-12 rounded-full bg-[#292d3e] shadow-neu-pressed flex items-center justify-center text-primary group-hover:text-secondary transition-colors duration-500 group-hover:shadow-glow">
-                                 <Upload size={24} strokeWidth={2.5} />
+                         {/* Animated Border Gradient */}
+                         <div className="absolute inset-0 bg-gradient-to-r from-[#00f3ff] via-[#ff0099] to-[#39ff14] opacity-30 group-hover:opacity-60 transition-opacity"></div>
+                         
+                         {/* Inner Button Content */}
+                         <div className="relative bg-[#292d3e] rounded-xl p-5 flex items-center justify-between z-10 h-full">
+                             <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 rounded-full bg-[#292d3e] shadow-neu-pressed flex items-center justify-center text-[#00f3ff] group-hover:text-white transition-colors duration-500 group-hover:shadow-[0_0_15px_#00f3ff]">
+                                     <Upload size={24} strokeWidth={2.5} />
+                                 </div>
+                                 <div className="text-left">
+                                     <span className="block text-lg font-bold text-gray-200 group-hover:text-white transition-colors">Upload Photo</span>
+                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider group-hover:text-[#00f3ff]">Start Creating</span>
+                                 </div>
                              </div>
-                             <div className="text-left">
-                                 <span className="block text-lg font-bold text-gray-200 group-hover:text-white transition-colors">Upload Photo</span>
-                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider group-hover:text-gray-400">Start Creating</span>
+                             <div className="w-8 h-8 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400 group-hover:text-[#39ff14] group-hover:translate-x-1 transition-all duration-300 border border-white/5">
+                                <ArrowRightIcon />
                              </div>
-                         </div>
-                         <div className="w-8 h-8 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300">
-                            <ArrowRightIcon />
                          </div>
                      </button>
                 </div>
 
-                {/* Quick Access Tiles (Floating) */}
+                {/* Quick Access Tiles (Neon Highlights) */}
                 <div className="grid grid-cols-3 gap-4 w-full px-4 animate-fade-in-up delay-300">
-                    <button onClick={() => setActiveTab(Tab.GENERATE)} className="aspect-square rounded-2xl bg-[#292d3e] shadow-neu flex flex-col items-center justify-center gap-3 transition-all duration-300 active:shadow-neu-pressed group hover:-translate-y-1">
-                            <div className="text-pink-400 group-hover:scale-110 transition-transform duration-300 drop-shadow-md">
+                    <button onClick={() => setActiveTab(Tab.GENERATE)} className="aspect-square rounded-2xl bg-[#292d3e] shadow-neu flex flex-col items-center justify-center gap-3 transition-all duration-300 active:shadow-neu-pressed group hover:-translate-y-1 relative overflow-hidden border border-transparent hover:border-[#ff0099]/30">
+                            <div className="absolute inset-0 bg-[#ff0099] opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                            <div className="text-[#ff0099] group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,0,153,0.6)]">
                                 <ImageIcon size={24} />
                             </div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide group-hover:text-gray-200 transition-colors">AI Art</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide group-hover:text-[#ff0099] transition-colors">AI Art</span>
                     </button>
-                    <button onClick={() => setActiveTab(Tab.CHAT)} className="aspect-square rounded-2xl bg-[#292d3e] shadow-neu flex flex-col items-center justify-center gap-3 transition-all duration-300 active:shadow-neu-pressed group hover:-translate-y-1">
-                            <div className="text-blue-400 group-hover:scale-110 transition-transform duration-300 drop-shadow-md">
+                    <button onClick={() => setActiveTab(Tab.CHAT)} className="aspect-square rounded-2xl bg-[#292d3e] shadow-neu flex flex-col items-center justify-center gap-3 transition-all duration-300 active:shadow-neu-pressed group hover:-translate-y-1 relative overflow-hidden border border-transparent hover:border-[#00f3ff]/30">
+                            <div className="absolute inset-0 bg-[#00f3ff] opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                            <div className="text-[#00f3ff] group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(0,243,255,0.6)]">
                                 <MessageCircle size={24} />
                             </div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide group-hover:text-gray-200 transition-colors">Chat</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide group-hover:text-[#00f3ff] transition-colors">Chat</span>
                     </button>
-                    <button onClick={() => setActiveTab(Tab.TOOLKIT)} className="aspect-square rounded-2xl bg-[#292d3e] shadow-neu flex flex-col items-center justify-center gap-3 transition-all duration-300 active:shadow-neu-pressed group hover:-translate-y-1">
-                            <div className="text-green-400 group-hover:scale-110 transition-transform duration-300 drop-shadow-md">
+                    <button onClick={() => setActiveTab(Tab.TOOLKIT)} className="aspect-square rounded-2xl bg-[#292d3e] shadow-neu flex flex-col items-center justify-center gap-3 transition-all duration-300 active:shadow-neu-pressed group hover:-translate-y-1 relative overflow-hidden border border-transparent hover:border-[#39ff14]/30">
+                            <div className="absolute inset-0 bg-[#39ff14] opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                            <div className="text-[#39ff14] group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(57,255,20,0.6)]">
                                 <Briefcase size={24} />
                             </div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide group-hover:text-gray-200 transition-colors">Tools</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide group-hover:text-[#39ff14] transition-colors">Tools</span>
                     </button>
                 </div>
             </div>
@@ -448,7 +472,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
         {isUploading && (
           <div className="absolute inset-0 z-50 bg-[#292d3e] flex flex-col items-center justify-center animate-fade-in-up">
               <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-6 relative">
-                <div className="absolute inset-0 rounded-full border-t-2 border-primary animate-spin"></div>
+                <div className="absolute inset-0 rounded-full border-t-2 border-[#00f3ff] animate-spin shadow-[0_0_15px_#00f3ff]"></div>
                 <RefreshCw className="text-gray-400" size={32} />
               </div>
               <h2 className="text-xl font-bold text-gray-200 tracking-tight animate-pulse">Initializing Studio...</h2>
