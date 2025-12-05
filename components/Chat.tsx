@@ -296,6 +296,14 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   };
 
   // --- TTS LOGIC ---
+  const cleanTextForSpeech = (text: string) => {
+      // Remove bold/italic markers (*, **, _, __, #, etc.)
+      let clean = text.replace(/[*_#`~]/g, '');
+      // Remove markdown links [text](url) keeping only text
+      clean = clean.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+      return clean;
+  };
+
   const toggleSpeech = (msgId: string, text: string) => {
       if (speakingMessageId === msgId) {
           window.speechSynthesis.cancel();
@@ -306,7 +314,8 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       window.speechSynthesis.cancel();
       setSpeakingMessageId(msgId);
       
-      const u = new SpeechSynthesisUtterance(text);
+      const cleanText = cleanTextForSpeech(text);
+      const u = new SpeechSynthesisUtterance(cleanText);
       u.rate = 1.1;
       u.pitch = 1;
       
