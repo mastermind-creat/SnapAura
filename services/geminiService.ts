@@ -43,7 +43,7 @@ export const validateApiKey = async (apiKey: string): Promise<boolean> => {
     try {
         const ai = new GoogleGenAI({ apiKey });
         await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-flash-lite',
             contents: { parts: [{ text: 'ping' }] },
         });
         return true;
@@ -95,23 +95,23 @@ const cleanAndParseJSON = (text: string) => {
 
 // --- GLOBAL STRUCTURE GUIDE (For Tools) ---
 const STRUCTURE_GUIDE = `
-FORMATTING RULES:
-1. **Direct Answer**: Start with a concise, bold summary of the result.
-2. **Breakdown**: Use clean bullet points or mini-sections for details.
-3. **Insights**: Explain *why* this matters in simple terms.
-4. **Confidence Score**: End with a confidence percentage (0-100%) if applicable.
-5. **Tone**: Friendly, sharp, trustworthy, no jargon without explanation.
+FORMATTING & BEHAVIOR RULES:
+1. **No Greetings**: Do NOT start with "Hello", "Hi", "Greetings", or "Hey". Start directly with the answer or analysis.
+2. **Direct Answer**: The first sentence must be the direct result or conclusion.
+3. **Structured Breakdown**: Use clean bullet points, **Bold** headers, and spacing for readability.
+4. **Professional Tone**: Be expert, concise, and helpful. Avoid fluff and overly technical jargon unless explained.
+5. **Visual Clarity**: Ensure the output looks organized on a mobile screen.
+6. **Confidence**: Include a confidence score/assessment where relevant.
 `;
 
 // --- HUMAN CHAT GUIDE (For Personas) ---
 const HUMAN_CHAT_GUIDE = `
 BEHAVIORAL RULES:
-1. **Be Human**: Chat like a real person (friend, coach, expert). Never say "As an AI".
-2. **Flow Naturally**: Do NOT start every message with "Hey there", "Hi", "Hello", or similar greetings unless it is the very first message of a brand new conversation. Respond directly to the user's input.
-3. **Be Concise**: Keep texts short and punchy, like a WhatsApp message. Only use long form if asked to explain deeply.
-4. **Structure**: Use spacing for readability, but avoid rigid document formatting unless necessary.
-5. **Engage**: Be witty, empathetic, or professional based on your persona.
-6. **Progressive Disclosure**: Give the main answer first. Ask if they want more details before dumping text.
+1. **No Greetings**: Do NOT start messages with "Hey there", "Hi", "Hello" unless the user specifically greets you first. Jump straight to the point.
+2. **Human-Like**: Be conversational but professional. Avoid robotic phrases like "As an AI".
+3. **Concise**: Keep responses digestible. Use short paragraphs.
+4. **Persona-Based**: Adhere strictly to your assigned role (Expert, Coach, Friend) but maintain high accuracy.
+5. **Formatting**: Use Markdown to highlight key points.
 `;
 
 // --- 1. Image Analysis & Caption Generation ---
@@ -136,7 +136,7 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string): Prom
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash', // Keep standard Flash for robust multimodal
       contents: {
         parts: [
           { inlineData: { mimeType: mimeType, data: data } },
@@ -183,8 +183,8 @@ export const rewriteCaption = async (caption: string, tone: string): Promise<str
   const ai = getAiClient();
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Rewrite the following caption to match a "${tone}" vibe. Be creative. Caption: "${caption}"`,
+      model: 'gemini-2.5-flash-lite', // Use Lite for fast text tasks
+      contents: `Rewrite this caption to match a "${tone}" vibe. Be creative and concise. No intro text.\nCaption: "${caption}"`,
     });
     return response.text || "";
   } catch (error) {
@@ -283,12 +283,12 @@ export const sendChatMessage = async (
     const guide = systemInstruction ? HUMAN_CHAT_GUIDE : STRUCTURE_GUIDE;
 
     const combinedSystemInstruction = `
-      ${systemInstruction || "You are SnapAura, a helpful, witty AI assistant."}
+      ${systemInstruction || "You are SnapAura, a helpful, professional AI assistant."}
       ${guide}
     `;
 
     const chatSession = ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-flash-lite', // Use Lite for fast chat response
         history: history,
         config: {
             systemInstruction: combinedSystemInstruction
@@ -305,7 +305,6 @@ export const sendChatMessage = async (
         ];
     }
 
-    // FIX: ContentUnion requires a strict object structure: { message: { parts: [...] } }
     const result = await chatSession.sendMessage({ 
         message: { 
             parts: messageParts 
@@ -319,8 +318,8 @@ export const generateSocialBio = async (info: string): Promise<string> => {
     const ai = getAiClient();
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Write 3 different short, punchy, and aesthetic social media bios (max 150 chars each) for a person who describes themselves as: "${info}". Use emojis. Return strictly just the 3 bios separated by '||'.`
+            model: 'gemini-2.5-flash-lite', // Use Lite
+            contents: `Write 3 different short, punchy, and aesthetic social media bios (max 150 chars each) for a person who describes themselves as: "${info}". Use emojis. Return strictly just the 3 bios separated by '||'. No intro.`
         });
         return response.text || "";
     } catch (e) {
@@ -334,7 +333,7 @@ export const getCryptoData = async (coin: string) => {
   const ai = getAiClient();
   const prompt = `
     Find the current price, 24h change, and market trend for ${coin} as of right now (real-time).
-    Also provide a brief trading analysis and a signal (BUY, SELL, or HOLD).
+    Also provide a brief professional trading analysis and a signal (BUY, SELL, or HOLD).
     Generate 7 estimate data points representing the last 7 days price trend normalized between 0 and 100 for a graph.
     
     Return strict JSON format:
@@ -343,13 +342,13 @@ export const getCryptoData = async (coin: string) => {
       "change": "string (e.g. +2.5%)",
       "trend": [number, number, ...],
       "signal": "BUY" | "SELL" | "HOLD",
-      "analysis": "short analysis string"
+      "analysis": "short professional analysis string"
     }
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite', // Use Lite for speed
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] },
     });
@@ -371,13 +370,13 @@ export const getCurrencyData = async (amount: string, from: string, to: string) 
     {
       "result": "string (formatted result e.g. KES 15,000)",
       "rate": "string (e.g. 1 USD = 130 KES)",
-      "details": "Brief market context or recent fluctuation note"
+      "details": "Brief market context"
     }
   `;
   
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite', // Use Lite
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] },
     });
@@ -399,7 +398,8 @@ export const getSoccerPredictions = async () => {
   const prompt = `
     Find the major soccer matches scheduled for today, ${today}.
     Select the top 5 most popular or significant matches.
-    For EACH match, perform a detailed statistical analysis.
+    For EACH match, perform a detailed deep-dive statistical analysis.
+    Think carefully about player form, injuries, and historical data.
     
     Format the "analysis" field in clean Markdown:
     1. **Direct Answer**: Brief summary of the likely outcome.
@@ -432,9 +432,12 @@ export const getSoccerPredictions = async () => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-pro-preview', // Use Pro for complex reasoning
       contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
+      config: { 
+          tools: [{ googleSearch: {} }],
+          thinkingConfig: { thinkingBudget: 32768 } // Enable Thinking Mode
+      },
     });
 
     const text = response.text;
@@ -465,8 +468,9 @@ export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewri
     }
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
+        model: mode === 'expand' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash-lite', // Use Pro for expansion/thinking, Lite for others
+        contents: prompt,
+        config: mode === 'expand' ? { thinkingConfig: { thinkingBudget: 32768 } } : undefined
     });
     return response.text || "";
 }
@@ -489,7 +493,7 @@ export const generateSocialContent = async (topic: string, type: 'hashtag' | 'id
     if (type === 'timing') prompt = `Suggest the best posting times for the "${topic}" niche on Instagram and TikTok.${styleGuide} Provide specific days/times and the reasoning based on general audience behavior.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-flash-lite', // Lite is sufficient for social text
         contents: prompt
     });
     return response.text || "";
@@ -518,7 +522,7 @@ export const analyzeMoodboard = async (images: string[]) => {
     `;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-flash', // Flash needed for vision
         contents: {
             parts: [
                 { inlineData: { mimeType: mimeType, data } },
@@ -560,7 +564,7 @@ export const getLiveMatchDetails = async () => {
   
   try {
       const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-2.5-flash-lite', // Fast updates for live scores
           contents: prompt,
           config: { tools: [{ googleSearch: {} }] }
       });
@@ -575,7 +579,7 @@ export const analyzePlayerPerformance = async (playerName: string) => {
     const ai = getAiClient();
     const prompt = `
       Search for current season stats and recent form (last 5 games) for football player: "${playerName}".
-      Analyze their strengths, weaknesses, playstyle, and injury status.
+      Analyze their strengths, weaknesses, playstyle, and injury status deeply.
       Calculate an "Impact Score" (0-10) based on their influence on the game.
       
       Return strict JSON:
@@ -599,9 +603,12 @@ export const analyzePlayerPerformance = async (playerName: string) => {
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Use Pro for complex reasoning
+            model: 'gemini-3-pro-preview', // Pro with Thinking for deep analysis
             contents: prompt,
-            config: { tools: [{ googleSearch: {} }] }
+            config: { 
+                tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 32768 }
+            }
         });
         return cleanAndParseJSON(response.text || "{}");
     } catch (e) {
@@ -614,6 +621,7 @@ export const getFantasyTips = async () => {
     const ai = getAiClient();
     const prompt = `
       Based on upcoming football fixtures and player form, suggest Fantasy Football picks.
+      Think deeply about differential options and upcoming difficult fixtures.
       Do NOT provide gambling odds. Focus on points potential.
       
       Identify:
@@ -633,9 +641,12 @@ export const getFantasyTips = async () => {
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Pro with Thinking
             contents: prompt,
-            config: { tools: [{ googleSearch: {} }] }
+            config: { 
+                tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 32768 }
+            }
         });
         return cleanAndParseJSON(response.text || "{}");
     } catch (e) {
@@ -668,9 +679,12 @@ export const getYesterdayAccuracy = async () => {
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Pro with Thinking for evaluation
             contents: prompt,
-            config: { tools: [{ googleSearch: {} }] }
+            config: { 
+                tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 32768 }
+            }
         });
         return cleanAndParseJSON(response.text || "[]");
     } catch (e) {
