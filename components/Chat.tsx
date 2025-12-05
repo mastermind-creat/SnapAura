@@ -1024,7 +1024,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
               <div className="flex items-end gap-3">
                   
                   {/* EXPANDABLE ACTIONS MENU */}
-                  <div className="flex items-end mb-1">
+                  <div className="flex items-end mb-3">
                       <button 
                         onClick={() => setActionsExpanded(!actionsExpanded)}
                         className={`p-3 rounded-full bg-[#292d3e] shadow-neu text-gray-400 active:shadow-neu-pressed transition-all z-10 hover:text-white ${actionsExpanded ? 'rotate-45 text-red-400' : ''}`}
@@ -1052,29 +1052,35 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                       </div>
                   </div>
 
-                  {/* Text Input */}
-                  <div className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-2xl flex items-center pr-2 relative overflow-hidden transition-all">
-                      <textarea
-                          ref={textareaRef}
-                          value={mode === 'ai' ? aiInput : p2pInput}
-                          onChange={(e) => mode === 'ai' ? setAiInput(e.target.value) : setP2pInput(e.target.value)}
-                          placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Message AI...") : "Secure message..."}
-                          className="w-full bg-transparent border-none text-gray-200 px-4 py-3.5 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
-                          rows={1}
-                          onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault();
-                                  mode === 'ai' ? handleAiSend() : handleP2pSend();
-                              }
-                          }}
-                      />
+                  {/* Text Input with Gradient Border */}
+                  <div className="flex-1 relative group">
+                      {/* Gradient Border Glow */}
+                      <div className="absolute -inset-[1.5px] bg-gradient-to-r from-[#00f3ff] via-[#bc13fe] to-[#ff0099] rounded-2xl opacity-40 group-hover:opacity-70 group-focus-within:opacity-100 blur-[2px] transition-all duration-500"></div>
+                      
+                      <div className="relative bg-[#292d3e] rounded-2xl flex items-center pr-2 overflow-hidden h-full shadow-neu-pressed">
+                          <textarea
+                              ref={textareaRef}
+                              value={mode === 'ai' ? aiInput : p2pInput}
+                              onChange={(e) => mode === 'ai' ? setAiInput(e.target.value) : setP2pInput(e.target.value)}
+                              placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Message AI...") : "Secure message..."}
+                              className="w-full bg-transparent border-none text-gray-200 px-4 py-4 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar leading-relaxed"
+                              style={{ minHeight: '56px' }}
+                              rows={1}
+                              onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                      e.preventDefault();
+                                      mode === 'ai' ? handleAiSend() : handleP2pSend();
+                                  }
+                              }}
+                          />
+                      </div>
                   </div>
 
                   {/* Send Button */}
                   <button 
                       onClick={mode === 'ai' ? handleAiSend : handleP2pSend}
                       disabled={mode === 'ai' ? ((!aiInput.trim() && !attachment) || aiLoading) : (!p2pInput.trim() && !attachment)}
-                      className="mb-1 p-3.5 bg-[#292d3e] shadow-neu rounded-2xl text-primary active:shadow-neu-pressed disabled:opacity-50 disabled:shadow-none transition-all hover:scale-105 active:scale-95"
+                      className="mb-2 p-3.5 bg-[#292d3e] shadow-neu rounded-2xl text-primary active:shadow-neu-pressed disabled:opacity-50 disabled:shadow-none transition-all hover:scale-105 active:scale-95"
                   >
                       {aiLoading ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} fill="currentColor" />}
                   </button>
