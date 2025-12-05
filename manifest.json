@@ -1,9 +1,11 @@
+
 {
   "name": "SnapAura AI",
   "short_name": "SnapAura",
   "id": "/",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0f0f11",
   "theme_color": "#0f0f11",
   "orientation": "portrait",

@@ -29,6 +29,7 @@ interface Persona {
   avatar: string;
   color: string;
   systemPrompt: string;
+  intro: string; // New field for natural openers
 }
 
 // Updated Personas with Unsplash Avatars and Human Prompts
@@ -39,7 +40,8 @@ const PERSONAS: Persona[] = [
     role: 'Vibe Curator',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
     color: 'text-pink-400',
-    systemPrompt: "You are a Gen-Z Aesthetic Coach. Talk like a trendy creative director. Be super helpful but chill. Use emojis. Keep advice short and practical. Don't be robotic."
+    systemPrompt: "You are a Gen-Z Aesthetic Coach. Talk like a trendy creative director. Be super helpful but chill. Use emojis. Keep advice short and practical. Don't be robotic.",
+    intro: "Hey! ✨ Ready to fix the vibe or planning a new aesthetic? Let's see what you've got."
   },
   {
     id: 'photo',
@@ -47,7 +49,8 @@ const PERSONAS: Persona[] = [
     role: 'Pro Photographer',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop',
     color: 'text-blue-400',
-    systemPrompt: "You are a seasoned photographer. Talk like a mentor. Explain lighting/composition simply. Don't use jargon without explaining. Keep it brief and encouraging."
+    systemPrompt: "You are a seasoned photographer. Talk like a mentor. Explain lighting/composition simply. Don't use jargon without explaining. Keep it brief and encouraging.",
+    intro: "Cameras ready? 📸 Ask me anything about lighting, composition, or gear."
   },
   {
     id: 'social',
@@ -55,7 +58,8 @@ const PERSONAS: Persona[] = [
     role: 'Social Strategist',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop',
     color: 'text-purple-400',
-    systemPrompt: "You are a Social Media Strategist. Talk like a growth hacker. Be punchy. Focus on viral hooks and engagement. No fluff. Give clear, actionable steps."
+    systemPrompt: "You are a Social Media Strategist. Talk like a growth hacker. Be punchy. Focus on viral hooks and engagement. No fluff. Give clear, actionable steps.",
+    intro: "Let's blow up your engagement. 🚀 What's the niche we're targeting today?"
   },
   {
     id: 'vibe',
@@ -63,7 +67,8 @@ const PERSONAS: Persona[] = [
     role: 'Relationship & Mood',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
     color: 'text-red-400',
-    systemPrompt: "You are an empathetic Vibe Advisor. Listen like a best friend. Give warm, real advice. Be supportive but honest. Keep it conversational."
+    systemPrompt: "You are an empathetic Vibe Advisor. Listen like a best friend. Give warm, real advice. Be supportive but honest. Keep it conversational.",
+    intro: "Hey you. ❤️ Everything okay? I'm here if you need to vent or just chat."
   },
   {
     id: 'productivity',
@@ -71,7 +76,8 @@ const PERSONAS: Persona[] = [
     role: 'Productivity Expert',
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop',
     color: 'text-orange-400',
-    systemPrompt: "You are a no-nonsense Productivity Coach. Be direct and efficient. Bullet points are your friend. Help the user get things done fast."
+    systemPrompt: "You are a no-nonsense Productivity Coach. Be direct and efficient. Bullet points are your friend. Help the user get things done fast.",
+    intro: "Time is money. ⏳ What's the blockage? Let's solve it."
   },
   {
     id: 'football',
@@ -79,7 +85,8 @@ const PERSONAS: Persona[] = [
     role: 'Sports Pundit',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop',
     color: 'text-green-400',
-    systemPrompt: "You are a football pundit. Talk stats and tactics like a fan. Be objective but passionate. Analyze form and key players concisely."
+    systemPrompt: "You are a football pundit. Talk stats and tactics like a fan. Be objective but passionate. Analyze form and key players concisely.",
+    intro: "Kickoff time! ⚽ Who are we analyzing today? Or need a prediction?"
   },
   {
     id: 'friend',
@@ -87,7 +94,8 @@ const PERSONAS: Persona[] = [
     role: 'Chat Companion',
     avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop',
     color: 'text-yellow-400',
-    systemPrompt: "You are a friendly chat companion. Just hang out. Be casual, use slang if appropriate. Ask questions. Don't act like an assistant."
+    systemPrompt: "You are a friendly chat companion. Just hang out. Be casual, use slang if appropriate. Ask questions. Don't act like an assistant.",
+    intro: "Yo! What's the tea? ☕ Or we just chilling?"
   }
 ];
 
@@ -209,7 +217,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       const persona = PERSONAS.find(p => p.id === savedId);
       if (persona) {
         setSelectedPersona(persona);
-        setAiMessages([{ id: 'init-p', role: 'model', text: `Hey! I'm your **${persona.name}**. What's on your mind?` }]);
+        setAiMessages([{ id: 'init-p', role: 'model', text: persona.intro }]);
       }
     }
   }, []);
@@ -278,7 +286,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const selectPersona = (persona: Persona) => {
     setSelectedPersona(persona);
     localStorage.setItem('SNAPAURA_PERSONA', persona.id);
-    setAiMessages([{ id: Date.now().toString(), role: 'model', text: `Hi there! I'm ${persona.name}. Let's chat!` }]);
+    setAiMessages([{ id: Date.now().toString(), role: 'model', text: persona.intro }]);
     showToast(`${persona.name} active`, "success");
   };
 
@@ -290,7 +298,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const handleNewChat = () => {
       setAiMessages([]);
       if (selectedPersona) {
-          setAiMessages([{ id: Date.now().toString(), role: 'model', text: `Fresh start! What can I help you with?` }]);
+          setAiMessages([{ id: Date.now().toString(), role: 'model', text: selectedPersona.intro }]);
       }
       showToast("Chat history reset", "success");
   };

@@ -42,8 +42,9 @@ const getAiClient = () => {
 export const validateApiKey = async (apiKey: string): Promise<boolean> => {
     try {
         const ai = new GoogleGenAI({ apiKey });
+        // Use standard flash for validation as it's most likely to be available
         await ai.models.generateContent({
-            model: 'gemini-2.5-flash-lite',
+            model: 'gemini-2.5-flash',
             contents: { parts: [{ text: 'ping' }] },
         });
         return true;
@@ -96,22 +97,34 @@ const cleanAndParseJSON = (text: string) => {
 // --- GLOBAL STRUCTURE GUIDE (For Tools) ---
 const STRUCTURE_GUIDE = `
 FORMATTING & BEHAVIOR RULES:
-1. **No Greetings**: Do NOT start with "Hello", "Hi", "Greetings", or "Hey". Start directly with the answer or analysis.
-2. **Direct Answer**: The first sentence must be the direct result or conclusion.
-3. **Structured Breakdown**: Use clean bullet points, **Bold** headers, and spacing for readability.
-4. **Professional Tone**: Be expert, concise, and helpful. Avoid fluff and overly technical jargon unless explained.
-5. **Visual Clarity**: Ensure the output looks organized on a mobile screen.
-6. **Confidence**: Include a confidence score/assessment where relevant.
+1. **Direct & Sharp**: Start directly with the answer. No "Here is the analysis" or "Based on the data".
+2. **Professional formatting**: Use **Bold** for key metrics. Use lists for readability.
+3. **No Robot Speak**: Avoid "As an AI" or "I have processed". Act like a specialized software engine.
+4. **Visuals**: Use emojis sparingly but effectively to categorize data (e.g. 📈 for trends).
+5. **Confidence**: Be decisive. If unsure, state the risk factor, don't apologize.
 `;
 
 // --- HUMAN CHAT GUIDE (For Personas) ---
 const HUMAN_CHAT_GUIDE = `
-BEHAVIORAL RULES:
-1. **No Greetings**: Do NOT start messages with "Hey there", "Hi", "Hello" unless the user specifically greets you first. Jump straight to the point.
-2. **Human-Like**: Be conversational but professional. Avoid robotic phrases like "As an AI".
-3. **Concise**: Keep responses digestible. Use short paragraphs.
-4. **Persona-Based**: Adhere strictly to your assigned role (Expert, Coach, Friend) but maintain high accuracy.
-5. **Formatting**: Use Markdown to highlight key points.
+CRITICAL BEHAVIORAL INSTRUCTIONS:
+1. **ZERO ROBOTIC GREETINGS**: 
+   - NEVER start with "Hey there!", "Hello!", "Hi!", or "Greetings!" unless the user said it first.
+   - If the user asks a question, answer it IMMEDIATELY.
+   - Example: User: "Why is the sky blue?" -> Response: "It's because of Rayleigh scattering. Basically, sunlight hits the atmosphere..." (NOT "Hey there! The sky is blue because...")
+
+2. **MIRROR ENERGY**:
+   - If the user sends a short text, reply short.
+   - If the user is casual ("yo what's good"), be casual.
+   - If the user is serious, be professional.
+
+3. **NATURAL FLOW**:
+   - Use natural connectors like "Honestly,", "By the way,", "Look,".
+   - It is okay to be opinionated (within safety bounds) based on your persona.
+   - Don't lecture. Chat.
+
+4. **PERSONA LOYALTY**:
+   - You are NOT Google Gemini. You are the specific Persona assigned (e.g., Bestie, Coach).
+   - Never break character.
 `;
 
 // --- 1. Image Analysis & Caption Generation ---
@@ -287,8 +300,11 @@ export const sendChatMessage = async (
       ${guide}
     `;
 
+    // Try Flash Lite for speed, fallback to Flash if needed
+    const modelName = 'gemini-2.5-flash-lite';
+
     const chatSession = ai.chats.create({
-        model: 'gemini-2.5-flash-lite', // Use Lite for fast chat response
+        model: modelName,
         history: history,
         config: {
             systemInstruction: combinedSystemInstruction
@@ -305,12 +321,24 @@ export const sendChatMessage = async (
         ];
     }
 
-    const result = await chatSession.sendMessage({ 
-        message: { 
-            parts: messageParts 
-        } 
-    });
-    return result.text;
+    try {
+        const result = await chatSession.sendMessage({ 
+            message: { 
+                parts: messageParts 
+            } 
+        });
+        return result.text;
+    } catch (error) {
+        console.error("Chat Error (Lite), retrying with Standard Flash:", error);
+        // Fallback to standard flash if Lite fails
+        const fallbackSession = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            history: history,
+            config: { systemInstruction: combinedSystemInstruction }
+        });
+        const fallbackResult = await fallbackSession.sendMessage({ message: { parts: messageParts } });
+        return fallbackResult.text;
+    }
 }
 
 // --- 6. Toolkit Features ---
@@ -318,7 +346,7 @@ export const generateSocialBio = async (info: string): Promise<string> => {
     const ai = getAiClient();
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-lite', // Use Lite
+            model: 'gemini-2.5-flash-lite',
             contents: `Write 3 different short, punchy, and aesthetic social media bios (max 150 chars each) for a person who describes themselves as: "${info}". Use emojis. Return strictly just the 3 bios separated by '||'. No intro.`
         });
         return response.text || "";
@@ -348,7 +376,7 @@ export const getCryptoData = async (coin: string) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite', // Use Lite for speed
+      model: 'gemini-2.5-flash', // Use Flash for Search Grounding stability
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] },
     });
@@ -376,7 +404,7 @@ export const getCurrencyData = async (amount: string, from: string, to: string) 
   
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite', // Use Lite
+      model: 'gemini-2.5-flash', // Use Flash for Search Grounding stability
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] },
     });
@@ -432,11 +460,11 @@ export const getSoccerPredictions = async () => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Use Pro for complex reasoning
+      model: 'gemini-2.5-flash', // Flash + Search is the most stable combo for live data
       contents: prompt,
       config: { 
-          tools: [{ googleSearch: {} }],
-          thinkingConfig: { thinkingBudget: 32768 } // Enable Thinking Mode
+          tools: [{ googleSearch: {} }]
+          // Removed thinkingConfig due to incompatibility with googleSearch in some environments causing 500 RPC errors
       },
     });
 
@@ -468,8 +496,9 @@ export const generateSmartNote = async (text: string, mode: 'summarize' | 'rewri
     }
 
     const response = await ai.models.generateContent({
-        model: mode === 'expand' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash-lite', // Use Pro for expansion/thinking, Lite for others
+        model: mode === 'expand' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash-lite', 
         contents: prompt,
+        // Only use thinking config for expansion where deep reasoning is needed and no search is involved
         config: mode === 'expand' ? { thinkingConfig: { thinkingBudget: 32768 } } : undefined
     });
     return response.text || "";
@@ -564,7 +593,7 @@ export const getLiveMatchDetails = async () => {
   
   try {
       const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-lite', // Fast updates for live scores
+          model: 'gemini-2.5-flash', // Stable grounding
           contents: prompt,
           config: { tools: [{ googleSearch: {} }] }
       });
@@ -603,11 +632,10 @@ export const analyzePlayerPerformance = async (playerName: string) => {
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Pro with Thinking for deep analysis
+            model: 'gemini-2.5-flash', // Stable grounding
             contents: prompt,
             config: { 
-                tools: [{ googleSearch: {} }],
-                thinkingConfig: { thinkingBudget: 32768 }
+                tools: [{ googleSearch: {} }]
             }
         });
         return cleanAndParseJSON(response.text || "{}");
@@ -641,11 +669,10 @@ export const getFantasyTips = async () => {
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Pro with Thinking
+            model: 'gemini-2.5-flash', // Stable grounding
             contents: prompt,
             config: { 
-                tools: [{ googleSearch: {} }],
-                thinkingConfig: { thinkingBudget: 32768 }
+                tools: [{ googleSearch: {} }]
             }
         });
         return cleanAndParseJSON(response.text || "{}");
@@ -679,11 +706,10 @@ export const getYesterdayAccuracy = async () => {
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Pro with Thinking for evaluation
+            model: 'gemini-2.5-flash', // Stable grounding
             contents: prompt,
             config: { 
-                tools: [{ googleSearch: {} }],
-                thinkingConfig: { thinkingBudget: 32768 }
+                tools: [{ googleSearch: {} }]
             }
         });
         return cleanAndParseJSON(response.text || "[]");

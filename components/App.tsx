@@ -61,10 +61,21 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Detect if app is running in standalone (installed) mode
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         (window.navigator as any).standalone === true;
+
+    if (isStandalone) {
+        setShowInstallBanner(false);
+    }
+
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstallBanner(true);
+      // Only show banner if NOT installed
+      if (!isStandalone) {
+          setShowInstallBanner(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -85,9 +96,9 @@ const App: React.FC = () => {
       deferredPrompt.userChoice.then((choiceResult: any) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('User accepted the install prompt');
+          setShowInstallBanner(false);
         }
         setDeferredPrompt(null);
-        setShowInstallBanner(false);
       });
     }
   };
@@ -222,6 +233,7 @@ const App: React.FC = () => {
                     >
                         <Download size={14} /> Install
                     </button>
+                    {/* Optional Close: If you want to force it, remove this button. Keeping it for UX niceness but it will reappear on reload */}
                     <button onClick={() => setShowInstallBanner(false)} className="absolute -top-2 -right-2 bg-black/50 rounded-full p-1 text-white"><span className="sr-only">Close</span>&times;</button>
                 </div>
                 </div>
