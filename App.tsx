@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import Studio from './components/Studio';
@@ -17,6 +18,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
+  // Navbar Visibility State
+  const [isNavVisible, setIsNavVisible] = useState(true);
+
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -30,6 +34,15 @@ const App: React.FC = () => {
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // Auto-hide navbar when entering Chat tab
+  useEffect(() => {
+      if (activeTab === Tab.CHAT) {
+          setIsNavVisible(false);
+      } else {
+          setIsNavVisible(true);
+      }
+  }, [activeTab]);
 
   // Check for API Key on mount
   useEffect(() => {
@@ -214,7 +227,12 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+            <BottomNav 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+              isVisible={isNavVisible}
+              onToggle={() => setIsNavVisible(!isNavVisible)}
+            />
         </>
     </div>
   );

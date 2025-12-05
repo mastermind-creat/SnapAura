@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { 
   Camera, 
@@ -112,7 +111,10 @@ import {
   CalendarCheck,
   Search,
   History,
-  Square
+  Square,
+  Plus,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -240,5 +242,8 @@ export {
   CalendarCheck,
   Search,
   History,
-  Square
+  Square,
+  Plus,
+  ChevronUp,
+  ChevronDown
 };

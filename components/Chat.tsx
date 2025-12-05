@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Copy, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Download, LogIn, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, DownloadCloud, Link as LinkIcon, User, RotateCcw, Square } from './Icons';
+import { Send, Sparkles, Copy, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Download, LogIn, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, DownloadCloud, Link as LinkIcon, User, RotateCcw, Square, Plus } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -138,6 +138,9 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   
   // User Avatar State
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  
+  // Actions UI State
+  const [actionsExpanded, setActionsExpanded] = useState(false);
 
   // Refs for PeerJS
   const peerInstance = useRef<any>(null);
@@ -1019,23 +1022,38 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
               )}
 
               <div className="flex items-end gap-3">
-                  {/* Actions (P2P + AI Image) */}
-                  <button onClick={() => fileInputRef.current?.click()} className="p-3 text-gray-400 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed hover:text-primary transition-all mb-1">
-                       {mode === 'ai' ? <ImageIcon size={20} /> : <Paperclip size={20} />}
-                  </button>
+                  
+                  {/* EXPANDABLE ACTIONS MENU */}
+                  <div className="flex items-end mb-1">
+                      <button 
+                        onClick={() => setActionsExpanded(!actionsExpanded)}
+                        className={`p-3 rounded-full bg-[#292d3e] shadow-neu text-gray-400 active:shadow-neu-pressed transition-all z-10 hover:text-white ${actionsExpanded ? 'rotate-45 text-red-400' : ''}`}
+                      >
+                          <Plus size={20} />
+                      </button>
+                      
+                      <div 
+                        className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out ${actionsExpanded ? 'w-[100px] opacity-100 ml-2' : 'w-0 opacity-0'}`}
+                      >
+                          {/* File Input */}
+                          <button onClick={() => fileInputRef.current?.click()} className="p-3 text-gray-400 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed hover:text-primary transition-all">
+                               {mode === 'ai' ? <ImageIcon size={20} /> : <Paperclip size={20} />}
+                          </button>
 
-                  {/* Voice Button */}
-                  <button 
-                    onClick={mode === 'ai' ? handleAiVoiceInput : (isRecording ? stopRecording : startRecording)} 
-                    className={`p-3 rounded-full shadow-neu transition-all active:shadow-neu-pressed mb-1 ${
-                        (isRecording || isAiListening) ? 'text-red-500 animate-pulse bg-[#292d3e]' : 'text-gray-400 bg-[#292d3e] hover:text-red-400'
-                    }`}
-                  >
-                      {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
-                  </button>
+                          {/* Voice Button */}
+                          <button 
+                            onClick={mode === 'ai' ? handleAiVoiceInput : (isRecording ? stopRecording : startRecording)} 
+                            className={`p-3 rounded-full shadow-neu transition-all active:shadow-neu-pressed ${
+                                (isRecording || isAiListening) ? 'text-red-500 animate-pulse bg-[#292d3e]' : 'text-gray-400 bg-[#292d3e] hover:text-red-400'
+                            }`}
+                          >
+                              {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                          </button>
+                      </div>
+                  </div>
 
                   {/* Text Input */}
-                  <div className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-2xl flex items-center pr-2 relative overflow-hidden">
+                  <div className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-2xl flex items-center pr-2 relative overflow-hidden transition-all">
                       <textarea
                           ref={textareaRef}
                           value={mode === 'ai' ? aiInput : p2pInput}

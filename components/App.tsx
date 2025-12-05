@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
 import Studio from './components/Studio';
@@ -17,6 +18,9 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
+  // Navbar Visibility State
+  const [isNavVisible, setIsNavVisible] = useState(true);
+
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -30,6 +34,15 @@ const App: React.FC = () => {
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // Auto-hide navbar when entering Chat tab
+  useEffect(() => {
+      if (activeTab === Tab.CHAT) {
+          setIsNavVisible(false);
+      } else {
+          setIsNavVisible(true);
+      }
+  }, [activeTab]);
 
   // Check for API Key on mount
   useEffect(() => {
@@ -107,6 +120,15 @@ const App: React.FC = () => {
   return (
     <div className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
+      {/* Dynamic Alive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Main Gradient Drift */}
+          <div className="absolute inset-0 alive-bg opacity-80"></div>
+          {/* Floating Blobs */}
+          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] animate-drift"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] animate-aurora"></div>
+      </div>
+
       {/* Toast System */}
       <ToastContainer />
       
@@ -184,28 +206,33 @@ const App: React.FC = () => {
         <>
             {showInstallBanner && (
                 <div className="absolute bottom-[80px] left-4 right-4 z-50 animate-fade-in-up">
-                <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl flex items-center justify-between">
+                <div className="glass-panel p-4 rounded-2xl flex items-center justify-between border-t border-white/20 bg-black/80 backdrop-blur-xl shadow-2xl">
                     <div className="flex items-center gap-3">
-                        <div className="text-white shadow-neu-pressed p-2 rounded-xl">
-                            <Smartphone size={24} />
+                        <div className="bg-white/10 p-2 rounded-xl">
+                            <Smartphone size={24} className="text-white" />
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-white">Install SnapAura</h3>
-                            <p className="text-xs text-gray-400">Add to home screen</p>
+                            <p className="text-xs text-gray-400">Add to home screen for full experience</p>
                         </div>
                     </div>
                     <button 
                         onClick={handleInstallClick}
-                        className="text-white bg-[#292d3e] shadow-neu hover:shadow-neu-pressed px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
+                        className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-1"
                     >
                         <Download size={14} /> Install
                     </button>
-                    <button onClick={() => setShowInstallBanner(false)} className="absolute -top-2 -right-2 bg-neu-dark rounded-full p-1 text-white shadow-neu"><span className="sr-only">Close</span>&times;</button>
+                    <button onClick={() => setShowInstallBanner(false)} className="absolute -top-2 -right-2 bg-black/50 rounded-full p-1 text-white"><span className="sr-only">Close</span>&times;</button>
                 </div>
                 </div>
             )}
 
-            <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+            <BottomNav 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+              isVisible={isNavVisible}
+              onToggle={() => setIsNavVisible(!isNavVisible)}
+            />
         </>
     </div>
   );
