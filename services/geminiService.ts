@@ -270,10 +270,15 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 };
 
 // --- 5. Chatbot ---
-export const sendChatMessage = async (history: {role: string, parts: {text: string}[]}[], newMessage: string, systemInstruction?: string) => {
+export const sendChatMessage = async (
+    history: {role: string, parts: {text?: string, inlineData?: any}[]}[], 
+    newMessage: string, 
+    systemInstruction?: string,
+    imageAttachment?: string
+) => {
     const ai = getAiClient();
     
-    // Choose the right guide: Human Guide for personas, Structure Guide for general/tools
+    // Choose the right guide
     const guide = systemInstruction ? HUMAN_CHAT_GUIDE : STRUCTURE_GUIDE;
 
     const combinedSystemInstruction = `
@@ -289,7 +294,22 @@ export const sendChatMessage = async (history: {role: string, parts: {text: stri
         }
     });
 
-    const result = await chatSession.sendMessage({ message: newMessage });
+    let messageParts: any[] = [{ text: newMessage }];
+    
+    if (imageAttachment) {
+        const { mimeType, data } = processBase64Image(imageAttachment);
+        messageParts = [
+            { inlineData: { mimeType, data } },
+            { text: newMessage || "Analyze this image." }
+        ];
+    }
+
+    // FIX: ContentUnion requires a strict object structure: { message: { parts: [...] } }
+    const result = await chatSession.sendMessage({ 
+        message: { 
+            parts: messageParts 
+        } 
+    });
     return result.text;
 }
 
@@ -500,7 +520,7 @@ export const analyzeMoodboard = async (images: string[]) => {
         model: 'gemini-2.5-flash',
         contents: {
             parts: [
-                { inlineData: { mimeType, data } },
+                { inlineData: { mimeType: mimeType, data } },
                 { text: prompt }
             ]
         },

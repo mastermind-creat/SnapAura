@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Copy, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Download, LogIn, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, DownloadCloud, Link as LinkIcon, User } from './Icons';
+import { Send, Sparkles, Copy, ShieldCheck, RefreshCw, Settings, Mic, Volume2, Radio, Paperclip, ImageIcon, FileText, XCircle, StopCircle, Play, Download, LogIn, Reply, SmilePlus, Trash, MoreVertical, UserMinus, Heart, DownloadCloud, Link as LinkIcon, User, RotateCcw, Square } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { showToast } from './Toast';
 
@@ -103,6 +103,7 @@ declare const Peer: any;
 const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const [mode, setMode] = useState<ChatMode>('ai');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // --- AI CHAT STATE ---
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
@@ -110,6 +111,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const [aiMessages, setAiMessages] = useState<Message[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [isAiListening, setIsAiListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // --- P2P CHAT STATE (PeerJS) ---
@@ -141,6 +143,61 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const peerInstance = useRef<any>(null);
   const connectionsRef = useRef<any[]>([]); 
   const connectedUsersRef = useRef<{id: string, name: string}[]>([]); 
+
+  // Matrix Animation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    
+    const chars = '0123456789';
+    const fontSize = 14;
+    const columns = width / fontSize;
+    const drops: number[] = [];
+
+    for (let i = 0; i < columns; i++) {
+        drops[i] = Math.random() * -100;
+    }
+
+    let animationId: number;
+
+    const draw = () => {
+        // Fade effect
+        ctx.fillStyle = 'rgba(41, 45, 62, 0.1)'; // Matches bg-[#292d3e]
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.fillStyle = '#00f3ff'; // Electric Cyan
+        ctx.font = `${fontSize}px monospace`;
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars.charAt(Math.floor(Math.random() * chars.length));
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if (drops[i] * fontSize > height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+        animationId = requestAnimationFrame(draw);
+    };
+
+    const handleResize = () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+    draw();
+
+    return () => {
+        cancelAnimationFrame(animationId);
+        window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Load Persona from LocalStorage
   useEffect(() => {
@@ -174,6 +231,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   useEffect(() => {
     return () => {
       destroyPeer();
+      window.speechSynthesis.cancel();
     };
   }, []);
 
@@ -224,6 +282,35 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   const clearPersona = () => {
     setSelectedPersona(null);
     localStorage.removeItem('SNAPAURA_PERSONA');
+  };
+
+  const handleNewChat = () => {
+      setAiMessages([]);
+      if (selectedPersona) {
+          setAiMessages([{ id: Date.now().toString(), role: 'model', text: `Fresh start! What can I help you with?` }]);
+      }
+      showToast("Chat history reset", "success");
+  };
+
+  // --- TTS LOGIC ---
+  const toggleSpeech = (msgId: string, text: string) => {
+      if (speakingMessageId === msgId) {
+          window.speechSynthesis.cancel();
+          setSpeakingMessageId(null);
+          return;
+      }
+
+      window.speechSynthesis.cancel();
+      setSpeakingMessageId(msgId);
+      
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.1;
+      u.pitch = 1;
+      
+      u.onend = () => setSpeakingMessageId(null);
+      u.onerror = () => setSpeakingMessageId(null);
+      
+      window.speechSynthesis.speak(u);
   };
 
   const destroyPeer = () => {
@@ -457,6 +544,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       const reader = new FileReader();
       reader.onload = () => {
           setAttachment({ type: file.type.startsWith('image/') ? 'image' : 'file', content: reader.result as string, name: file.name, size: (file.size / 1024).toFixed(1) + ' KB' });
+          if(mode === 'ai') showToast("Image attached. Type a prompt.", "info");
       };
       reader.readAsDataURL(file);
       e.target.value = '';
@@ -498,21 +586,53 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
           textareaRef.current.style.height = 'auto';
           textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
       }
-  }, [aiInput]);
+  }, [aiInput, p2pInput]);
 
   const handleAiSend = async () => {
-    if (!aiInput.trim() || aiLoading) return;
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', text: aiInput };
+    if ((!aiInput.trim() && !attachment) || aiLoading) return;
+    
+    const userMsg: Message = { 
+        id: Date.now().toString(), 
+        role: 'user', 
+        text: aiInput,
+        type: attachment && attachment.type === 'image' ? 'image' : 'text'
+    };
+    
+    // If sending an image, store content in text for local display logic (though messy for history, fine for display)
+    // Better: separate content. For history, we reconstruct.
+    if (attachment && attachment.type === 'image') {
+        userMsg.text = attachment.content; // base64
+        userMsg.fileName = attachment.name;
+    }
+
     setAiMessages(prev => [...prev, userMsg]);
     setAiInput('');
+    const currentAttachment = attachment; // Capture current
+    setAttachment(null); // Clear immediately
     setAiLoading(true);
+    
     if(textareaRef.current) textareaRef.current.style.height = 'auto';
+    
     try {
-      const history = aiMessages.map(m => ({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: m.text }] }));
-      const responseText = await sendChatMessage(history, userMsg.text, selectedPersona?.systemPrompt);
+      // Construct history for Gemini. Only text history is robustly supported in simple chat array. 
+      // Images are usually single turn in basic implementation, but we can try passing multimodal history if we structured it.
+      // For simplicity and stability: Send previous text history + current multimodal message.
+      const history = aiMessages.filter(m => m.type === 'text').map(m => ({ 
+          role: m.role === 'model' ? 'model' : 'user', 
+          parts: [{ text: m.text }] 
+      }));
+      
+      const responseText = await sendChatMessage(
+          history, 
+          userMsg.type === 'image' ? (aiInput || "Analyze this image") : userMsg.text, 
+          selectedPersona?.systemPrompt,
+          currentAttachment?.type === 'image' ? currentAttachment.content : undefined
+      );
+      
       setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: responseText }]);
     } catch (error) {
-      setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Can you say that again? I missed it." }]);
+      console.error(error);
+      setAiMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Sorry, I encountered an error processing that request." }]);
     } finally { setAiLoading(false); }
   };
 
@@ -532,10 +652,27 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       let content: React.ReactNode = msg.text;
       
-      if (msg.role === 'model') content = <div className="prose prose-invert prose-sm max-w-none text-gray-300 leading-snug" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(msg.text) : msg.text }}></div>;
-      else if (msg.type === 'image') content = <div className="space-y-2"><div className="relative group"><img src={msg.text} alt="Shared" className="rounded-xl max-w-full max-h-60 shadow-lg" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl"><a href={msg.text} download={msg.fileName || 'image.png'} className="p-3 bg-[#292d3e] shadow-neu rounded-full text-white"><DownloadCloud size={20} /></a></div></div>{msg.fileName && <p className="text-[10px] opacity-70 truncate max-w-[200px]">{msg.fileName}</p>}</div>;
-      else if (msg.type === 'audio') content = <div className="flex items-center gap-2 min-w-[150px]"><div className="bg-[#292d3e] shadow-neu p-2 rounded-full"><Play size={16} className="text-primary" /></div><audio controls src={msg.text} className="h-8 w-48" /></div>;
-      else if (msg.type === 'file') content = <div className="flex items-center gap-3 bg-[#292d3e] p-3 rounded-xl shadow-neu-pressed"><div className="text-blue-400"><FileText size={24} /></div><div className="flex flex-col overflow-hidden mr-2"><span className="text-sm font-bold truncate max-w-[140px] text-gray-200">{msg.fileName || 'File'}</span><span className="text-[10px] opacity-60 text-gray-400">{msg.fileSize || 'Unknown size'}</span></div><a href={msg.text} download={msg.fileName || 'download'} className="p-2 bg-[#292d3e] shadow-neu hover:text-primary rounded-full text-gray-400 transition-colors"><Download size={18} /></a></div>;
+      // Special Handling for user sent images in AI mode (stored in msg.text as base64)
+      if (msg.role === 'user' && msg.type === 'image') {
+           content = (
+               <div className="space-y-2">
+                   <img src={msg.text} alt="Uploaded" className="rounded-xl max-w-full max-h-60 shadow-lg border border-white/10" />
+                   {msg.fileName && <p className="text-[10px] opacity-70 truncate">{msg.fileName}</p>}
+               </div>
+           );
+      }
+      else if (msg.role === 'model') {
+          content = <div className="prose prose-invert prose-sm max-w-none text-gray-300 leading-snug" dangerouslySetInnerHTML={{ __html: typeof marked !== 'undefined' ? marked.parse(msg.text) : msg.text }}></div>;
+      }
+      else if (msg.type === 'image') {
+          content = <div className="space-y-2"><div className="relative group"><img src={msg.text} alt="Shared" className="rounded-xl max-w-full max-h-60 shadow-lg" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl"><a href={msg.text} download={msg.fileName || 'image.png'} className="p-3 bg-[#292d3e] shadow-neu rounded-full text-white"><DownloadCloud size={20} /></a></div></div>{msg.fileName && <p className="text-[10px] opacity-70 truncate max-w-[200px]">{msg.fileName}</p>}</div>;
+      }
+      else if (msg.type === 'audio') {
+          content = <div className="flex items-center gap-2 min-w-[150px]"><div className="bg-[#292d3e] shadow-neu p-2 rounded-full"><Play size={16} className="text-primary" /></div><audio controls src={msg.text} className="h-8 w-48" /></div>;
+      }
+      else if (msg.type === 'file') {
+          content = <div className="flex items-center gap-3 bg-[#292d3e] p-3 rounded-xl shadow-neu-pressed"><div className="text-blue-400"><FileText size={24} /></div><div className="flex flex-col overflow-hidden mr-2"><span className="text-sm font-bold truncate max-w-[140px] text-gray-200">{msg.fileName || 'File'}</span><span className="text-[10px] opacity-60 text-gray-400">{msg.fileSize || 'Unknown size'}</span></div><a href={msg.text} download={msg.fileName || 'download'} className="p-2 bg-[#292d3e] shadow-neu hover:text-primary rounded-full text-gray-400 transition-colors"><Download size={18} /></a></div>;
+      }
 
       return (
           <div className="relative group/msg">
@@ -567,16 +704,24 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
   };
 
   return (
-    <div className="h-full flex flex-col relative bg-[#292d3e]">
+    <div className="h-full flex flex-col relative bg-[#292d3e] overflow-hidden">
+        
+      {/* --- MATRIX BACKGROUND --- */}
+      <canvas 
+        ref={canvasRef} 
+        className="absolute inset-0 z-0 pointer-events-none opacity-20"
+      />
+
       {/* Header */}
-      <div className="p-3 bg-[#292d3e] sticky top-0 z-30 flex flex-col shadow-sm gap-2">
+      <div className="p-3 bg-[#292d3e]/95 backdrop-blur-md sticky top-0 z-30 flex flex-col shadow-sm gap-2 border-b border-white/5">
         <div className="flex justify-between items-center">
             {mode === 'ai' ? (
                 <div className="flex items-center gap-3">
                    {selectedPersona ? (
                        <div className="flex items-center gap-3" onClick={clearPersona}>
-                           <div className="w-8 h-8 rounded-full overflow-hidden shadow-neu bg-[#292d3e] border border-white/10">
+                           <div className="w-9 h-9 rounded-full overflow-hidden shadow-neu bg-[#292d3e] border border-white/10 relative">
                                <img src={selectedPersona.avatar} className="w-full h-full object-cover" alt="Avatar" />
+                               {aiLoading && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><RefreshCw size={12} className="animate-spin text-white"/></div>}
                            </div>
                            <div>
                                <h1 className="font-bold text-gray-200 leading-tight text-sm">{selectedPersona.name}</h1>
@@ -612,6 +757,13 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                         <MoreVertical size={18} />
                     </button>
                 )}
+                {/* New Chat Button for AI */}
+                {mode === 'ai' && selectedPersona && (
+                    <button onClick={handleNewChat} className="p-2.5 bg-[#292d3e] shadow-neu rounded-full text-gray-400 active:shadow-neu-pressed hover:text-green-400 transition-colors" title="New Chat">
+                        <RotateCcw size={18} />
+                    </button>
+                )}
+
                 <div className="bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl flex">
                     <button onClick={() => setMode('ai')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'ai' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>AI</button>
                     <button onClick={() => setMode('p2p')} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${mode === 'p2p' ? 'bg-[#292d3e] text-green-400 shadow-neu' : 'text-gray-500'}`}>P2P</button>
@@ -650,7 +802,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       {/* Admin Panel (Host Only) */}
       {showAdmin && mode === 'p2p' && (
-          <div className="bg-[#292d3e] p-4 shadow-neu-pressed animate-fade-in-up mx-2 rounded-xl mb-2">
+          <div className="bg-[#292d3e] p-4 shadow-neu-pressed animate-fade-in-up mx-2 rounded-xl mb-2 relative z-20">
               <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Connected Users</h3>
               <div className="space-y-2">
                   {connectedUsersRef.current.map(u => (
@@ -665,7 +817,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 hide-scrollbar" ref={scrollRef}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-44 hide-scrollbar relative z-10" ref={scrollRef}>
         
         {/* --- AI MODE --- */}
         {mode === 'ai' && (
@@ -706,24 +858,25 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                             )}
                             
                             <div 
-                              className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
+                              className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed relative ${
                                 msg.role === 'user' 
                                   ? 'bg-[#292d3e] text-blue-400 shadow-neu rounded-br-none border border-blue-500/10 order-1' 
                                   : 'bg-[#292d3e] text-gray-300 shadow-neu rounded-bl-none'
                               }`}
                             >
                                {renderMessageContent(msg)}
+                               {/* Speaking Indicator */}
+                               {speakingMessageId === msg.id && (
+                                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+                               )}
                             </div>
                             
                             {msg.role === 'model' && (
                                 <button 
-                                    onClick={() => {
-                                        const u = new SpeechSynthesisUtterance(msg.text);
-                                        window.speechSynthesis.speak(u);
-                                    }}
-                                    className="self-end text-gray-500 hover:text-primary transition-colors"
+                                    onClick={() => toggleSpeech(msg.id, msg.text)}
+                                    className={`self-end transition-colors ${speakingMessageId === msg.id ? 'text-green-400 animate-pulse' : 'text-gray-500 hover:text-primary'}`}
                                 >
-                                    <Volume2 size={14} />
+                                    {speakingMessageId === msg.id ? <Square size={14} fill="currentColor" /> : <Volume2 size={14} />}
                                 </button>
                             )}
                           </div>
@@ -840,9 +993,9 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
       </div>
 
-      {/* Input Area */}
+      {/* Input Area (Refined Spacing) */}
       {((mode === 'ai') || (mode === 'p2p' && p2pState === 'connected')) && (
-          <div className="p-3 bg-[#292d3e] fixed bottom-[72px] left-0 right-0 max-w-md mx-auto z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.1)] border-t border-[#292d3e]">
+          <div className="p-4 bg-[#292d3e]/90 backdrop-blur-lg fixed bottom-[72px] left-0 right-0 max-w-md mx-auto z-40 border-t border-white/5 rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
               
               {/* Reply Preview */}
               {replyingTo && (
@@ -857,7 +1010,7 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
 
               {/* Attachment Preview */}
               {attachment && (
-                  <div className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-2 rounded-xl mb-2 mx-2">
+                  <div className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-2 rounded-xl mb-3 mx-1">
                       {attachment.type === 'image' ? <ImageIcon size={16} className="text-pink-400"/> : <FileText size={16} className="text-blue-400"/>}
                       <span className="text-xs text-gray-300 truncate flex-1">{attachment.name}</span>
                       <span className="text-[10px] text-gray-500">{attachment.size}</span>
@@ -865,32 +1018,30 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                   </div>
               )}
 
-              <div className="flex items-end gap-2 px-1">
-                  {/* Media Actions */}
-                  {mode === 'p2p' && (
-                      <div className="flex gap-2 mb-1.5">
-                           <button onClick={() => fileInputRef.current?.click()} className="p-2.5 text-gray-400 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed hover:text-primary transition-all">
-                               <Paperclip size={18} />
-                           </button>
-                           <button onClick={isRecording ? stopRecording : startRecording} className={`p-2.5 rounded-full shadow-neu transition-all active:shadow-neu-pressed ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 bg-[#292d3e] hover:text-red-400'}`}>
-                               {isRecording ? <StopCircle size={18} /> : <Mic size={18} />}
-                           </button>
-                      </div>
-                  )}
+              <div className="flex items-end gap-3">
+                  {/* Actions (P2P + AI Image) */}
+                  <button onClick={() => fileInputRef.current?.click()} className="p-3 text-gray-400 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed hover:text-primary transition-all mb-1">
+                       {mode === 'ai' ? <ImageIcon size={20} /> : <Paperclip size={20} />}
+                  </button>
 
-                  {mode === 'ai' && (
-                      <button onClick={handleAiVoiceInput} className={`p-2.5 mb-1.5 rounded-full shadow-neu transition-all active:shadow-neu-pressed ${isAiListening ? 'text-red-500 animate-pulse' : 'text-gray-400 bg-[#292d3e] hover:text-primary'}`}>
-                          <Mic size={18} />
-                      </button>
-                  )}
+                  {/* Voice Button */}
+                  <button 
+                    onClick={mode === 'ai' ? handleAiVoiceInput : (isRecording ? stopRecording : startRecording)} 
+                    className={`p-3 rounded-full shadow-neu transition-all active:shadow-neu-pressed mb-1 ${
+                        (isRecording || isAiListening) ? 'text-red-500 animate-pulse bg-[#292d3e]' : 'text-gray-400 bg-[#292d3e] hover:text-red-400'
+                    }`}
+                  >
+                      {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                  </button>
 
-                  <div className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-2xl flex items-center pr-2">
+                  {/* Text Input */}
+                  <div className="flex-1 bg-[#292d3e] shadow-neu-pressed rounded-2xl flex items-center pr-2 relative overflow-hidden">
                       <textarea
                           ref={textareaRef}
                           value={mode === 'ai' ? aiInput : p2pInput}
                           onChange={(e) => mode === 'ai' ? setAiInput(e.target.value) : setP2pInput(e.target.value)}
-                          placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Type a message...") : "Message secure peer..."}
-                          className="w-full bg-transparent border-none text-gray-200 px-4 py-3 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
+                          placeholder={mode === 'ai' ? (isAiListening ? "Listening..." : "Message AI...") : "Secure message..."}
+                          className="w-full bg-transparent border-none text-gray-200 px-4 py-3.5 max-h-32 focus:ring-0 resize-none text-sm placeholder-gray-500 hide-scrollbar"
                           rows={1}
                           onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) {
@@ -901,19 +1052,20 @@ const Chat: React.FC<ChatProps> = ({ onOpenSettings }) => {
                       />
                   </div>
 
+                  {/* Send Button */}
                   <button 
                       onClick={mode === 'ai' ? handleAiSend : handleP2pSend}
-                      disabled={mode === 'ai' ? (!aiInput.trim() || aiLoading) : (!p2pInput.trim() && !attachment)}
-                      className="mb-1 p-3 bg-[#292d3e] shadow-neu rounded-2xl text-primary active:shadow-neu-pressed disabled:opacity-50 disabled:shadow-none transition-all"
+                      disabled={mode === 'ai' ? ((!aiInput.trim() && !attachment) || aiLoading) : (!p2pInput.trim() && !attachment)}
+                      className="mb-1 p-3.5 bg-[#292d3e] shadow-neu rounded-2xl text-primary active:shadow-neu-pressed disabled:opacity-50 disabled:shadow-none transition-all hover:scale-105 active:scale-95"
                   >
-                      {aiLoading ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} />}
+                      {aiLoading ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} fill="currentColor" />}
                   </button>
               </div>
           </div>
       )}
 
       {/* Hidden File Input */}
-      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept={mode === 'ai' ? "image/*" : "*"} />
     </div>
   );
 };

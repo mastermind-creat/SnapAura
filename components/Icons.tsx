@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { 
   Camera, 
@@ -110,7 +111,8 @@ import {
   BarChart,
   CalendarCheck,
   Search,
-  History
+  History,
+  Square
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -237,5 +239,6 @@ export {
   BarChart,
   CalendarCheck,
   Search,
-  History
+  History,
+  Square
 };
