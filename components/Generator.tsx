@@ -1,15 +1,17 @@
 
 import React, { useState } from 'react';
-import { ImageIcon, Download, RefreshCw, Settings } from './Icons';
+import { ImageIcon, Download, RefreshCw, Settings, Wand2 } from './Icons';
 import { generateImageFromPrompt } from '../services/geminiService';
 import { ImageSize } from '../types';
 import { showToast } from './Toast';
+import { useNeural } from './NeuralContext';
 
 interface GeneratorProps {
   onOpenSettings: () => void;
 }
 
 const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
+  const { dispatchIntent } = useNeural(); // For cross-tool automation
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState<ImageSize>(ImageSize.S_1K);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -29,6 +31,14 @@ const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleRemix = () => {
+      if (!generatedImage) return;
+      dispatchIntent({ 
+          type: 'SMART_EDIT', 
+          payload: { image: generatedImage, prompt: '' } 
+      });
   };
 
   return (
@@ -94,14 +104,26 @@ const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
         {generatedImage ? (
              <div className="relative w-full h-full rounded-xl overflow-hidden group">
                 <img src={generatedImage} alt="Generated" className="w-full h-full object-contain bg-[#1e212d]" />
-                <a 
-                    href={generatedImage} 
-                    download={`snapaura-gen-${Date.now()}.png`}
-                    className="absolute bottom-4 right-4 bg-[#292d3e] p-3 rounded-full text-primary shadow-neu active:shadow-neu-pressed transition-all"
-                    onClick={() => showToast("Downloading...", "success")}
-                >
-                    <Download size={20} />
-                </a>
+                
+                {/* Result Actions */}
+                <div className="absolute bottom-4 right-4 flex gap-3">
+                    <button 
+                        onClick={handleRemix}
+                        className="bg-[#292d3e] p-3 rounded-full text-blue-400 shadow-neu active:shadow-neu-pressed transition-all hover:text-blue-300"
+                        title="Remix in Editor"
+                    >
+                        <Wand2 size={20} />
+                    </button>
+                    <a 
+                        href={generatedImage} 
+                        download={`snapaura-gen-${Date.now()}.png`}
+                        className="bg-[#292d3e] p-3 rounded-full text-green-400 shadow-neu active:shadow-neu-pressed transition-all hover:text-green-300"
+                        onClick={() => showToast("Downloading...", "success")}
+                        title="Download"
+                    >
+                        <Download size={20} />
+                    </a>
+                </div>
              </div>
         ) : (
             <div className="text-center text-gray-500 p-4">

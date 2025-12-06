@@ -92,6 +92,13 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         window.dispatchEvent(new CustomEvent('neural-tool-select', { detail: 'social-growth' }));
         break;
         
+      case 'SMART_EDIT':
+        // Auto-switch to Editor with the image
+        updateState({ activeImage: intent.payload.image });
+        setActiveTab(Tab.EDIT);
+        showToast("Opened in Editor", "success");
+        break;
+        
       case 'GENERATE_CAPTION':
         // Internal logic
         break;

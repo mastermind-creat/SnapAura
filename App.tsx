@@ -13,9 +13,10 @@ import Profile from './components/Profile';
 import Auth from './components/Auth';
 import { Tab, UserProfile } from './types';
 import { Smartphone, Download } from './components/Icons';
+import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
+  const { activeTab, setActiveTab, updateState, state } = useNeural();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Navbar Visibility State
@@ -34,6 +35,13 @@ const App: React.FC = () => {
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // Sync Neural State with App State
+  useEffect(() => {
+      if (state.activeImage && state.activeImage !== currentImage) {
+          setCurrentImage(state.activeImage);
+      }
+  }, [state.activeImage]);
 
   // Auto-hide navbar when entering Chat tab
   useEffect(() => {

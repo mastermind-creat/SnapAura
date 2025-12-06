@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Sparkles, ImageIcon, RotateCcw, User, Heart, Zap, Briefcase, Camera, TrendingUp, Smile, Activity, Radio, Users, Copy, Link2, CheckCircle, AlertCircle } from './Icons';
+import { Send, Sparkles, ImageIcon, RotateCcw, User, Heart, Zap, Briefcase, Camera, TrendingUp, Smile, Activity, Radio, Users, Copy, Link2, CheckCircle, AlertCircle, Plus, X, Volume2 } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { useNeural } from './NeuralContext';
 import { showToast } from './Toast';
@@ -70,6 +70,7 @@ const Chat: React.FC<any> = () => {
   const { state } = useNeural(); // Access Global State
   const [mode, setMode] = useState<'AI' | 'P2P'>('AI');
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [isPlusOpen, setIsPlusOpen] = useState(false);
   
   // --- AI STATE ---
   const [messages, setMessages] = useState<any[]>([]);
@@ -87,8 +88,69 @@ const Chat: React.FC<any> = () => {
   const [username, setUsername] = useState('');
   const [isSetup, setIsSetup] = useState(false);
 
+  // --- TTS State ---
+  const [speakingMsgId, setSpeakingMsgId] = useState<number | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  }, [input]);
+
+  // Matrix Animation Effect
+  useEffect(() => {
+    const canvas = document.getElementById('matrix-bg') as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
+    let height = canvas.height = canvas.parentElement?.clientHeight || window.innerHeight;
+    
+    const fontSize = 14;
+    const columns = Math.floor(width / fontSize);
+    const drops: number[] = new Array(columns).fill(1);
+    
+    const draw = () => {
+        // Semi-transparent fade to create trails
+        ctx.fillStyle = 'rgba(41, 45, 62, 0.1)'; 
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.fillStyle = '#00f3ff'; // Electric Blue
+        ctx.font = `${fontSize}px monospace`;
+        
+        for (let i = 0; i < drops.length; i++) {
+            // Random number 0-9
+            const text = Math.floor(Math.random() * 10).toString(); 
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            
+            // Random reset to top
+            if (drops[i] * fontSize > height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    };
+
+    const interval = setInterval(draw, 50);
+
+    const handleResize = () => {
+        width = canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
+        height = canvas.height = canvas.parentElement?.clientHeight || window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+        clearInterval(interval);
+        window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // 1. Load Persistence on Mount
   useEffect(() => {
@@ -105,7 +167,7 @@ const Chat: React.FC<any> = () => {
       if (storedHistory) {
           try { setMessages(JSON.parse(storedHistory)); } catch(e) {}
       } else {
-          setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id }]);
+          setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id, id: Date.now() }]);
       }
   }, []);
 
@@ -135,7 +197,6 @@ const Chat: React.FC<any> = () => {
 
           setPeer(newPeer);
       }
-      // Note: We don't auto-destroy peer on mode switch to keep connection alive if user toggles quickly
   }, [mode, isSetup]);
 
   // 4. Intent Handling (AI Context)
@@ -145,7 +206,7 @@ const Chat: React.FC<any> = () => {
           if (detail.text) {
               setMode('AI'); // Switch to AI
               setActivePersona(PERSONAS[0]); // System
-              const newMsgs = [...messages, { role: 'user', text: detail.text }];
+              const newMsgs = [...messages, { role: 'user', text: detail.text, id: Date.now() }];
               setMessages(newMsgs);
               processAiResponse(newMsgs, detail.text, PERSONAS[0]);
           }
@@ -157,7 +218,8 @@ const Chat: React.FC<any> = () => {
           setMessages([{
               role: 'model', 
               text: `I see you're working on an image. It looks like: "${analysisSnippet}...". How can I help?`,
-              personaId: 'system'
+              personaId: 'system',
+              id: Date.now()
           }]);
       }
       return () => window.removeEventListener('neural-chat-intent', handleIntent);
@@ -165,22 +227,22 @@ const Chat: React.FC<any> = () => {
 
   useEffect(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, p2pMessages, mode]);
+  }, [messages, p2pMessages, mode, input]);
 
   // --- AI LOGIC ---
   const processAiResponse = async (history: any[], lastMsg: string, persona: typeof activePersona, img?: string) => {
       setLoading(true);
       try {
           const res = await sendChatMessage(
-              history.map(m => ({ role: m.role, parts: [{ text: m.text }] })), 
+              history.filter(m => m.role).map(m => ({ role: m.role, parts: [{ text: m.text }] })), 
               lastMsg, 
               persona.prompt, 
               img, 
               state 
           );
-          setMessages(prev => [...prev, { role: 'model', text: res, personaId: persona.id }]);
+          setMessages(prev => [...prev, { role: 'model', text: res, personaId: persona.id, id: Date.now() }]);
       } catch (e) {
-          setMessages(prev => [...prev, { role: 'model', text: "Connection error.", personaId: persona.id }]);
+          setMessages(prev => [...prev, { role: 'model', text: "Connection error.", personaId: persona.id, id: Date.now() }]);
       } finally {
           setLoading(false);
       }
@@ -220,18 +282,44 @@ const Chat: React.FC<any> = () => {
       }
   };
 
+  // --- TTS LOGIC ---
+  const cleanTextForSpeech = (text: string) => {
+      return text.replace(/[*_`#]/g, '').replace(/\[.*?\]/g, '');
+  };
+
+  const toggleSpeech = (text: string, id: number) => {
+      if (speakingMsgId === id) {
+          window.speechSynthesis.cancel();
+          setSpeakingMsgId(null);
+      } else {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(cleanTextForSpeech(text));
+          utterance.onend = () => setSpeakingMsgId(null);
+          setSpeakingMsgId(id);
+          window.speechSynthesis.speak(utterance);
+      }
+  };
+
   // --- SHARED HANDLERS ---
   const handleSend = () => {
       if (!input.trim()) return;
       
       if (mode === 'AI') {
-          const newMsgs = [...messages, { role: 'user', text: input }];
+          const newMsgs = [...messages, { role: 'user', text: input, id: Date.now() }];
           setMessages(newMsgs);
           processAiResponse(newMsgs, input, activePersona);
       } else {
           sendP2P(input);
       }
       setInput('');
+      if(textareaRef.current) textareaRef.current.style.height = 'auto'; // Reset height
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+      }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,12 +329,13 @@ const Chat: React.FC<any> = () => {
           reader.onload = () => {
               const res = reader.result as string;
               if (mode === 'AI') {
-                  const newMsgs = [...messages, { role: 'user', text: "Analyze this image", image: res }];
+                  const newMsgs = [...messages, { role: 'user', text: "Analyze this image", image: res, id: Date.now() }];
                   setMessages(newMsgs);
                   processAiResponse(newMsgs, "Analyze this image", activePersona, res);
               } else {
                   sendP2P("Sent an image", res);
               }
+              setIsPlusOpen(false);
           };
           reader.readAsDataURL(file);
       }
@@ -254,7 +343,7 @@ const Chat: React.FC<any> = () => {
 
   const handleClear = () => {
       if (mode === 'AI') {
-          setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id }]);
+          setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id, id: Date.now() }]);
           localStorage.removeItem('SNAPAURA_CHAT_HISTORY');
           showToast("Chat Reset", "info");
       } else {
@@ -272,8 +361,9 @@ const Chat: React.FC<any> = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#292d3e] relative overflow-hidden pb-24">
-        {/* Animated Background */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://media.giphy.com/media/U3qYN8S0j3bpK/giphy.gif')] bg-cover mix-blend-screen"></div>
+        {/* Matrix Background */}
+        <canvas id="matrix-bg" className="absolute inset-0 z-0 opacity-10 pointer-events-none"></canvas>
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
         {/* Header & Mode Switch */}
         <div className="bg-[#292d3e]/90 backdrop-blur-md border-b border-white/5 z-20">
@@ -292,8 +382,8 @@ const Chat: React.FC<any> = () => {
                         <Users size={14}/> Secure P2P
                     </button>
                 </div>
-                <button onClick={handleClear} className="p-2 text-gray-500 hover:text-white transition-colors">
-                    <RotateCcw size={18}/>
+                <button onClick={handleClear} className="p-2 text-gray-500 hover:text-white transition-colors bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed">
+                    <RotateCcw size={16}/>
                 </button>
             </div>
 
@@ -303,7 +393,7 @@ const Chat: React.FC<any> = () => {
                     {PERSONAS.map(p => (
                         <button 
                             key={p.id}
-                            onClick={() => { setActivePersona(p); setMessages(prev => [...prev, {role:'model', text: p.intro, personaId: p.id}]); }}
+                            onClick={() => { setActivePersona(p); setMessages(prev => [...prev, {role:'model', text: p.intro, personaId: p.id, id: Date.now()}]); }}
                             className={`flex items-center gap-2 pr-3 pl-1 py-1 rounded-full text-[10px] font-bold transition-all whitespace-nowrap border ${
                                 activePersona.id === p.id 
                                 ? 'bg-[#292d3e] shadow-neu-pressed border-white/10 text-white' 
@@ -336,7 +426,7 @@ const Chat: React.FC<any> = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10" ref={scrollRef}>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 pb-44" ref={scrollRef}>
             
             {/* P2P Setup Screen */}
             {mode === 'P2P' && !isSetup && (
@@ -389,9 +479,10 @@ const Chat: React.FC<any> = () => {
             {(mode === 'AI' ? messages : (p2pStatus === 'connected' ? p2pMessages : [])).map((m, i) => {
                 const isUser = mode === 'AI' ? m.role === 'user' : m.isMe;
                 const persona = mode === 'AI' ? (PERSONAS.find(p => p.id === m.personaId) || activePersona) : { avatar: null, color: 'text-green-400' };
-                
+                const isSpeaking = speakingMsgId === m.id;
+
                 return (
-                    <div key={i} className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    <div key={i} className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
                         {!isUser && (
                             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-2 shadow-neu border border-white/5 bg-[#292d3e] flex items-center justify-center">
                                 {mode === 'AI' ? (
@@ -402,7 +493,7 @@ const Chat: React.FC<any> = () => {
                             </div>
                         )}
                         
-                        <div className={`max-w-[85%] space-y-1`}>
+                        <div className={`max-w-[85%] space-y-1 relative group`}>
                             {/* Sender Name in P2P */}
                             {!isUser && mode === 'P2P' && <p className="text-[9px] text-gray-500 ml-2">{m.sender}</p>}
                             
@@ -410,12 +501,22 @@ const Chat: React.FC<any> = () => {
                                 <img src={m.image} className="w-48 rounded-xl border border-white/10" alt="Upload" />
                             )}
                             {m.text && (
-                                <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-neu ${
+                                <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-neu relative ${
                                     isUser 
                                     ? 'bg-[#292d3e] text-blue-400 rounded-tr-none border border-blue-500/10' 
                                     : 'bg-[#292d3e] text-gray-300 rounded-tl-none border border-white/5'
                                 }`}>
                                     <div dangerouslySetInnerHTML={{ __html: m.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                    
+                                    {/* Text Actions */}
+                                    {!isUser && mode === 'AI' && (
+                                        <button 
+                                            onClick={() => toggleSpeech(m.text, m.id)}
+                                            className={`absolute -right-8 bottom-0 p-2 text-gray-500 hover:text-white transition-opacity ${isSpeaking ? 'opacity-100 text-green-400' : 'opacity-0 group-hover:opacity-100'}`}
+                                        >
+                                            {isSpeaking ? <Activity className="animate-pulse" size={14}/> : <Volume2 size={14}/>}
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -444,21 +545,49 @@ const Chat: React.FC<any> = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-[#292d3e]/90 backdrop-blur-lg border-t border-white/5 relative z-20">
-            <div className="relative flex gap-2 bg-[#292d3e] rounded-xl p-1 shadow-neu-pressed">
-                <button onClick={() => fileRef.current?.click()} className="p-3 text-gray-400 hover:text-white transition-colors">
-                    <ImageIcon size={20} />
-                </button>
-                <input 
-                    value={input} 
-                    onChange={e => setInput(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && handleSend()}
-                    placeholder={mode === 'AI' ? `Message ${activePersona.name}...` : "Type a secure message..."}
-                    className="flex-1 bg-transparent px-2 py-3 text-gray-200 outline-none text-sm placeholder-gray-600"
-                    disabled={mode === 'P2P' && p2pStatus !== 'connected'}
-                />
-                <button onClick={handleSend} disabled={!input.trim() || (mode === 'P2P' && p2pStatus !== 'connected')} className="bg-[#292d3e] shadow-neu p-2.5 rounded-lg text-blue-400 active:shadow-neu-pressed disabled:opacity-50">
-                    <Send size={18} />
+        <div className="p-4 fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-20">
+            <div className="max-w-md mx-auto pointer-events-auto flex items-end gap-2">
+                
+                {/* Expandable Plus Menu */}
+                <div className="relative">
+                    <div className={`absolute bottom-full left-0 mb-2 flex flex-col gap-2 transition-all duration-300 ${isPlusOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-90 pointer-events-none'}`}>
+                        <button onClick={() => { fileRef.current?.click(); setIsPlusOpen(false); }} className="w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-blue-400 active:shadow-neu-pressed">
+                            <ImageIcon size={18} />
+                        </button>
+                        <button onClick={() => { /* Voice logic placeholder */ setIsPlusOpen(false); }} className="w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-pink-400 active:shadow-neu-pressed">
+                            <Smile size={18} />
+                        </button>
+                    </div>
+                    <button 
+                        onClick={() => setIsPlusOpen(!isPlusOpen)} 
+                        className={`w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400 active:shadow-neu-pressed transition-transform duration-300 ${isPlusOpen ? 'rotate-45 text-red-400' : ''}`}
+                    >
+                        <Plus size={20} />
+                    </button>
+                </div>
+
+                {/* Text Area Container with Glowing Border */}
+                <div className="flex-1 relative group rounded-2xl bg-gradient-to-r from-[#00f3ff] via-[#ff0099] to-[#39ff14] p-[1px] shadow-neon-blue">
+                    <div className="bg-[#292d3e] rounded-2xl flex items-end p-1">
+                        <textarea
+                            ref={textareaRef}
+                            value={input} 
+                            onChange={e => setInput(e.target.value)} 
+                            onKeyDown={handleKeyDown}
+                            placeholder={mode === 'AI' ? `Message ${activePersona.name}...` : "Type a secure message..."}
+                            className="w-full bg-transparent px-3 py-3 text-gray-200 outline-none text-sm placeholder-gray-600 resize-none max-h-32 min-h-[44px] hide-scrollbar leading-relaxed"
+                            rows={1}
+                            disabled={mode === 'P2P' && p2pStatus !== 'connected'}
+                        />
+                    </div>
+                </div>
+
+                <button 
+                    onClick={handleSend} 
+                    disabled={!input.trim() || (mode === 'P2P' && p2pStatus !== 'connected')} 
+                    className="w-10 h-10 bg-[#292d3e] shadow-neu rounded-full text-blue-400 active:shadow-neu-pressed disabled:opacity-50 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                >
+                    <Send size={18} className={input.trim() ? "fill-current" : ""} />
                 </button>
             </div>
             <input type="file" ref={fileRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
