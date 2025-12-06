@@ -114,7 +114,9 @@ import {
   Square,
   Plus,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Power,
+  Server
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -245,5 +247,7 @@ export {
   Square,
   Plus,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Power,
+  Server
 };
