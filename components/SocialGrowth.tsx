@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
-import { TrendingUp, Hash, Clock, MessageSquare, RefreshCw, Copy, Lightbulb } from './Icons';
+import { TrendingUp, Hash, Clock, MessageSquare, RefreshCw, Copy, Lightbulb, FileText } from './Icons';
 import { generateSocialContent } from '../services/geminiService';
 import { showToast } from './Toast';
+import { useNeural } from './NeuralContext';
 
-// Access marked from global scope (loaded via CDN)
+// Access marked from global scope
 declare const marked: any;
 
 const SocialGrowth: React.FC = () => {
+    const { dispatchIntent } = useNeural();
     const [topic, setTopic] = useState('');
     const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
@@ -24,6 +26,10 @@ const SocialGrowth: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSaveToNotes = (content: string, type: string) => {
+        dispatchIntent({ type: 'SEND_TO_NOTES', payload: { text: content, title: `${type} for ${topic}` } });
     };
 
     const renderResult = () => {
@@ -44,12 +50,20 @@ const SocialGrowth: React.FC = () => {
                             </button>
                         ))}
                     </div>
-                    <button 
-                        onClick={() => {navigator.clipboard.writeText(result); showToast("Copied all tags", "success")}}
-                        className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-sm font-bold text-blue-400 active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
-                    >
-                        <Copy size={16} /> Copy All Tags
-                    </button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => {navigator.clipboard.writeText(result); showToast("Copied all tags", "success")}}
+                            className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-sm font-bold text-blue-400 active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
+                        >
+                            <Copy size={16} /> Copy All
+                        </button>
+                        <button 
+                            onClick={() => handleSaveToNotes(result, 'Hashtags')}
+                            className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-sm font-bold text-yellow-400 active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
+                        >
+                            <FileText size={16} /> Save
+                        </button>
+                    </div>
                 </div>
             );
         }
@@ -73,18 +87,26 @@ const SocialGrowth: React.FC = () => {
             );
         }
 
-        // Parse Markdown for Ideas and Timing
         const htmlContent = typeof marked !== 'undefined' ? marked.parse(result) : result;
 
         return (
             <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl relative group">
-                <button 
-                    onClick={() => {navigator.clipboard.writeText(result); showToast("Copied!", "success")}}
-                    className="absolute top-4 right-4 p-2 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-lg text-gray-400 hover:text-white transition-all z-10"
-                    title="Copy Text"
-                >
-                    <Copy size={16} />
-                </button>
+                <div className="absolute top-4 right-4 flex gap-2 z-10">
+                    <button 
+                        onClick={() => handleSaveToNotes(result, activeTab)}
+                        className="p-2 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-lg text-yellow-400 hover:text-white transition-all"
+                        title="Save to Notes"
+                    >
+                        <FileText size={16} />
+                    </button>
+                    <button 
+                        onClick={() => {navigator.clipboard.writeText(result); showToast("Copied!", "success")}}
+                        className="p-2 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-lg text-gray-400 hover:text-white transition-all"
+                        title="Copy Text"
+                    >
+                        <Copy size={16} />
+                    </button>
+                </div>
                 
                 <div 
                     className="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed"

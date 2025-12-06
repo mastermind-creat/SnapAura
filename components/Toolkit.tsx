@@ -5,7 +5,7 @@ import {
   ImageIcon, Scissors, Palette, FileText, Smartphone,
   Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
   Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
-  Activity, Star, Eye, EyeOff, ImagePlus
+  Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle
 } from './Icons';
 import SocialGrowth from './SocialGrowth';
 import SmartNotes from './SmartNotes';
@@ -16,6 +16,7 @@ import FootballHub from './FootballHub';
 import { getCryptoData, getCurrencyData } from '../services/geminiService';
 import { showToast } from './Toast';
 import SmartCard from './SmartCard';
+import { useNeural } from './NeuralContext';
 
 // Access global libraries
 declare const Html5Qrcode: any;
@@ -112,10 +113,11 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
 
   return (
     <div className="h-full overflow-y-auto hide-scrollbar bg-[#292d3e] p-4 pb-24 relative">
-        {/* Background FX */}
+        {/* Cinematic Background */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[80px] animate-pulse-slow"></div>
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-[80px] animate-pulse-slow delay-500"></div>
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px] opacity-20 transform perspective-500 rotateX-60 animate-grid-move"></div>
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-secondary/10 rounded-full blur-[80px] animate-pulse-slow delay-500"></div>
         </div>
 
         {/* Header */}
@@ -175,11 +177,10 @@ const QrTools = () => {
 
     const handleScan = (decodedText: string) => {
         setScanResult(decodedText);
-        stopScanning(); // Auto stop on success
+        stopScanning();
 
         if (decodedText.startsWith('WIFI:')) {
             setScanType('wifi');
-            // Parse WIFI:S:SSID;T:WPA;P:Password;;
             const ssid = decodedText.match(/S:([^;]+)/)?.[1];
             const password = decodedText.match(/P:([^;]+)/)?.[1];
             const type = decodedText.match(/T:([^;]+)/)?.[1];
@@ -198,7 +199,6 @@ const QrTools = () => {
         setScanResult(null);
         setWifiData(null);
         
-        // Small delay to let UI render the #reader div
         setTimeout(() => {
             const html5QrCode = new Html5Qrcode("reader");
             scannerRef.current = html5QrCode;
@@ -208,9 +208,8 @@ const QrTools = () => {
                 { facingMode: "environment" }, 
                 config, 
                 handleScan,
-                (error: any) => { /* ignore frame errors */ }
+                (error: any) => { }
             ).catch((err: any) => {
-                console.error(err);
                 setIsScanning(false);
                 showToast("Camera access failed", "error");
             });
@@ -231,13 +230,19 @@ const QrTools = () => {
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        
         try {
-            const html5QrCode = new Html5Qrcode("reader"); // Re-use reader ID even if hidden
+            const html5QrCode = new Html5Qrcode("reader");
             const result = await html5QrCode.scanFile(file, true);
             handleScan(result);
         } catch (err) {
-            showToast("No QR code found in image", "error");
+            showToast("No QR code found", "error");
+        }
+    };
+
+    const handleShortenLink = () => {
+        if (scanType === 'url' && scanResult) {
+            localStorage.setItem('TOOL_LINK_PENDING', scanResult);
+            window.dispatchEvent(new CustomEvent('neural-tool-select', { detail: 'links' }));
         }
     };
 
@@ -249,6 +254,14 @@ const QrTools = () => {
         };
     }, []);
 
+    // Auto-start camera when mounting scan mode
+    useEffect(() => {
+        if (mode === 'scan' && !scanResult) {
+            startScanning();
+        }
+        return () => stopScanning();
+    }, [mode]);
+
     return (
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl">
@@ -258,22 +271,15 @@ const QrTools = () => {
 
             {mode === 'scan' && (
                 <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl relative overflow-hidden min-h-[400px] flex flex-col">
-                    
-                    {/* Camera Feed Area */}
-                    <div className={`relative rounded-xl overflow-hidden shadow-neu-pressed bg-black flex-1 flex items-center justify-center`}>
+                    <div className={`relative rounded-xl overflow-hidden shadow-neu-pressed bg-black flex-1 flex items-center justify-center min-h-[300px]`}>
                         <div id="reader" className="w-full h-full"></div>
                         
                         {!isScanning && !scanResult && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#292d3e] z-10">
                                 <QrCode size={48} className="text-gray-500 opacity-20" />
-                                <div className="flex flex-col gap-3 w-full px-8">
-                                    <button onClick={startScanning} className="w-full py-4 bg-[#292d3e] shadow-neu text-blue-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2">
-                                        <QrCode size={18}/> Start Camera
-                                    </button>
-                                    <button onClick={() => fileRef.current?.click()} className="w-full py-4 bg-[#292d3e] shadow-neu text-gray-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2">
-                                        <ImagePlus size={18}/> Scan Image
-                                    </button>
-                                </div>
+                                <button onClick={startScanning} className="w-full py-4 bg-[#292d3e] shadow-neu text-blue-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2">
+                                    <QrCode size={18}/> Start Camera
+                                </button>
                             </div>
                         )}
 
@@ -286,52 +292,39 @@ const QrTools = () => {
                                     <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-xl -mb-1 -mr-1"></div>
                                     <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_20px_red] animate-[laserY_2s_infinite_alternate] opacity-80"></div>
                                 </div>
-                                <div className="absolute bottom-4 left-0 right-0 text-center">
-                                    <button onClick={stopScanning} className="pointer-events-auto bg-red-500/20 text-red-400 backdrop-blur-md border border-red-500/30 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-500/30 transition-colors">
-                                        Stop Scanning
-                                    </button>
-                                </div>
+                                <button onClick={stopScanning} className="absolute bottom-4 pointer-events-auto bg-red-500/20 text-red-400 backdrop-blur-md border border-red-500/30 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-500/30 transition-colors">
+                                    Stop
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Result Area */}
                     {scanResult && (
                         <div className="mt-6 space-y-4 animate-fade-in-up">
                             {scanType === 'wifi' && wifiData ? (
-                                <div className="bg-[#292d3e] shadow-neu rounded-2xl p-5 border border-blue-400/20">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="p-3 bg-blue-400/10 rounded-full text-blue-400"><Wifi size={24} /></div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-200">WiFi Network</h3>
-                                            <p className="text-xs text-gray-500">Connect to {wifiData.ssid}</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-3">
-                                        <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex justify-between items-center">
-                                            <span className="text-xs text-gray-500 font-bold">Network</span>
-                                            <span className="text-sm font-bold text-white">{wifiData.ssid}</span>
-                                        </div>
-                                        <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex justify-between items-center">
-                                            <span className="text-xs text-gray-500 font-bold">Password</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-white font-mono">
+                                <SmartCard 
+                                    title="WiFi Network" 
+                                    subtitle={`Connect to ${wifiData.ssid}`}
+                                    icon={Wifi}
+                                    content={
+                                        <div className="space-y-3 pt-2">
+                                            <div className="flex justify-between items-center text-xs text-gray-400">
+                                                <span>Password:</span>
+                                                <span className="font-mono font-bold text-white bg-[#1e212d] px-2 py-1 rounded">
                                                     {showWifiPass ? wifiData.password : '••••••••'}
                                                 </span>
-                                                <button onClick={() => setShowWifiPass(!showWifiPass)} className="text-gray-500 hover:text-white">
-                                                    {showWifiPass ? <EyeOff size={14}/> : <Eye size={14}/>}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setShowWifiPass(!showWifiPass)} className="flex-1 py-2 bg-[#292d3e] shadow-neu rounded-lg text-xs font-bold text-gray-400 active:shadow-neu-pressed">
+                                                    {showWifiPass ? 'Hide' : 'Show'}
+                                                </button>
+                                                <button onClick={() => {navigator.clipboard.writeText(wifiData.password); showToast("Copied", "success")}} className="flex-1 py-2 bg-[#292d3e] shadow-neu rounded-lg text-xs font-bold text-blue-400 active:shadow-neu-pressed">
+                                                    Copy
                                                 </button>
                                             </div>
                                         </div>
-                                        <button 
-                                            onClick={() => {navigator.clipboard.writeText(wifiData.password); showToast("Password Copied", "success")}}
-                                            className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold text-xs flex items-center justify-center gap-2 active:shadow-neu-pressed"
-                                        >
-                                            <Copy size={14}/> Copy Password
-                                        </button>
-                                    </div>
-                                </div>
+                                    }
+                                />
                             ) : (
                                 <SmartCard 
                                     title={scanType === 'url' ? "Website Link" : "Scanned Content"}
@@ -341,15 +334,26 @@ const QrTools = () => {
                             )}
 
                             {scanType === 'url' && (
-                                <a href={scanResult} target="_blank" rel="noreferrer" className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all">
-                                    <ExternalLink size={18} /> Visit Link
-                                </a>
+                                <div className="flex gap-3">
+                                    <a href={scanResult} target="_blank" rel="noreferrer" className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-green-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed text-xs">
+                                        <ExternalLink size={16} /> Open
+                                    </a>
+                                    <button onClick={handleShortenLink} className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-purple-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed text-xs">
+                                        <LinkIcon size={16} /> Shorten
+                                    </button>
+                                </div>
                             )}
                             
-                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 font-bold active:shadow-neu-pressed transition-all">
-                                <RefreshCw size={16} className="inline mr-2"/> Scan Another
+                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 font-bold active:shadow-neu-pressed flex items-center justify-center gap-2 text-xs">
+                                <RefreshCw size={16}/> Scan Again
                             </button>
                         </div>
+                    )}
+                    
+                    {!isScanning && !scanResult && (
+                        <button onClick={() => fileRef.current?.click()} className="mt-4 w-full py-3 bg-[#292d3e] shadow-neu text-gray-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2 text-xs">
+                            <ImagePlus size={16}/> Scan from Image
+                        </button>
                     )}
                 </div>
             )}
@@ -384,7 +388,6 @@ const FinancialTools = () => {
     const [cryptoData, setCryptoData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
-    // Currency State
     const [amount, setAmount] = useState('100');
     const [fromCur, setFromCur] = useState('USD');
     const [toCur, setToCur] = useState('KES');
@@ -472,9 +475,9 @@ const UnitConverter = () => {
     const convert = () => {
         const n = parseFloat(val);
         if(isNaN(n)) return;
-        if (cat === 'length') setRes(`${(n * 3.28084).toFixed(2)} ft`); // m to ft
-        if (cat === 'mass') setRes(`${(n * 2.20462).toFixed(2)} lbs`); // kg to lbs
-        if (cat === 'temp') setRes(`${((n * 9/5) + 32).toFixed(1)} °F`); // C to F
+        if (cat === 'length') setRes(`${(n * 3.28084).toFixed(2)} ft`); 
+        if (cat === 'mass') setRes(`${(n * 2.20462).toFixed(2)} lbs`); 
+        if (cat === 'temp') setRes(`${((n * 9/5) + 32).toFixed(1)} °F`); 
     };
 
     return (
@@ -487,11 +490,7 @@ const UnitConverter = () => {
             <div className="space-y-4">
                 <input value={val} onChange={e => setVal(e.target.value)} type="number" placeholder={cat === 'length' ? 'Meters' : cat === 'mass' ? 'Kilograms' : 'Celsius'} className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none"/>
                 <button onClick={convert} className="w-full bg-[#292d3e] shadow-neu text-gray-200 py-3 rounded-xl font-bold active:shadow-neu-pressed">Convert</button>
-                {res && (
-                    <div className="bg-[#292d3e] shadow-neu p-4 rounded-xl text-center">
-                        <span className="text-2xl font-black text-green-400">{res}</span>
-                    </div>
-                )}
+                {res && <SmartCard title="Result" content={res} icon={Ruler} />}
             </div>
         </div>
     );
@@ -508,6 +507,13 @@ const LinkShortener = () => {
             setShort(text);
         } catch(e) { showToast("Failed to shorten", "error"); }
     };
+
+    // Auto-fill from automation intent
+    useEffect(() => {
+       const pending = localStorage.getItem('TOOL_LINK_PENDING');
+       if(pending) { setUrl(pending); localStorage.removeItem('TOOL_LINK_PENDING'); }
+    }, []);
+
     return (
         <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 animate-fade-in-up">
             <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Paste long URL..." className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none text-sm"/>
@@ -518,6 +524,7 @@ const LinkShortener = () => {
 };
 
 const PhotoUtils = () => {
+    const { dispatchIntent } = useNeural();
     const [mode, setMode] = useState('compress');
     const [file, setFile] = useState<File|null>(null);
     const [preview, setPreview] = useState<string|null>(null);
@@ -525,7 +532,6 @@ const PhotoUtils = () => {
     const [stat, setStat] = useState('');
     const fileRef = useRef<HTMLInputElement>(null);
 
-    // Resize state
     const [width, setWidth] = useState(1080);
     const [quality, setQuality] = useState(80);
 
@@ -564,7 +570,6 @@ const PhotoUtils = () => {
             const data = canvas.toDataURL('image/jpeg', q);
             setProcessed(data);
             
-            // Calculate size reduction
             const head = 'data:image/jpeg;base64,';
             const size = Math.round((data.length - head.length)*3/4) / 1024;
             setStat(prev => `${prev} -> New: ${size.toFixed(1)} KB`);
@@ -574,7 +579,7 @@ const PhotoUtils = () => {
     return (
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl overflow-x-auto hide-scrollbar">
-                {['compress', 'resize', 'meme'].map(m => (
+                {['compress', 'resize'].map(m => (
                     <button key={m} onClick={() => {setMode(m); setProcessed(null);}} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap ${mode === m ? 'bg-[#292d3e] shadow-neu text-red-400' : 'text-gray-500'}`}>{m}</button>
                 ))}
             </div>
@@ -611,6 +616,23 @@ const PhotoUtils = () => {
                             )}
                             <button onClick={() => {setFile(null); setProcessed(null);}} className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-gray-400"><RefreshCw/></button>
                         </div>
+
+                        {processed && (
+                            <div className="grid grid-cols-2 gap-3 mt-2 border-t border-white/5 pt-4">
+                                <button 
+                                    onClick={() => dispatchIntent({ type: 'SMART_EDIT', payload: { image: processed, prompt: '' } })}
+                                    className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-xs font-bold text-blue-400 flex items-center justify-center gap-2 active:shadow-neu-pressed"
+                                >
+                                    <Wand2 size={14}/> Edit in Studio
+                                </button>
+                                <button 
+                                    onClick={() => dispatchIntent({ type: 'SEND_TO_CHAT', payload: { image: processed, text: "What's the vibe of this photo?" } })}
+                                    className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-xs font-bold text-purple-400 flex items-center justify-center gap-2 active:shadow-neu-pressed"
+                                >
+                                    <MessageCircle size={14}/> Analyze Vibe
+                                </button>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

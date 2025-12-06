@@ -1,10 +1,12 @@
 
 import React, { useState, useRef } from 'react';
-import { UserCheck, Upload, Wand2, Download, RefreshCw, Layers, Sparkles, Zap, CheckCircle } from './Icons';
+import { UserCheck, Upload, Wand2, Download, RefreshCw, Layers, Sparkles, Zap, CheckCircle, FileText } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
+import { useNeural } from './NeuralContext';
 
 const ProfileStudio: React.FC = () => {
+    const { dispatchIntent } = useNeural();
     const [image, setImage] = useState<string | null>(null);
     const [processed, setProcessed] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -72,17 +74,14 @@ const ProfileStudio: React.FC = () => {
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            // Square crop center logic
             const size = Math.min(img.width, img.height);
             canvas.width = 200;
             canvas.height = 200;
             
             if(ctx) {
-                // sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
                 ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, 200, 200);
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 localStorage.setItem('SNAPAURA_AVATAR', dataUrl);
-                // Dispatch event to update UI globally
                 window.dispatchEvent(new Event('avatar-update'));
                 showToast("Profile Picture Updated!", "success");
             }
@@ -105,7 +104,6 @@ const ProfileStudio: React.FC = () => {
                     </button>
                 ) : (
                     <div className="space-y-6">
-                        {/* Main Preview */}
                         <div className="relative h-64 w-64 mx-auto rounded-full overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 group">
                             <div className="w-full h-full rounded-full overflow-hidden relative">
                                 <img src={processed || image} className="w-full h-full object-cover" alt="Profile" />
@@ -117,7 +115,6 @@ const ProfileStudio: React.FC = () => {
                             </div>
                         </div>
                         
-                        {/* Themes Grid */}
                         <div className="space-y-3">
                              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest text-left ml-1">Select Theme</h4>
                              <div className="grid grid-cols-2 gap-3">
@@ -134,7 +131,6 @@ const ProfileStudio: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Quick Retouch */}
                         <div className="space-y-3">
                              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest text-left ml-1">Quick Adjustments</h4>
                              <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar px-1">
@@ -151,7 +147,6 @@ const ProfileStudio: React.FC = () => {
                              </div>
                         </div>
 
-                        {/* Actions */}
                         <div className="space-y-3">
                             <button 
                                 onClick={handleSetAvatar}
@@ -175,6 +170,15 @@ const ProfileStudio: React.FC = () => {
                                     <RefreshCw size={20} />
                                 </button>
                             </div>
+                            
+                            {processed && (
+                                <button 
+                                    onClick={() => dispatchIntent({ type: 'SOCIAL_GROWTH', payload: { topic: "Professional Bio for Creator" } })}
+                                    className="w-full bg-[#292d3e] text-blue-400 shadow-neu py-4 rounded-xl font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
+                                >
+                                    <FileText size={18} /> Generate Matching Bio
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

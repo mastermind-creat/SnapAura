@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Trophy, Activity, Shirt, Users, BarChart, CalendarCheck, 
   TrendingUp, TrendingDown, Shield, Search, History, RefreshCw, ChevronRight, 
-  AlertCircle, Star, ArrowRight, User 
+  AlertCircle, Star, ArrowRight, User, MessageCircle 
 } from './Icons';
 import { 
   getLiveMatchDetails, 
@@ -12,6 +12,7 @@ import {
   getYesterdayAccuracy 
 } from '../services/geminiService';
 import { showToast } from './Toast';
+import { useNeural } from './NeuralContext';
 
 // Access marked from global scope
 declare const marked: any;
@@ -72,7 +73,7 @@ const FootballHub: React.FC = () => {
   );
 };
 
-// Helper: Safely render text that might be returned as an object/array by AI
+// Helper: Safely render text
 const renderSafe = (content: any) => {
     if (typeof content === 'string') return content;
     if (typeof content === 'number') return String(content);
@@ -93,6 +94,7 @@ const renderSafe = (content: any) => {
 
 // --- 1. Live Match Tracker ---
 const LiveTracker = () => {
+    const { dispatchIntent } = useNeural();
     const [matches, setMatches] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -163,17 +165,19 @@ const LiveTracker = () => {
                         </div>
                     </div>
                     
-                    <div className="text-[10px] text-gray-500 font-mono px-2">
-                        <span className="font-bold uppercase text-gray-600 mr-2">Events:</span>
-                        {renderSafe(m.events)}
-                    </div>
+                    <button 
+                        onClick={() => dispatchIntent({ type: 'SEND_TO_CHAT', payload: { text: `Analyze this match: ${m.home} vs ${m.away}. Stats: ${m.score}, Events: ${JSON.stringify(m.events)}` } })}
+                        className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold text-xs flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all"
+                    >
+                        <MessageCircle size={14}/> Discuss in Chat
+                    </button>
                 </div>
             ))}
         </div>
     );
 };
 
-// --- 2. Player Analyzer ---
+// ... (PlayerAnalyzer, FantasyOptimizer, AccuracyReview unchanged but safe to keep)
 const PlayerAnalyzer = () => {
     const [query, setQuery] = useState('');
     const [data, setData] = useState<any>(null);
@@ -215,7 +219,6 @@ const PlayerAnalyzer = () => {
 
             {data && (
                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-3xl animate-fade-in-up space-y-6">
-                    {/* Player Header */}
                     <div className="flex items-center gap-4 border-b border-white/5 pb-6">
                         <div className="w-16 h-16 rounded-2xl bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400">
                             <User size={32} />
@@ -226,7 +229,6 @@ const PlayerAnalyzer = () => {
                         </div>
                     </div>
 
-                    {/* Scores Grid */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-[#292d3e] shadow-neu-pressed p-4 rounded-2xl text-center flex flex-col justify-center h-28">
                             <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-2">Impact Score</span>
@@ -246,7 +248,6 @@ const PlayerAnalyzer = () => {
                         </div>
                     </div>
 
-                    {/* Stats Row */}
                     <div className="flex justify-between bg-[#292d3e] shadow-neu p-2 rounded-2xl">
                         <div className="flex-1 text-center py-2 border-r border-[#1e212d]">
                             <span className="block text-[9px] text-gray-500 uppercase font-bold">Goals</span>
@@ -262,7 +263,6 @@ const PlayerAnalyzer = () => {
                         </div>
                     </div>
 
-                    {/* Analysis Section */}
                     <div className="space-y-4 pt-2">
                         <div>
                             <h4 className="text-[10px] text-gray-500 uppercase font-bold mb-3 tracking-wider ml-1">Key Strengths</h4>
@@ -287,7 +287,6 @@ const PlayerAnalyzer = () => {
     );
 };
 
-// --- 3. Fantasy Optimizer ---
 const FantasyOptimizer = () => {
     const [tips, setTips] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -296,7 +295,7 @@ const FantasyOptimizer = () => {
         const fetchTips = async () => {
             setLoading(true);
             try { setTips(await getFantasyTips()); }
-            catch(e) { /* silent fail */ }
+            catch(e) { }
             finally { setLoading(false); }
         };
         fetchTips();
@@ -314,7 +313,6 @@ const FantasyOptimizer = () => {
                 </span>
             </div>
 
-            {/* Captain Pick */}
             <div className="bg-[#292d3e] shadow-neu p-6 rounded-3xl relative overflow-hidden group border border-yellow-400/10">
                 <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-4 text-yellow-400 font-black text-[10px] uppercase tracking-widest">
@@ -331,7 +329,6 @@ const FantasyOptimizer = () => {
                 </div>
             </div>
 
-            {/* Top Picks */}
             <div>
                 <h4 className="text-[10px] font-black text-green-400 uppercase mb-4 ml-2 tracking-widest">Safe Picks</h4>
                 <div className="grid gap-4">
@@ -355,7 +352,6 @@ const FantasyOptimizer = () => {
                 </div>
             </div>
 
-            {/* Value & Differentials Grid */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl">
                     <h4 className="text-[10px] font-black text-blue-400 uppercase mb-4 tracking-widest text-center">Value Gems</h4>
@@ -390,7 +386,6 @@ const FantasyOptimizer = () => {
     );
 };
 
-// --- 4. Accuracy Review ---
 const AccuracyReview = () => {
     const [reviews, setReviews] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
