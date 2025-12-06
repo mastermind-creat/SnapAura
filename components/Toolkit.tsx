@@ -5,7 +5,7 @@ import {
   ImageIcon, Scissors, Palette, FileText, Smartphone,
   Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
   Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
-  Activity, Star
+  Activity, Star, Eye, EyeOff, ImagePlus
 } from './Icons';
 import SocialGrowth from './SocialGrowth';
 import SmartNotes from './SmartNotes';
@@ -19,7 +19,6 @@ import SmartCard from './SmartCard';
 
 // Access global libraries
 declare const Html5Qrcode: any;
-declare const Html5QrcodeScanner: any;
 
 const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   const [activeTool, setActiveTool] = useState<string>('menu');
@@ -155,15 +154,18 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   );
 };
 
-// --- RESTORED SUB TOOLS ---
-
 const QrTools = () => {
     const [mode, setMode] = useState<'scan' | 'gen'>('scan');
     const [genText, setGenText] = useState('');
     const [qrCode, setQrCode] = useState('');
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [scanType, setScanType] = useState<'url'|'text'|'wifi'|null>(null);
+    const [wifiData, setWifiData] = useState<any>(null);
+    const [isScanning, setIsScanning] = useState(false);
+    const [showWifiPass, setShowWifiPass] = useState(false);
+    
     const scannerRef = useRef<any>(null);
+    const fileRef = useRef<HTMLInputElement>(null);
 
     const generateQr = () => {
         if(!genText) return;
@@ -173,49 +175,79 @@ const QrTools = () => {
 
     const handleScan = (decodedText: string) => {
         setScanResult(decodedText);
-        if (decodedText.startsWith('WIFI:')) setScanType('wifi');
-        else if (decodedText.startsWith('http')) setScanType('url');
-        else setScanType('text');
+        stopScanning(); // Auto stop on success
+
+        if (decodedText.startsWith('WIFI:')) {
+            setScanType('wifi');
+            // Parse WIFI:S:SSID;T:WPA;P:Password;;
+            const ssid = decodedText.match(/S:([^;]+)/)?.[1];
+            const password = decodedText.match(/P:([^;]+)/)?.[1];
+            const type = decodedText.match(/T:([^;]+)/)?.[1];
+            setWifiData({ ssid, password, type });
+        } else if (decodedText.startsWith('http')) {
+            setScanType('url');
+        } else {
+            setScanType('text');
+        }
+        showToast("Code detected!", "success");
+    };
+
+    const startScanning = () => {
+        if (isScanning) return;
+        setIsScanning(true);
+        setScanResult(null);
+        setWifiData(null);
         
-        // Stop scanning upon success
-        if (scannerRef.current) {
-            scannerRef.current.stop().catch((e: any) => console.error(e));
+        // Small delay to let UI render the #reader div
+        setTimeout(() => {
+            const html5QrCode = new Html5Qrcode("reader");
+            scannerRef.current = html5QrCode;
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                handleScan,
+                (error: any) => { /* ignore frame errors */ }
+            ).catch((err: any) => {
+                console.error(err);
+                setIsScanning(false);
+                showToast("Camera access failed", "error");
+            });
+        }, 100);
+    };
+
+    const stopScanning = () => {
+        if (scannerRef.current && scannerRef.current.isScanning) {
+            scannerRef.current.stop().then(() => {
+                scannerRef.current.clear();
+                setIsScanning(false);
+            }).catch((e: any) => console.error(e));
+        } else {
+            setIsScanning(false);
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        try {
+            const html5QrCode = new Html5Qrcode("reader"); // Re-use reader ID even if hidden
+            const result = await html5QrCode.scanFile(file, true);
+            handleScan(result);
+        } catch (err) {
+            showToast("No QR code found in image", "error");
         }
     };
 
     useEffect(() => {
-        let html5QrCode: any;
-        if (mode === 'scan' && !scanResult) {
-            // Small delay to ensure the element is in the DOM
-            const timer = setTimeout(() => {
-                try {
-                    html5QrCode = new Html5Qrcode("reader");
-                    scannerRef.current = html5QrCode;
-                    
-                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                    
-                    html5QrCode.start(
-                        { facingMode: "environment" }, 
-                        config, 
-                        handleScan,
-                        (error: any) => { /* ignore frame errors */ }
-                    ).catch((err: any) => {
-                        console.error("Camera start failed", err);
-                        showToast("Camera access failed. Check permissions.", "error");
-                    });
-                } catch (e) {
-                    console.error("Init failed", e);
-                }
-            }, 100);
-
-            return () => {
-                clearTimeout(timer);
-                if (html5QrCode && html5QrCode.isScanning) {
-                    html5QrCode.stop().then(() => html5QrCode.clear()).catch((e:any) => {});
-                }
-            };
-        }
-    }, [mode, scanResult]);
+        return () => {
+            if (scannerRef.current?.isScanning) {
+                scannerRef.current.stop().catch((e:any)=>{});
+            }
+        };
+    }, []);
 
     return (
         <div className="space-y-6 animate-fade-in-up">
@@ -225,42 +257,98 @@ const QrTools = () => {
             </div>
 
             {mode === 'scan' && (
-                <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl relative overflow-hidden">
-                    {!scanResult ? (
-                        <div className="relative">
-                            {/* Camera Feed Container */}
-                            <div id="reader" className="w-full h-[300px] bg-black rounded-xl overflow-hidden shadow-neu-pressed"></div>
-                            
-                            {/* Cinematic Overlay */}
-                            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                                <div className="w-64 h-64 border-2 border-blue-400/30 rounded-2xl relative">
-                                    {/* Corners */}
-                                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-400 rounded-tl-lg -mt-1 -ml-1"></div>
-                                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-400 rounded-tr-lg -mt-1 -mr-1"></div>
-                                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-400 rounded-bl-lg -mb-1 -ml-1"></div>
-                                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-lg -mb-1 -mr-1"></div>
-                                    
-                                    {/* Laser Scan Line */}
-                                    <div className="absolute top-0 left-2 right-2 h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-[laserY_3s_infinite] opacity-80"></div>
+                <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl relative overflow-hidden min-h-[400px] flex flex-col">
+                    
+                    {/* Camera Feed Area */}
+                    <div className={`relative rounded-xl overflow-hidden shadow-neu-pressed bg-black flex-1 flex items-center justify-center`}>
+                        <div id="reader" className="w-full h-full"></div>
+                        
+                        {!isScanning && !scanResult && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#292d3e] z-10">
+                                <QrCode size={48} className="text-gray-500 opacity-20" />
+                                <div className="flex flex-col gap-3 w-full px-8">
+                                    <button onClick={startScanning} className="w-full py-4 bg-[#292d3e] shadow-neu text-blue-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2">
+                                        <QrCode size={18}/> Start Camera
+                                    </button>
+                                    <button onClick={() => fileRef.current?.click()} className="w-full py-4 bg-[#292d3e] shadow-neu text-gray-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2">
+                                        <ImagePlus size={18}/> Scan Image
+                                    </button>
                                 </div>
-                                <p className="mt-4 text-xs font-bold text-white bg-black/50 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 animate-pulse">
-                                    Align QR code within frame
-                                </p>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4 animate-fade-in-up">
-                            <SmartCard 
-                                title={scanType === 'wifi' ? "WiFi Network" : scanType === 'url' ? "Website Link" : "Scanned Text"}
-                                content={scanResult}
-                                icon={QrCode}
-                            />
+                        )}
+
+                        {isScanning && (
+                            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-20">
+                                <div className="w-64 h-64 border-2 border-blue-400/50 rounded-3xl relative">
+                                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-400 rounded-tl-xl -mt-1 -ml-1"></div>
+                                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-400 rounded-tr-xl -mt-1 -mr-1"></div>
+                                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-400 rounded-bl-xl -mb-1 -ml-1"></div>
+                                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-xl -mb-1 -mr-1"></div>
+                                    <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_20px_red] animate-[laserY_2s_infinite_alternate] opacity-80"></div>
+                                </div>
+                                <div className="absolute bottom-4 left-0 right-0 text-center">
+                                    <button onClick={stopScanning} className="pointer-events-auto bg-red-500/20 text-red-400 backdrop-blur-md border border-red-500/30 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-500/30 transition-colors">
+                                        Stop Scanning
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Result Area */}
+                    {scanResult && (
+                        <div className="mt-6 space-y-4 animate-fade-in-up">
+                            {scanType === 'wifi' && wifiData ? (
+                                <div className="bg-[#292d3e] shadow-neu rounded-2xl p-5 border border-blue-400/20">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="p-3 bg-blue-400/10 rounded-full text-blue-400"><Wifi size={24} /></div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-200">WiFi Network</h3>
+                                            <p className="text-xs text-gray-500">Connect to {wifiData.ssid}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex justify-between items-center">
+                                            <span className="text-xs text-gray-500 font-bold">Network</span>
+                                            <span className="text-sm font-bold text-white">{wifiData.ssid}</span>
+                                        </div>
+                                        <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex justify-between items-center">
+                                            <span className="text-xs text-gray-500 font-bold">Password</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-white font-mono">
+                                                    {showWifiPass ? wifiData.password : '••••••••'}
+                                                </span>
+                                                <button onClick={() => setShowWifiPass(!showWifiPass)} className="text-gray-500 hover:text-white">
+                                                    {showWifiPass ? <EyeOff size={14}/> : <Eye size={14}/>}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => {navigator.clipboard.writeText(wifiData.password); showToast("Password Copied", "success")}}
+                                            className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold text-xs flex items-center justify-center gap-2 active:shadow-neu-pressed"
+                                        >
+                                            <Copy size={14}/> Copy Password
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <SmartCard 
+                                    title={scanType === 'url' ? "Website Link" : "Scanned Content"}
+                                    content={scanResult}
+                                    icon={scanType === 'url' ? ExternalLink : FileText}
+                                />
+                            )}
+
                             {scanType === 'url' && (
                                 <a href={scanResult} target="_blank" rel="noreferrer" className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all">
-                                    <ExternalLink size={18} /> Open Link
+                                    <ExternalLink size={18} /> Visit Link
                                 </a>
                             )}
-                            <button onClick={() => setScanResult(null)} className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 font-bold active:shadow-neu-pressed transition-all">Scan Again</button>
+                            
+                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 font-bold active:shadow-neu-pressed transition-all">
+                                <RefreshCw size={16} className="inline mr-2"/> Scan Another
+                            </button>
                         </div>
                     )}
                 </div>
@@ -285,6 +373,7 @@ const QrTools = () => {
                     )}
                 </div>
             )}
+            <input type="file" ref={fileRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
         </div>
     );
 };
