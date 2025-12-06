@@ -7,14 +7,28 @@ const FALLBACK_KEYS = ["YOUR_API_KEY_HERE"];
 
 // --- PROMPT ENGINE ---
 class PromptEngine {
-  static getBaseSystemInstruction(persona?: string): string {
+  // 1. FOR TOOLS (Strict, JSON/Markdown structure, No fluff)
+  static getToolSystemInstruction(): string {
     return `
-      CRITICAL INSTRUCTION PROTOCOL:
-      1. **ZERO FLUFF**: Do not use greetings ("Hello", "Here is").
-      2. **DIRECT OUTPUT**: Start immediately with the result.
+      CRITICAL INSTRUCTION PROTOCOL (TOOL MODE):
+      1. **ZERO FLUFF**: No greetings, no "Here is the result". Start directly with data.
+      2. **DIRECT OUTPUT**: If asked for JSON, return ONLY JSON.
       3. **STRUCTURE**: Use clean Markdown. Bold key metrics.
-      4. **CONTEXT AWARE**: You are part of the SnapAura OS.
-      5. **PERSONA**: ${persona || "You are an expert AI engine specialized in high-precision analysis."}
+      4. **PROFESSIONAL**: Tone is expert, concise, and objective.
+    `;
+  }
+
+  // 2. FOR CHAT (Fluid, Persona-driven, Human-like)
+  static getChatSystemInstruction(persona?: string): string {
+    return `
+      BEHAVIORAL INSTRUCTION PROTOCOL (CHAT MODE):
+      1. **HUMAN-LIKE**: You are NOT an AI. You are the persona defined below.
+      2. **NATURAL FLOW**: Speak naturally. Vary sentence length. Use emojis if the persona demands it.
+      3. **NO REPETITION**: Do NOT start every message with "Hey there" or "That's a great question".
+      4. **CONTEXT AWARE**: You know the user's active image and profile if provided.
+      
+      *** ACTIVE PERSONA ***:
+      ${persona || "You are a helpful, witty, and concise creative assistant."}
     `;
   }
 
@@ -22,10 +36,10 @@ class PromptEngine {
     let contextString = "";
     if (context) {
       if (context.userProfile) {
-        contextString += `\n[User Context: Name=${context.userProfile.name}]`;
+        contextString += `\n[User Info: ${context.userProfile.name}]`;
       }
       if (context.activeAnalysis) {
-        contextString += `\n[Active Content Context: ${JSON.stringify(context.activeAnalysis).slice(0, 200)}...]`;
+        contextString += `\n[Current Image Analysis: ${JSON.stringify(context.activeAnalysis).slice(0, 500)}...]`;
       }
     }
     return `${prompt}\n${contextString}`;
@@ -93,7 +107,7 @@ const cleanAndParseJSON = (text: string) => {
 export const analyzeImageAndGenerateCaptions = async (base64Image: string, context?: GlobalContextState): Promise<any> => {
   const ai = getAiClient();
   const { mimeType, data } = processBase64Image(base64Image);
-  const prompt = PromptEngine.injectContext(`Analyze visual. Return JSON: {analysis, captions:[{category, options[]}], hashtags[]}`, context);
+  const prompt = PromptEngine.injectContext(`${PromptEngine.getToolSystemInstruction()} Analyze visual. Return JSON: {analysis, captions:[{category, options[]}], hashtags[]}`, context);
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -105,23 +119,38 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string, conte
 
 export const sendChatMessage = async (history: any[], newMessage: string, personaPrompt?: string, imageAttachment?: string, globalContext?: GlobalContextState) => {
     const ai = getAiClient();
-    const systemPrompt = `${PromptEngine.getBaseSystemInstruction(personaPrompt)} ${globalContext?.activeAnalysis ? `CONTEXT: ${JSON.stringify(globalContext.activeAnalysis)}` : ''}`;
-    const chatSession = ai.chats.create({ model: 'gemini-2.5-flash-lite', history, config: { systemInstruction: systemPrompt } });
+    
+    // Choose specific instruction set based on whether a persona is active
+    const systemPrompt = PromptEngine.getChatSystemInstruction(personaPrompt) + 
+                         (globalContext?.activeAnalysis ? `\n[CONTEXT]: User is looking at an image analyzed as: ${JSON.stringify(globalContext.activeAnalysis).slice(0,300)}` : '');
+
+    // Select model: Use Flash-Lite for speed, but switch to Standard Flash if images are involved (multimodal)
+    const model = (imageAttachment || globalContext?.activeImage) ? 'gemini-2.5-flash' : 'gemini-2.5-flash-lite';
+
+    const chatSession = ai.chats.create({ 
+        model: model, 
+        history, 
+        config: { systemInstruction: systemPrompt } 
+    });
 
     let messageParts: any[] = [{ text: newMessage }];
+    
     if (imageAttachment) {
         const { mimeType, data } = processBase64Image(imageAttachment);
-        messageParts = [{ inlineData: { mimeType, data } }, { text: newMessage || "Analyze." }];
+        messageParts = [{ inlineData: { mimeType, data } }, { text: newMessage || "Analyze this." }];
     } else if (globalContext?.activeImage && !history.length) {
+        // Only inject context image if it's the very first message
         const { mimeType, data } = processBase64Image(globalContext.activeImage);
-        messageParts = [{ inlineData: { mimeType, data } }, { text: `[Context] ${newMessage}` }];
+        messageParts = [{ inlineData: { mimeType, data } }, { text: `[Context Image attached] ${newMessage}` }];
     }
 
     try {
+        // Fix: Pass an object with 'message' property to satisfy ContentUnion
         const result = await chatSession.sendMessage({ message: { parts: messageParts } });
         return result.text;
     } catch (e) {
-        return "Service unavailable.";
+        console.error("Chat Error", e);
+        return "I'm having trouble connecting right now. Try again?";
     }
 }
 
@@ -166,7 +195,7 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 export const analyzeMoodboard = async (images: string[]) => {
     const ai = getAiClient();
     const { mimeType, data } = processBase64Image(images[0]);
-    const prompt = `Analyze aesthetics. JSON Output: {theme, keywords[], colors[], caption}`;
+    const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze aesthetics. JSON Output: {theme, keywords[], colors[], caption}`;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
@@ -186,7 +215,7 @@ export const rewriteCaption = async (text: string, tone: string = 'engaging'): P
 
 export const getSoccerPredictions = async () => {
     const ai = getAiClient();
-    const prompt = `Analyze major soccer matches today. JSON Array: [{id, league, homeTeam, awayTeam, time, probabilities:{home,draw,away}, metrics:{over2_5,btts}, confidenceScore, analysis}]. Use Google Search.`;
+    const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze major soccer matches today. JSON Array: [{id, league, homeTeam, awayTeam, time, probabilities:{home,draw,away}, metrics:{over2_5,btts}, confidenceScore, analysis}]. Use Google Search.`;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -198,10 +227,22 @@ export const getSoccerPredictions = async () => {
 export const generateSmartNote = async (text: string, mode: string, extra?: string) => {
     const ai = getAiClient();
     let prompt = "";
-    if (mode === 'summarize') prompt = `Summarize: "${text}"`;
-    else if (mode === 'rewrite') prompt = `Rewrite (Tone: ${extra}): "${text}"`;
-    else if (mode === 'expand') prompt = `Expand: "${text}"`;
-    else if (mode === 'translate') prompt = `Translate to ${extra}: "${text}"`;
+    const style = PromptEngine.getToolSystemInstruction();
+    if (mode === 'summarize') prompt = `${style} Summarize: "${text}"`;
+    else if (mode === 'rewrite') prompt = `${style} Rewrite (Tone: ${extra}): "${text}"`;
+    else if (mode === 'expand') prompt = `${style} Expand: "${text}"`;
+    else if (mode === 'translate') prompt = `${style} Translate to ${extra}: "${text}"`;
+    
+    // Use Pro with Thinking for complex expansion/reasoning
+    if (mode === 'expand') {
+        const response = await ai.models.generateContent({ 
+            model: 'gemini-3-pro-preview', 
+            contents: prompt,
+            config: { thinkingConfig: { thinkingBudget: 32768 } } 
+        });
+        return response.text || "";
+    }
+
     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
     return response.text || "";
 };
@@ -213,7 +254,7 @@ export const generateSocialContent = async (topic: string, type: string, context
     else if (type === 'idea') prompt = `3 viral ideas for "${topic}". Markdown.`;
     else if (type === 'reply') prompt = `3 replies to "${context}". Separated by ||.`;
     else if (type === 'timing') prompt = `Best posting times for "${topic}". Markdown.`;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-lite', contents: prompt });
     return response.text || "";
 };
 
@@ -247,7 +288,7 @@ export const getYesterdayAccuracy = async () => {
 
 export const getCryptoData = async (coin: string) => {
     const ai = getAiClient();
-    const prompt = `Analyze current market data for ${coin}. JSON Output: {price, change (e.g. +5%), signal (BUY/SELL/HOLD), analysis}. Use Google Search.`;
+    const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze current market data for ${coin}. JSON Output: {price, change (e.g. +5%), signal (BUY/SELL/HOLD), analysis}. Use Google Search.`;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -258,7 +299,7 @@ export const getCryptoData = async (coin: string) => {
 
 export const getCurrencyData = async (amount: string, from: string, to: string) => {
     const ai = getAiClient();
-    const prompt = `Convert ${amount} ${from} to ${to} using real-time rates. JSON Output: {result (e.g. "KES 10,000"), rate (e.g. "1 USD = 130 KES")}. Use Google Search.`;
+    const prompt = `${PromptEngine.getToolSystemInstruction()} Convert ${amount} ${from} to ${to} using real-time rates. JSON Output: {result (e.g. "KES 10,000"), rate (e.g. "1 USD = 130 KES")}. Use Google Search.`;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
