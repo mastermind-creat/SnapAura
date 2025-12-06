@@ -8,6 +8,33 @@ export enum Tab {
   PROFILE = 'PROFILE'
 }
 
+// --- ECOSYSTEM TYPES ---
+
+export type AppIntent = 
+  | { type: 'ANALYZE_IMAGE'; payload: string }
+  | { type: 'GENERATE_CAPTION'; payload: { image: string; analysis: string } }
+  | { type: 'SMART_EDIT'; payload: { image: string; prompt: string } }
+  | { type: 'SEND_TO_CHAT'; payload: { text?: string; image?: string; context?: string } }
+  | { type: 'SEND_TO_NOTES'; payload: { text: string; title?: string } }
+  | { type: 'SOCIAL_GROWTH'; payload: { topic: string; context?: string } };
+
+export interface GlobalContextState {
+  activeImage: string | null;
+  activeAnalysis: any | null;
+  userProfile: UserProfile | null;
+  recentActions: string[];
+  clipboard: string | null;
+}
+
+export interface SmartAction {
+  label: string;
+  icon: any;
+  intent: AppIntent;
+  primary?: boolean;
+}
+
+// --- EXISTING TYPES ---
+
 export interface CaptionCategory {
   category: string;
   captions: string[];

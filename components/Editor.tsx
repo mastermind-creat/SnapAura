@@ -127,6 +127,13 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
 
   return (
     <div className="p-4 pb-40 space-y-6 h-full overflow-y-auto hide-scrollbar relative bg-[#292d3e]">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-20">
+          <div className="absolute w-2 h-2 bg-white rounded-full animate-float left-10 top-10"></div>
+          <div className="absolute w-1 h-1 bg-white rounded-full animate-float-delayed left-3/4 top-1/3"></div>
+          <div className="absolute w-1.5 h-1.5 bg-primary rounded-full animate-float-slow left-1/2 bottom-20"></div>
+      </div>
+
       <div className="flex justify-between items-center sticky top-0 z-30 bg-[#292d3e] py-2">
          <h1 className="text-xl font-bold text-gray-200 flex items-center gap-2">
             <Wand2 className="text-primary" /> Magic Editor
@@ -141,7 +148,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
       </div>
       
       {/* Image Preview & Comparison Slider */}
-      <div className="relative rounded-2xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 select-none group">
+      <div className="relative rounded-2xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 select-none group z-10">
          {/* If we have original image and it differs from current, show slider UI */}
          {originalImage && originalImage !== image && !isProcessing ? (
              <div className="relative w-full h-auto min-h-[300px] touch-pan-y rounded-xl overflow-hidden">
@@ -197,7 +204,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
       )}
 
       {/* Aesthetic Filters */}
-      <div className="space-y-3">
+      <div className="space-y-3 relative z-10">
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 flex items-center gap-1">
               <Sparkles size={12} /> Instant Aesthetics
           </label>
@@ -217,7 +224,7 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
       </div>
 
       {/* Manual Prompt */}
-      <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl space-y-4">
+      <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl space-y-4 relative z-10">
         <div>
             <label className="text-xs font-bold text-gray-500 uppercase ml-1">Custom Prompt</label>
             <div className="flex gap-3 mt-2">

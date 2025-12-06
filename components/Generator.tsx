@@ -32,8 +32,14 @@ const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
   };
 
   return (
-    <div className="h-full overflow-y-auto hide-scrollbar p-4 pb-24 space-y-6 bg-[#292d3e]">
-      <div className="flex justify-between items-start">
+    <div className="h-full overflow-y-auto hide-scrollbar p-4 pb-24 space-y-6 bg-[#292d3e] relative">
+      {/* Background FX */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-purple-900/10 via-transparent to-blue-900/10 animate-pulse-slow"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[100px] animate-breathe"></div>
+      </div>
+
+      <div className="flex justify-between items-start relative z-10">
         <div>
             <h1 className="text-2xl font-bold text-gray-200">
                 AI Artist
@@ -49,7 +55,7 @@ const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
          </button>
       </div>
 
-      <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl space-y-5">
+      <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl space-y-5 relative z-10">
         <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -84,7 +90,7 @@ const Generator: React.FC<GeneratorProps> = ({ onOpenSettings }) => {
         </div>
       </div>
 
-      <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 flex items-center justify-center">
+      <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 flex items-center justify-center z-10">
         {generatedImage ? (
              <div className="relative w-full h-full rounded-xl overflow-hidden group">
                 <img src={generatedImage} alt="Generated" className="w-full h-full object-contain bg-[#1e212d]" />

@@ -1,1183 +1,533 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, QrCode, Sparkles, ArrowLeft, Copy, RefreshCw, Briefcase, Wand2, Bitcoin, Banknote, TrendingUp, DollarSign, ArrowRight, Activity, AlertCircle, RefreshCcw, Info, Shield, Minimize, Maximize, Stamp, Smile, Grid, Calendar, Save, Archive, Film, Gamepad, ImagePlus, Scissors, Palette, Upload, ScanLine, CheckCircle, Settings, Ruler, ExternalLink, Wifi, Eye, EyeOff, Lock, Unlock, Trophy, UserCheck, Layers, FileText, FileDigit, Music, Hash, Clock, MessageSquare, BookOpen, Feather, Shirt, Download } from './Icons';
-import { generateSocialBio, getCryptoData, getCurrencyData } from '../services/geminiService';
-import { showToast } from './Toast';
-import SoccerPredictions from './SoccerPredictions';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Briefcase, ArrowLeft, Settings, QrCode, Bitcoin, Ruler, 
+  ImageIcon, Scissors, Palette, FileText, Smartphone,
+  Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
+  Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
+  Activity, Star
+} from './Icons';
+import SocialGrowth from './SocialGrowth';
+import SmartNotes from './SmartNotes';
 import ProfileStudio from './ProfileStudio';
 import MoodboardGenerator from './MoodboardGenerator';
-import SmartNotes from './SmartNotes';
-import SocialGrowth from './SocialGrowth';
 import PdfTools from './PdfTools';
 import FootballHub from './FootballHub';
+import { getCryptoData, getCurrencyData } from '../services/geminiService';
+import { showToast } from './Toast';
+import SmartCard from './SmartCard';
 
-// Define tool types for better state management
-type ToolType = 'menu' | 'shortener' | 'qr' | 'qr-scan' | 'bio' | 'crypto' | 'currency' | 'meta' | 'resize' | 'compress' | 'meme' | 'palette' | 'puzzle' | 'unit' | 'soccer' | 'profile-studio' | 'moodboard' | 'notes' | 'social-growth' | 'pdf-tools' | 'football-hub';
+// Access global libraries
+declare const Html5Qrcode: any;
+declare const Html5QrcodeScanner: any;
 
-interface ToolkitProps {
-  onOpenSettings: () => void;
-}
+const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
+  const [activeTool, setActiveTool] = useState<string>('menu');
+  const [searchQuery, setSearchQuery] = useState('');
 
-const Toolkit: React.FC<ToolkitProps> = ({ onOpenSettings }) => {
-  const [activeTool, setActiveTool] = useState<ToolType>('menu');
-  const [isUploading, setIsUploading] = useState(false);
-
-  // --- SOCIAL TOOLS STATE ---
-  const [longUrl, setLongUrl] = useState('');
-  const [shortUrl, setShortUrl] = useState('');
-  const [isShortening, setIsShortening] = useState(false);
-  const [qrText, setQrText] = useState('');
-  const [qrUrl, setQrUrl] = useState('');
-  const [bioInput, setBioInput] = useState('');
-  const [bios, setBios] = useState<string[]>([]);
-  const [isWritingBio, setIsWritingBio] = useState(false);
-  const [scannedResult, setScannedResult] = useState<string | null>(null);
-  const [showWifiPass, setShowWifiPass] = useState(false);
-
-  // --- FINANCIAL TOOLS STATE ---
-  const [selectedCoin, setSelectedCoin] = useState('Bitcoin (BTC)');
-  const [cryptoResult, setCryptoResult] = useState<any>(null);
-  const [financialResult, setFinancialResult] = useState<any>(null);
-  const [isAnalyzingFinance, setIsAnalyzingFinance] = useState(false);
-  const [amount, setAmount] = useState('1');
-  const [fromCurr, setFromCurr] = useState('USD');
-  const [toCurr, setToCurr] = useState('KES');
-
-  // --- UNIT CONVERTER STATE ---
-  const [unitCategory, setUnitCategory] = useState<'length' | 'mass' | 'temp'>('length');
-  const [unitVal, setUnitVal] = useState('1');
-  const [unitFrom, setUnitFrom] = useState('m');
-  const [unitTo, setUnitTo] = useState('ft');
-  const [unitResult, setUnitResult] = useState<string | null>(null);
-
-  // --- PHOTO UTILS STATE ---
-  const [utilImage, setUtilImage] = useState<string | null>(null);
-  const [imageMeta, setImageMeta] = useState<any>(null);
-  const utilFileInputRef = useRef<HTMLInputElement>(null);
-  const qrFileInputRef = useRef<HTMLInputElement>(null); 
-  
-  // Palette
-  const [extractedColors, setExtractedColors] = useState<string[]>([]);
-  
-  // Meme
-  const [memeTop, setMemeTop] = useState('');
-  const [memeBottom, setMemeBottom] = useState('');
-  const [memeCanvasUrl, setMemeCanvasUrl] = useState<string | null>(null);
-
-  // Puzzle
-  const [puzzleTiles, setPuzzleTiles] = useState<number[]>([]);
-  const [puzzleWin, setPuzzleWin] = useState(false);
-  const [draggedTileIndex, setDraggedTileIndex] = useState<number | null>(null);
-
-  // Compression & Resize
-  const [compressQuality, setCompressQuality] = useState(80);
-  const [resizeWidth, setResizeWidth] = useState(1080);
-  const [resizeHeight, setResizeHeight] = useState(1080);
-  const [maintainAspect, setMaintainAspect] = useState(true);
-  const [aspectRatio, setAspectRatio] = useState(1);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [processedMeta, setProcessedMeta] = useState<{ size: string, dimensions?: string } | null>(null);
-
-  const COINS = ["Bitcoin (BTC)", "Ethereum (ETH)", "Solana (SOL)", "Binance Coin (BNB)", "Ripple (XRP)", "Cardano (ADA)", "Dogecoin (DOGE)"];
-  
-  const CURRENCIES = [
-    {code: 'USD', name: 'US Dollar', flag: '🇺🇸'}, 
-    {code: 'EUR', name: 'Euro', flag: '🇪🇺'}, 
-    {code: 'GBP', name: 'British Pound', flag: '🇬🇧'},
-    {code: 'KES', name: 'Kenyan Shilling', flag: '🇰🇪'}, 
-    {code: 'JPY', name: 'Japanese Yen', flag: '🇯🇵'},
-    {code: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦'},
-    {code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺'},
-    {code: 'CHF', name: 'Swiss Franc', flag: '🇨🇭'},
-    {code: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳'},
-    {code: 'INR', name: 'Indian Rupee', flag: '🇮🇳'},
-    {code: 'NGN', name: 'Nigerian Naira', flag: '🇳🇬'},
-    {code: 'ZAR', name: 'South African Rand', flag: '🇿🇦'},
-    {code: 'AED', name: 'UAE Dirham', flag: '🇦🇪'}
-  ];
-
-  const PUZZLE_PRESETS = [
-      { name: "Neon City", url: "https://images.unsplash.com/photo-1515630278258-407f66498911?w=500&h=500&fit=crop" },
-      { name: "Nature", url: "https://images.unsplash.com/photo-1501854140884-074bf86ee91c?w=500&h=500&fit=crop" },
-      { name: "Abstract", url: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&h=500&fit=crop" }
-  ];
-
-  // Helper to parse WiFi string
-  const parseWifi = (text: string) => {
-      const ssid = text.match(/S:([^;]+)/)?.[1] || '';
-      const password = text.match(/P:([^;]+)/)?.[1] || '';
-      const type = text.match(/T:([^;]+)/)?.[1] || 'nopass';
-      const hidden = text.match(/H:([^;]+)/)?.[1] === 'true';
-      return { ssid, password, type, hidden };
-  };
-
-  // Helper: Load Image for Utils with Loading Effect
-  const handleUtilImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-          setIsUploading(true);
-          // Reset processed states
-          setProcessedImage(null);
-          setProcessedMeta(null);
-
-          // EXIF Logic
-          if (activeTool === 'meta') {
-            // @ts-ignore
-            if (window.EXIF) {
-                // @ts-ignore
-                window.EXIF.getData(file, function() {
-                    // @ts-ignore
-                    const allTags = window.EXIF.getAllTags(this);
-                    setImageMeta({
-                        name: file.name,
-                        type: file.type,
-                        size: (file.size / 1024).toFixed(2) + ' KB',
-                        dimensions: "Loading...",
-                        ...allTags
-                    });
-                });
-            } else {
-                setImageMeta({ name: file.name, type: file.type, size: (file.size/1024).toFixed(2) + ' KB', note: "EXIF Lib not loaded" });
-            }
-          }
-
-          const reader = new FileReader();
-          reader.onloadend = () => {
-              const res = reader.result as string;
-              setUtilImage(res);
-              
-              if (activeTool === 'palette') extractPalette(res);
-              if (activeTool === 'puzzle') initPuzzle();
-              
-              if (activeTool === 'resize' || activeTool === 'compress') {
-                  const img = new Image();
-                  img.src = res;
-                  img.onload = () => {
-                      setResizeWidth(img.width);
-                      setResizeHeight(img.height);
-                      setAspectRatio(img.width / img.height);
-                      setImageMeta({
-                          size: (file.size/1024).toFixed(2) + ' KB',
-                          dimensions: `${img.width}x${img.height}`
-                      });
-                  }
-              }
-
-              setTimeout(() => setIsUploading(false), 800);
-          };
-          reader.readAsDataURL(file);
-      }
-  };
-
-  const handleQrFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      setIsUploading(true);
-      
-      // @ts-ignore
-      if (window.Html5Qrcode) {
-          // @ts-ignore
-          const html5QrCode = new Html5Qrcode("reader");
-          html5QrCode.scanFile(file, true)
-            .then((decodedText: string) => {
-                setScannedResult(decodedText);
-                setShowWifiPass(false);
-                setIsUploading(false);
-                showToast("QR Code Scanned!", "success");
-            })
-            .catch((err: any) => {
-                setIsUploading(false);
-                showToast("No QR code found in image", "error");
-                console.error(err);
-            });
-      }
-  };
-
-  const handlePresetSelect = (url: string) => {
-      setIsUploading(true);
-      setUtilImage(url);
-      setTimeout(() => {
-          setIsUploading(false);
-          initPuzzle();
-      }, 500);
-  };
-
-  // --- SOCIAL HANDLERS ---
-  const handleShorten = async () => {
-      if(!longUrl) return;
-      setIsShortening(true);
-      setTimeout(() => {
-          setShortUrl(`snapaura.lnk/${Math.random().toString(36).substring(7)}`);
-          setIsShortening(false);
-          showToast("Link shortened!", "success");
-      }, 1000);
-  };
-
-  const handleGenerateQR = () => {
-      if(qrText) {
-          setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrText)}`);
-          showToast("QR Code generated", "success");
-      }
-  };
-
-  const handleGenerateBio = async () => {
-      if(!bioInput) return;
-      setIsWritingBio(true);
-      try {
-          const result = await generateSocialBio(bioInput);
-          setBios(result.split('||').map(s => s.trim()).filter(s => s));
-      } finally { setIsWritingBio(false); }
-  };
-  
-  // Initialize Scanner (Camera)
+  // Listen for Neural Intents (Automation)
   useEffect(() => {
-    let html5QrCode: any;
-    // Only start camera if active tool is qr-scan and no result yet
-    if (activeTool === 'qr-scan' && !scannedResult) {
-       // @ts-ignore
-       if (window.Html5Qrcode) {
-           // @ts-ignore
-           html5QrCode = new Html5Qrcode("reader");
-           const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-           
-           html5QrCode.start({ facingMode: "environment" }, config, (decodedText: string) => {
-               setScannedResult(decodedText);
-               setShowWifiPass(false);
-               html5QrCode.stop().then(() => {
-                   showToast("QR Code Scanned!", "success");
-                   if (navigator.vibrate) navigator.vibrate(100);
-               });
-           }, (errorMessage: any) => {
-               // ignore errors for scanning
-           }).catch((err: any) => {
-               console.log("Camera start failed (might use file upload)", err);
-           });
-       }
-    }
+      const handler = (e: CustomEvent) => {
+          setActiveTool(e.detail);
+      };
+      window.addEventListener('neural-tool-select', handler as EventListener);
+      return () => window.removeEventListener('neural-tool-select', handler as EventListener);
+  }, []);
+
+  const tools = [
+    { id: 'qr-tools', label: 'QR Master', icon: QrCode, color: 'text-blue-400', cat: 'Essentials' },
+    { id: 'finance', label: 'Crypto & Fiat', icon: Bitcoin, color: 'text-yellow-400', cat: 'Essentials' },
+    { id: 'units', label: 'Converter', icon: Ruler, color: 'text-green-400', cat: 'Essentials' },
+    { id: 'links', label: 'Link Shortener', icon: LinkIcon, color: 'text-purple-400', cat: 'Essentials' },
     
-    return () => {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().catch((err: any) => console.log(err));
-        }
-    }
-  }, [activeTool, scannedResult]);
+    { id: 'notes', label: 'Smart Notes', icon: FileText, color: 'text-yellow-400', cat: 'Intelligence' },
+    { id: 'social-growth', label: 'Social Growth', icon: TrendingUp, color: 'text-blue-400', cat: 'Intelligence' },
+    { id: 'football-hub', label: 'Football Intel', icon: Zap, color: 'text-green-400', cat: 'Intelligence' },
+    
+    { id: 'profile-studio', label: 'Profile Studio', icon: Smartphone, color: 'text-indigo-400', cat: 'Creative' },
+    { id: 'moodboard', label: 'Moodboard', icon: Palette, color: 'text-pink-400', cat: 'Creative' },
+    { id: 'photo-utils', label: 'Photo Lab', icon: ImageIcon, color: 'text-red-400', cat: 'Creative' },
+    { id: 'pdf-tools', label: 'PDF Tools', icon: FileText, color: 'text-red-400', cat: 'Creative' },
+  ];
 
-  // --- FINANCIAL HANDLERS ---
-  const handleCryptoAnalysis = async () => {
-      setIsAnalyzingFinance(true);
-      setCryptoResult(null);
-      try {
-          const data = await getCryptoData(selectedCoin);
-          setCryptoResult(data);
-          showToast(`Data loaded for ${selectedCoin}`, "success");
-      } catch (err) {
-          showToast("Failed to fetch crypto data", "error");
-      } finally { 
-          setIsAnalyzingFinance(false); 
-      }
-  };
-  
-  const handleCurrencyConvert = async () => {
-      setIsAnalyzingFinance(true);
-      setFinancialResult(null);
-       try {
-          const data = await getCurrencyData(amount, fromCurr, toCurr);
-          setFinancialResult(data);
-      } catch(err) {
-          showToast("Conversion failed", "error");
-      } finally { 
-          setIsAnalyzingFinance(false); 
-      }
-  };
-
-  // --- UNIT CONVERTER HANDLER ---
-  const handleUnitConvert = () => {
-      const v = parseFloat(unitVal);
-      if(isNaN(v)) return;
-      
-      let res = 0;
-      const lenFactors: any = { m: 1, km: 1000, cm: 0.01, mm: 0.001, ft: 0.3048, mi: 1609.34, in: 0.0254, yd: 0.9144 };
-      const massFactors: any = { kg: 1, g: 0.001, mg: 0.000001, lb: 0.453592, oz: 0.0283495 };
-      
-      if(unitCategory === 'length') {
-          const valInMeters = v * (lenFactors[unitFrom] || 1);
-          res = valInMeters / (lenFactors[unitTo] || 1);
-      } else if (unitCategory === 'mass') {
-          const valInKg = v * (massFactors[unitFrom] || 1);
-          res = valInKg / (massFactors[unitTo] || 1);
-      } else if (unitCategory === 'temp') {
-          let valInC = v;
-          if(unitFrom === 'F') valInC = (v - 32) * 5/9;
-          if(unitFrom === 'K') valInC = v - 273.15;
-          if(unitTo === 'C') res = valInC;
-          if(unitTo === 'F') res = (valInC * 9/5) + 32;
-          if(unitTo === 'K') res = valInC + 273.15;
-      }
-
-      setUnitResult(res.toLocaleString(undefined, { maximumFractionDigits: 4 }));
-      if (navigator.vibrate) navigator.vibrate(20);
-  };
-
-  useEffect(() => {
-      setUnitResult(null);
-      if(unitCategory === 'length') { setUnitFrom('m'); setUnitTo('ft'); }
-      if(unitCategory === 'mass') { setUnitFrom('kg'); setUnitTo('lb'); }
-      if(unitCategory === 'temp') { setUnitFrom('C'); setUnitTo('F'); }
-  }, [unitCategory]);
-
-
-  // --- PHOTO UTILS LOGIC ---
-  const extractPalette = (imgSrc: string) => {
-      const img = new Image();
-      img.src = imgSrc;
-      img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = 100; canvas.height = 100;
-          if(!ctx) return;
-          ctx.drawImage(img, 0, 0, 100, 100);
-          const data = ctx.getImageData(0,0,100,100).data;
-          const colors = [];
-          for(let i=0; i<data.length; i+=400) { 
-              colors.push(`rgb(${data[i]}, ${data[i+1]}, ${data[i+2]})`);
-          }
-          setExtractedColors([...new Set(colors)].slice(0, 6));
-      }
-  };
-
-  const renderMeme = () => {
-      if (!utilImage) return;
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.src = utilImage;
-      img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          if(!ctx) return;
-          ctx.drawImage(img, 0, 0);
-          ctx.font = `bold ${canvas.width/10}px Impact`;
-          ctx.fillStyle = 'white';
-          ctx.strokeStyle = 'black';
-          ctx.lineWidth = canvas.width/100;
-          ctx.textAlign = 'center';
-          
-          if(memeTop) {
-              ctx.strokeText(memeTop.toUpperCase(), canvas.width/2, canvas.height*0.15);
-              ctx.fillText(memeTop.toUpperCase(), canvas.width/2, canvas.height*0.15);
-          }
-          if(memeBottom) {
-              ctx.strokeText(memeBottom.toUpperCase(), canvas.width/2, canvas.height*0.9);
-              ctx.fillText(memeBottom.toUpperCase(), canvas.width/2, canvas.height*0.9);
-          }
-          setMemeCanvasUrl(canvas.toDataURL());
-          showToast("Meme rendered!", "success");
-      }
-  };
-
-  const handleCompress = () => {
-      if (!utilImage) return;
-      setIsUploading(true);
-      const img = new Image();
-      img.src = utilImage;
-      img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          if(!ctx) return;
-          ctx.drawImage(img, 0, 0);
-          
-          const quality = compressQuality / 100;
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          setProcessedImage(dataUrl);
-
-          // Calculate size estimate
-          const head = 'data:image/jpeg;base64,';
-          const sizeBytes = Math.round((dataUrl.length - head.length) * 3 / 4);
-          setProcessedMeta({ 
-              size: (sizeBytes/1024).toFixed(2) + ' KB',
-              dimensions: `${img.width}x${img.height}`
-          });
-          setIsUploading(false);
-          showToast("Image compressed!", "success");
-      }
-  };
-
-  const handleResize = () => {
-      if (!utilImage) return;
-      setIsUploading(true);
-      const img = new Image();
-      img.src = utilImage;
-      img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = resizeWidth;
-          canvas.height = resizeHeight;
-          const ctx = canvas.getContext('2d');
-          if(!ctx) return;
-          
-          // High quality scaling
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, resizeWidth, resizeHeight);
-          
-          const dataUrl = canvas.toDataURL('image/png');
-          setProcessedImage(dataUrl);
-          
-           const head = 'data:image/png;base64,';
-          const sizeBytes = Math.round((dataUrl.length - head.length) * 3 / 4);
-          setProcessedMeta({ 
-              size: (sizeBytes/1024).toFixed(2) + ' KB', 
-              dimensions: `${resizeWidth}x${resizeHeight}`
-          });
-          setIsUploading(false);
-          showToast("Image resized!", "success");
-      }
-  };
-
-  // --- PUZZLE LOGIC ---
-  const initPuzzle = () => {
-      setPuzzleTiles([...Array(9).keys()].sort(() => Math.random() - 0.5));
-      setPuzzleWin(false);
-  };
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-      setDraggedTileIndex(index);
-      e.dataTransfer.effectAllowed = "move";
-      const img = new Image();
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      e.dataTransfer.setDragImage(img, 0, 0);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-      e.preventDefault();
-      if (draggedTileIndex === null) return;
-      if (draggedTileIndex === targetIndex) return;
-
-      const newTiles = [...puzzleTiles];
-      const temp = newTiles[draggedTileIndex];
-      newTiles[draggedTileIndex] = newTiles[targetIndex];
-      newTiles[targetIndex] = temp;
-
-      setPuzzleTiles(newTiles);
-      setDraggedTileIndex(null);
-
-      const isSorted = newTiles.every((val, i) => val === i);
-      if (isSorted) {
-          setPuzzleWin(true);
-          showToast("Puzzle Solved!", "success");
-          if (window.confetti) window.confetti();
-      } else {
-          if (navigator.vibrate) navigator.vibrate(20);
-      }
-  };
-
-  const isUrl = (text: string) => {
-      return /^(http|https):\/\/[^ "]+$/.test(text);
-  };
-
-  // Reusable Upload UI for Neumorphic consistency
-  const renderUploadUI = (icon: any, label: string, onClick: () => void) => (
-      <div className="space-y-6 animate-fade-in-up">
-           <div className="bg-[#292d3e] shadow-neu p-8 rounded-2xl flex flex-col items-center text-center space-y-6">
-                <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400">
-                    {React.createElement(icon, { size: 40 })}
-                </div>
-                <div>
-                    <h2 className="text-xl font-bold text-gray-200">{label}</h2>
-                    <p className="text-sm text-gray-500 mt-2">Upload a photo to start processing</p>
-                </div>
-                <button 
-                    onClick={onClick}
-                    className="w-full bg-[#292d3e] text-primary shadow-neu py-4 rounded-xl font-bold active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
-                >
-                    <Upload size={18} /> Upload Image
-                </button>
-           </div>
-           
-           {/* If Puzzle tool, show presets */}
-           {activeTool === 'puzzle' && (
-               <div>
-                   <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Or try a preset</h3>
-                   <div className="grid grid-cols-3 gap-3">
-                       {PUZZLE_PRESETS.map((p, i) => (
-                           <button 
-                                key={i}
-                                onClick={() => handlePresetSelect(p.url)}
-                                className="aspect-square rounded-xl bg-cover bg-center shadow-neu active:scale-95 transition-transform"
-                                style={{backgroundImage: `url(${p.url})`}}
-                           />
-                       ))}
-                   </div>
-               </div>
-           )}
-      </div>
-  );
+  const filteredTools = tools.filter(t => t.label.toLowerCase().includes(searchQuery.toLowerCase()));
+  const categories = Array.from(new Set(filteredTools.map(t => t.cat)));
 
   const renderMenu = () => (
-    <div className="grid grid-cols-1 gap-6 animate-fade-in-up">
-        {/* New Feature: Profile Studio & Moodboard */}
-        <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl flex flex-col gap-3 cursor-pointer active:shadow-neu-pressed transition-all" onClick={() => setActiveTool('profile-studio')}>
-                <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-indigo-400 w-fit"><UserCheck size={24} /></div>
-                <div><h4 className="font-bold text-gray-200 leading-tight">Profile Studio</h4><p className="text-[10px] text-gray-500">Pro Headshots</p></div>
-            </div>
-            <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl flex flex-col gap-3 cursor-pointer active:shadow-neu-pressed transition-all" onClick={() => setActiveTool('moodboard')}>
-                <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-pink-400 w-fit"><Layers size={24} /></div>
-                <div><h4 className="font-bold text-gray-200 leading-tight">Moodboard</h4><p className="text-[10px] text-gray-500">Aesthetic Grids</p></div>
-            </div>
-        </div>
+      <div className="space-y-8 animate-fade-in-up pb-20">
+          {/* Quick Shortcuts */}
+          <div className="space-y-3">
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                  <Star size={10} className="text-yellow-400" /> Favorites
+              </h3>
+              <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+                  <button onClick={() => setActiveTool('qr-tools')} className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-4 rounded-2xl min-w-[140px] active:shadow-neu-pressed transition-all">
+                      <div className="p-2 bg-[#292d3e] shadow-neu-pressed rounded-full text-blue-400"><QrCode size={18}/></div>
+                      <span className="text-xs font-bold text-gray-300">Scan QR</span>
+                  </button>
+                  <button onClick={() => setActiveTool('finance')} className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-4 rounded-2xl min-w-[140px] active:shadow-neu-pressed transition-all">
+                      <div className="p-2 bg-[#292d3e] shadow-neu-pressed rounded-full text-yellow-400"><Bitcoin size={18}/></div>
+                      <span className="text-xs font-bold text-gray-300">Market</span>
+                  </button>
+              </div>
+          </div>
 
-        {/* New Feature: PDF & Notes */}
-        <div>
-             <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Productivity</h3>
-             <div className="grid grid-cols-2 gap-4">
-                 <MenuCard icon={FileText} color="text-red-400" title="PDF Tools" onClick={() => setActiveTool('pdf-tools')} />
-                 <MenuCard icon={Feather} color="text-yellow-400" title="Smart Notes" onClick={() => setActiveTool('notes')} />
-             </div>
-        </div>
+          {/* Search */}
+          <div className="relative group">
+              <div className="absolute inset-0 bg-[#292d3e] rounded-2xl shadow-neu-pressed pointer-events-none"></div>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 z-10" size={18} />
+              <input 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search tools..." 
+                  className="w-full bg-transparent rounded-2xl pl-12 pr-4 py-4 text-gray-200 focus:outline-none relative z-10 text-sm font-bold placeholder-gray-600"
+              />
+          </div>
 
-        {/* Section: Sports & Trends */}
-        <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Sports & Trends</h3>
-            <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl flex items-center gap-4 cursor-pointer active:shadow-neu-pressed transition-all mb-4" onClick={() => setActiveTool('football-hub')}>
-                <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-green-400"><Shirt size={20} /></div>
-                <div><h4 className="font-bold text-gray-200">Football Intel Hub</h4><p className="text-xs text-gray-500">Live, Stats, Fantasy & AI</p></div>
-                <ArrowRight className="ml-auto text-gray-500" size={16} />
-            </div>
-            
-             <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl flex items-center gap-4 cursor-pointer active:shadow-neu-pressed transition-all" onClick={() => setActiveTool('soccer')}>
-                <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-green-400 opacity-60"><Trophy size={20} /></div>
-                <div><h4 className="font-bold text-gray-200">Simple Predictions</h4><p className="text-xs text-gray-500">Classic View</p></div>
-                <ArrowRight className="ml-auto text-gray-500" size={16} />
-            </div>
-        </div>
-
-        {/* Section: Essentials */}
-        <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Essentials</h3>
-            <div className="grid grid-cols-3 gap-4">
-                <MenuCard icon={Bitcoin} color="text-orange-400" title="Crypto" onClick={() => setActiveTool('crypto')} />
-                <MenuCard icon={Banknote} color="text-green-400" title="Currency" onClick={() => setActiveTool('currency')} />
-                <MenuCard icon={Ruler} color="text-teal-400" title="Units" onClick={() => setActiveTool('unit')} />
-                <MenuCard icon={Link} color="text-blue-400" title="Shortener" onClick={() => setActiveTool('shortener')} />
-                <MenuCard icon={QrCode} color="text-purple-400" title="Gen QR" onClick={() => setActiveTool('qr')} />
-                <MenuCard icon={ScanLine} color="text-red-400" title="Scan QR" onClick={() => { setScannedResult(null); setActiveTool('qr-scan'); }} />
-            </div>
-        </div>
-
-        {/* Section: Photo Utils */}
-        <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Photo Utilities</h3>
-            <div className="grid grid-cols-3 gap-4">
-                <MenuCard icon={Minimize} color="text-cyan-400" title="Compress" onClick={() => { setUtilImage(null); setActiveTool('compress'); }} />
-                <MenuCard icon={Maximize} color="text-indigo-400" title="Resize" onClick={() => { setUtilImage(null); setActiveTool('resize'); }} />
-                <MenuCard icon={Palette} color="text-pink-400" title="Palette" onClick={() => { setUtilImage(null); setActiveTool('palette'); }} />
-                <MenuCard icon={Smile} color="text-red-400" title="Meme" onClick={() => { setUtilImage(null); setActiveTool('meme'); }} />
-                <MenuCard icon={Info} color="text-yellow-400" title="Metadata" onClick={() => { setUtilImage(null); setActiveTool('meta'); }} />
-                <MenuCard icon={Gamepad} color="text-gray-200" title="Puzzle" onClick={() => { setUtilImage(null); setActiveTool('puzzle'); }} />
-            </div>
-        </div>
-        
-        {/* Section: Social */}
-        <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Social Growth</h3>
-            <div className="grid grid-cols-2 gap-4">
-                 <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl flex items-center gap-4 cursor-pointer active:shadow-neu-pressed transition-all" onClick={() => setActiveTool('bio')}>
-                    <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-pink-400"><Sparkles size={20} /></div>
-                    <div><h4 className="font-bold text-gray-200">Bio Writer</h4></div>
-                </div>
-                 <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl flex items-center gap-4 cursor-pointer active:shadow-neu-pressed transition-all" onClick={() => setActiveTool('social-growth')}>
-                    <div className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-full text-blue-400"><TrendingUp size={20} /></div>
-                    <div><h4 className="font-bold text-gray-200">Growth Hub</h4></div>
-                </div>
-            </div>
-        </div>
-    </div>
+          {/* Grid */}
+          {categories.map((cat, catIdx) => (
+              <div key={cat} className="space-y-3">
+                  <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1 border-l-2 border-primary pl-2">{cat}</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                      {filteredTools.filter(t => t.cat === cat).map((tool, idx) => (
+                          <div 
+                            key={tool.id} 
+                            onClick={() => setActiveTool(tool.id)}
+                            className={`bg-[#292d3e] shadow-neu p-5 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer active:shadow-neu-pressed transition-all active:scale-95 group relative overflow-hidden animate-fade-in-up`}
+                            style={{ animationDelay: `${(catIdx * 100) + (idx * 50)}ms` }}
+                          >
+                              {/* Hover Glow */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                              
+                              <div className={`p-4 bg-[#292d3e] shadow-neu-pressed rounded-full ${tool.color} group-hover:scale-110 transition-transform relative z-10`}>
+                                  <tool.icon size={24} />
+                              </div>
+                              <span className="font-bold text-gray-300 text-sm relative z-10">{tool.label}</span>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          ))}
+      </div>
   );
 
   return (
-    <div className="h-full overflow-y-auto hide-scrollbar bg-[#292d3e] relative">
-      
-      {/* --- FUTURISTIC ANIMATED BACKGROUND --- */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-            {/* Cyber Grid Floor */}
-            <div className="absolute inset-0 opacity-10"
-                 style={{ 
-                     backgroundImage: 'linear-gradient(#00f3ff 1px, transparent 1px), linear-gradient(90deg, #00f3ff 1px, transparent 1px)', 
-                     backgroundSize: '40px 40px',
-                     transform: 'perspective(500px) rotateX(60deg)',
-                     animation: 'gridMove 20s linear infinite'
-                 }}>
-            </div>
-
-            {/* Electric Pink Laser (Horizontal) */}
-            <div className="absolute top-[30%] h-[1px] w-full bg-gradient-to-r from-transparent via-[#ff0099] to-transparent opacity-60 blur-[2px] animate-laser-x"></div>
-            
-            {/* Electric Blue Laser (Vertical) */}
-            <div className="absolute left-[85%] w-[1px] h-full bg-gradient-to-b from-transparent via-[#00f3ff] to-transparent opacity-50 blur-[2px] animate-laser-y delay-700"></div>
-
-            {/* Green Laser (Low Horizontal) */}
-            <div className="absolute top-[60%] h-[1px] w-full bg-gradient-to-r from-transparent via-[#39ff14] to-transparent opacity-40 blur-[2px] animate-laser-x delay-1000"></div>
-
-            {/* Ambient Pulse Glow */}
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#bc13fe] rounded-full blur-[100px] opacity-10 animate-pulse-slow"></div>
-      </div>
-
-      {/* --- MAIN CONTENT (Floats above background) --- */}
-      <div className="relative z-10 p-4 pb-24 space-y-6">
-        
-        {/* Upload Loading Overlay */}
-        {isUploading && (
-            <div className="fixed inset-0 z-50 bg-[#292d3e]/90 flex flex-col items-center justify-center animate-fade-in-up backdrop-blur-sm">
-                <div className="w-20 h-20 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-6">
-                    <RefreshCw className="animate-spin text-gray-200" size={32} />
-                </div>
-                <p className="text-gray-200 font-bold text-lg">Processing...</p>
-            </div>
-        )}
-
-        {/* Header (Neumorphic) */}
-        <div className="flex items-center gap-4 sticky top-0 bg-[#292d3e]/95 backdrop-blur-sm py-3 z-20 shadow-sm border-b border-[#292d3e]">
-            {activeTool !== 'menu' && (
-                <button onClick={() => { setActiveTool('menu'); }} className="p-3 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed transition-all text-gray-400 hover:text-white">
-                    <ArrowLeft size={18} />
-                </button>
-            )}
-            <h1 className="text-xl font-bold text-gray-200 flex items-center gap-2">
-                <Briefcase className="text-teal-500" size={20} /> Toolkit
-            </h1>
-            <div className="ml-auto">
-                <button 
-                    onClick={onOpenSettings}
-                    className="text-gray-400 hover:text-white p-3 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all"
-                    title="Settings"
-                >
-                    <Settings size={20} />
-                </button>
-            </div>
+    <div className="h-full overflow-y-auto hide-scrollbar bg-[#292d3e] p-4 pb-24 relative">
+        {/* Background FX */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/5 rounded-full blur-[80px] animate-pulse-slow"></div>
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-[80px] animate-pulse-slow delay-500"></div>
         </div>
 
-        {activeTool === 'menu' && renderMenu()}
-        
-        {/* --- NEW COMPONENTS RENDER --- */}
-        {activeTool === 'profile-studio' && <ProfileStudio />}
-        {activeTool === 'moodboard' && <MoodboardGenerator />}
-        {activeTool === 'notes' && <SmartNotes />}
-        {activeTool === 'pdf-tools' && <PdfTools />}
-        {activeTool === 'social-growth' && <SocialGrowth />}
-        {activeTool === 'football-hub' && <FootballHub />}
-
-        {/* --- SOCCER TOOL --- */}
-        {activeTool === 'soccer' && (
-            <SoccerPredictions />
-        )}
-
-        {/* --- QR SCANNER (Neumorphic) --- */}
-        {activeTool === 'qr-scan' && (
-            <div className="space-y-4 animate-fade-in-up">
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center">
-                    {!scannedResult ? (
-                        <div className="space-y-6">
-                            <div className="overflow-hidden rounded-xl relative min-h-[250px] bg-[#1e212d] shadow-neu-pressed flex items-center justify-center border-4 border-[#292d3e]">
-                                <div id="reader" className="w-full"></div>
-                                <p className="absolute text-xs text-gray-500 pointer-events-none font-bold uppercase">Scanning...</p>
-                            </div>
-                            <button 
-                                onClick={() => qrFileInputRef.current?.click()}
-                                className="w-full bg-[#292d3e] shadow-neu py-4 rounded-xl text-gray-300 font-bold text-sm flex items-center justify-center gap-2 transition-all active:shadow-neu-pressed hover:text-white"
-                            >
-                                <ImagePlus size={18} /> Upload QR Image
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="w-20 h-20 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mx-auto text-green-400">
-                                <CheckCircle size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-200">Scan Successful!</h3>
-                            
-                            {/* Parse Result logic */}
-                            {(() => {
-                                const wifiData = scannedResult.startsWith('WIFI:') ? parseWifi(scannedResult) : null;
-                                
-                                if (wifiData) {
-                                    return (
-                                        <div className="bg-[#292d3e] shadow-neu-pressed p-5 rounded-xl text-left space-y-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="bg-[#292d3e] shadow-neu p-3 rounded-full text-blue-400">
-                                                    <Wifi size={24} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-bold uppercase">WiFi Network</p>
-                                                    <h3 className="text-lg font-bold text-gray-200">{wifiData.ssid}</h3>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center bg-[#292d3e] p-4 rounded-xl shadow-neu">
-                                                <span className="font-mono text-gray-200 text-lg tracking-wider">
-                                                    {showWifiPass ? wifiData.password : '••••••••'}
-                                                </span>
-                                                <button onClick={() => setShowWifiPass(!showWifiPass)} className="text-gray-400 hover:text-white p-2">
-                                                    {showWifiPass ? <EyeOff size={18}/> : <Eye size={18}/>}
-                                                </button>
-                                            </div>
-
-                                            <button 
-                                                onClick={() => {navigator.clipboard.writeText(wifiData.password); showToast("Password Copied", "success")}}
-                                                className="w-full bg-[#292d3e] text-blue-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
-                                            >
-                                                <Copy size={18} /> Copy Password
-                                            </button>
-                                        </div>
-                                    );
-                                }
-                                
-                                return (
-                                    <div className="bg-[#292d3e] shadow-neu-pressed p-5 rounded-xl text-left">
-                                        <p className="text-xs text-gray-500 font-bold uppercase mb-2">Content</p>
-                                        <div className="break-all text-sm text-gray-300 font-mono">
-                                            {scannedResult}
-                                        </div>
-                                        
-                                        {isUrl(scannedResult) && (
-                                            <a href={scannedResult} target="_blank" rel="noreferrer" className="mt-4 w-full bg-[#292d3e] text-blue-400 font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-neu active:shadow-neu-pressed transition-all">
-                                                <ExternalLink size={16} /> Open Link
-                                            </a>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-
-                            <div className="flex gap-4">
-                                {!scannedResult.startsWith('WIFI:') && (
-                                    <button onClick={() => {navigator.clipboard.writeText(scannedResult); showToast("Copied to clipboard", "success")}} className="flex-1 bg-[#292d3e] shadow-neu py-3 rounded-xl font-bold hover:text-white flex items-center justify-center gap-2 active:shadow-neu-pressed text-gray-400">
-                                        <Copy size={16} /> Copy
-                                    </button>
-                                )}
-                                <button onClick={() => { setScannedResult(null); window.location.reload(); }} className="flex-1 bg-[#292d3e] shadow-neu text-gray-400 hover:text-white py-3 rounded-xl font-bold active:shadow-neu-pressed">
-                                    Scan Again
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )}
-
-        {/* --- CRYPTO TOOL --- */}
-        {activeTool === 'crypto' && (
-            <div className="space-y-6 animate-fade-in-up">
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Select Asset</label>
-                    <div className="relative">
-                        <select 
-                            value={selectedCoin} 
-                            onChange={e => setSelectedCoin(e.target.value)}
-                            className="w-full bg-[#292d3e] text-gray-200 p-4 rounded-xl shadow-neu-pressed outline-none appearance-none font-bold"
-                        >
-                            {COINS.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
-                    </div>
-                    
-                    <button 
-                        onClick={handleCryptoAnalysis} 
-                        disabled={isAnalyzingFinance}
-                        className="w-full bg-[#292d3e] text-orange-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex justify-center items-center gap-2 mt-2"
-                    >
-                        {isAnalyzingFinance ? <RefreshCw className="animate-spin" /> : <Activity />}
-                        Analyze Market
+        {/* Header */}
+        <div className="flex items-center justify-between sticky top-0 bg-[#292d3e]/95 backdrop-blur-md py-3 z-30 mb-4 border-b border-white/5">
+            <div className="flex items-center gap-3">
+                {activeTool !== 'menu' && (
+                    <button onClick={() => setActiveTool('menu')} className="p-2.5 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 hover:text-white active:shadow-neu-pressed transition-all">
+                        <ArrowLeft size={18} />
                     </button>
-                </div>
-
-                {cryptoResult && (
-                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl animate-fade-in-up space-y-6">
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase font-bold">Current Price</p>
-                                <h2 className="text-3xl font-black text-gray-200 mt-1">{cryptoResult.price}</h2>
-                            </div>
-                            <div className={`px-4 py-2 rounded-lg text-sm font-bold shadow-neu-pressed ${cryptoResult.change?.includes('+') ? 'text-green-400' : 'text-red-400'}`}>
-                                {cryptoResult.change}
-                            </div>
-                        </div>
-
-                        {cryptoResult.trend && (
-                            <div className="h-24 w-full flex items-end gap-2 px-2">
-                                {cryptoResult.trend.map((val: number, i: number) => (
-                                    <div key={i} className="flex-1 bg-[#292d3e] shadow-neu rounded-t-sm relative" style={{height: `${val}%`}}>
-                                        <div className="absolute inset-0 bg-orange-500 opacity-20 rounded-t-sm"></div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-4 pt-2 border-t border-gray-800">
-                            <div className={`flex-1 py-3 rounded-xl text-center font-black text-xl shadow-neu ${
-                                cryptoResult.signal === 'BUY' ? 'text-green-400' : 
-                                cryptoResult.signal === 'SELL' ? 'text-red-400' : 'text-gray-400'
-                            }`}>
-                                {cryptoResult.signal}
-                            </div>
-                            <p className="flex-[2] text-xs text-gray-400 leading-relaxed font-medium">{cryptoResult.analysis}</p>
-                        </div>
-                    </div>
                 )}
+                <h1 className="text-xl font-black text-gray-200 tracking-tight flex items-center gap-2">
+                    {activeTool === 'menu' ? 'Toolkit OS' : tools.find(t => t.id === activeTool)?.label || 'Tool'}
+                </h1>
             </div>
-        )}
+            <button onClick={onOpenSettings} className="p-2.5 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 active:shadow-neu-pressed">
+                <Settings size={18} />
+            </button>
+        </div>
 
-        {/* --- CURRENCY TOOL --- */}
-        {activeTool === 'currency' && (
-            <div className="space-y-6 animate-fade-in-up">
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-5">
-                    <div className="flex flex-col gap-4">
-                        <input 
-                            type="number" 
-                            value={amount} 
-                            onChange={e => setAmount(e.target.value)} 
-                            className="w-full bg-[#292d3e] p-4 rounded-xl text-gray-200 font-bold text-2xl text-center shadow-neu-pressed outline-none"
-                            placeholder="Amount"
-                        />
-                        <div className="flex items-center gap-3">
-                            <select value={fromCurr} onChange={e => setFromCurr(e.target.value)} className="flex-1 bg-[#292d3e] p-3 rounded-xl text-gray-300 text-sm shadow-neu outline-none appearance-none text-center font-bold">
-                                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-                            </select>
-                            <div className="text-gray-500"><ArrowRight size={16}/></div>
-                            <select value={toCurr} onChange={e => setToCurr(e.target.value)} className="flex-1 bg-[#292d3e] p-3 rounded-xl text-gray-300 text-sm shadow-neu outline-none appearance-none text-center font-bold">
-                                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <button 
-                        onClick={handleCurrencyConvert}
-                        disabled={isAnalyzingFinance}
-                        className="w-full bg-[#292d3e] text-green-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex justify-center items-center gap-2"
-                    >
-                        {isAnalyzingFinance ? <RefreshCw className="animate-spin" /> : <RefreshCcw />}
-                        Convert Now
-                    </button>
-                </div>
-
-                {financialResult && (
-                    <div className="bg-[#292d3e] shadow-neu p-8 rounded-2xl animate-fade-in-up text-center space-y-4">
-                        <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Conversion Result</p>
-                        <h2 className="text-4xl font-black text-gray-200 tracking-tight">{financialResult.result}</h2>
-                        <div className="inline-block bg-[#292d3e] shadow-neu-pressed px-4 py-2 rounded-full text-xs text-green-400 font-bold">
-                            {financialResult.rate}
-                        </div>
-                        <p className="text-xs text-gray-500 pt-4 border-t border-gray-800">{financialResult.details}</p>
-                    </div>
-                )}
-            </div>
-        )}
-
-        {/* --- SHORTENER --- */}
-        {activeTool === 'shortener' && (
-            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 animate-fade-in-up">
-                <input value={longUrl} onChange={e => setLongUrl(e.target.value)} placeholder="Paste long URL here..." className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-300 outline-none" />
-                <button onClick={handleShorten} className="w-full bg-[#292d3e] text-blue-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
-                    {isShortening ? <RefreshCw className="animate-spin inline mr-2"/> : <Link className="inline mr-2"/>} Shorten Link
-                </button>
-                {shortUrl && (
-                    <div className="bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl flex justify-between items-center cursor-pointer hover:bg-[#292d3e]" onClick={() => {navigator.clipboard.writeText(shortUrl); showToast("Copied!", "success")}}>
-                        <span className="font-mono text-blue-400 font-bold">{shortUrl}</span>
-                        <Copy size={18} className="text-gray-500" />
-                    </div>
-                )}
-            </div>
-        )}
-        
-        {/* --- QR GEN --- */}
-        {activeTool === 'qr' && (
-            <div className="space-y-6 animate-fade-in-up">
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <input value={qrText} onChange={e => setQrText(e.target.value)} placeholder="Enter text or URL..." className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-300 outline-none" />
-                    <button onClick={handleGenerateQR} className="w-full bg-[#292d3e] text-purple-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
-                        Generate Code
-                    </button>
-                </div>
-                {qrUrl && (
-                    <div className="bg-[#292d3e] shadow-neu p-8 rounded-2xl flex flex-col items-center animate-fade-in-up">
-                        <img src={qrUrl} alt="QR Code" className="w-48 h-48 rounded-lg shadow-lg mb-4" />
-                        <button onClick={() => {const a = document.createElement('a'); a.href = qrUrl; a.download = 'qr.png'; a.click();}} className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-white">
-                            <Download size={16} /> Download
-                        </button>
-                    </div>
-                )}
-            </div>
-        )}
-        
-        {/* --- BIO WRITER --- */}
-        {activeTool === 'bio' && (
-            <div className="space-y-6 animate-fade-in-up">
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <textarea value={bioInput} onChange={e => setBioInput(e.target.value)} placeholder="Describe yourself (e.g. Gamer, Tech Enthusiast, Coffee Lover)..." className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-300 outline-none h-32 resize-none" />
-                    <button onClick={handleGenerateBio} disabled={isWritingBio} className="w-full bg-[#292d3e] text-pink-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex justify-center items-center gap-2">
-                        {isWritingBio ? <RefreshCw className="animate-spin" /> : <Sparkles />} Generate Bios
-                    </button>
-                </div>
-                <div className="space-y-3">
-                    {bios.map((bio, i) => (
-                        <div key={i} className="bg-[#292d3e] shadow-neu p-4 rounded-xl relative group">
-                            <p className="text-gray-300 pr-8">{bio}</p>
-                            <button onClick={() => {navigator.clipboard.writeText(bio); showToast("Copied!", "success")}} className="absolute top-4 right-4 text-gray-500 hover:text-white"><Copy size={16}/></button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-
-        {/* --- UNIT CONVERTER --- */}
-        {activeTool === 'unit' && (
-            <div className="space-y-6 animate-fade-in-up">
-                <div className="flex bg-[#292d3e] shadow-neu-pressed rounded-xl p-1 mb-4">
-                    {['length', 'mass', 'temp'].map(c => (
-                        <button key={c} onClick={() => setUnitCategory(c as any)} className={`flex-1 py-2 text-xs font-bold rounded-lg capitalize ${unitCategory === c ? 'bg-[#292d3e] shadow-neu text-teal-400' : 'text-gray-500'}`}>{c}</button>
-                    ))}
-                </div>
-                
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-5">
-                    <input type="number" value={unitVal} onChange={e => setUnitVal(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-2xl font-bold text-center text-gray-200 outline-none" />
-                    <div className="flex items-center gap-3">
-                        <select value={unitFrom} onChange={e => setUnitFrom(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu p-3 rounded-xl text-gray-300 font-bold outline-none text-center">
-                            {unitCategory === 'length' && ['m','km','cm','mm','ft','mi','in','yd'].map(u => <option key={u} value={u}>{u}</option>)}
-                            {unitCategory === 'mass' && ['kg','g','mg','lb','oz'].map(u => <option key={u} value={u}>{u}</option>)}
-                            {unitCategory === 'temp' && ['C','F','K'].map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                        <ArrowRight className="text-gray-500" />
-                        <select value={unitTo} onChange={e => setUnitTo(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu p-3 rounded-xl text-gray-300 font-bold outline-none text-center">
-                            {unitCategory === 'length' && ['m','km','cm','mm','ft','mi','in','yd'].map(u => <option key={u} value={u}>{u}</option>)}
-                            {unitCategory === 'mass' && ['kg','g','mg','lb','oz'].map(u => <option key={u} value={u}>{u}</option>)}
-                            {unitCategory === 'temp' && ['C','F','K'].map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                    </div>
-                    <button onClick={handleUnitConvert} className="w-full bg-[#292d3e] text-teal-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">Convert</button>
-                </div>
-
-                {unitResult && (
-                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center animate-fade-in-up">
-                        <h2 className="text-4xl font-black text-gray-200">{unitResult} <span className="text-lg text-gray-500 font-medium">{unitTo}</span></h2>
-                    </div>
-                )}
-            </div>
-        )}
-
-        {/* --- PHOTO UTILS --- */}
-        
-        {/* 1. COMPRESS */}
-        {activeTool === 'compress' && (
-            !utilImage ? renderUploadUI(Minimize, "Image Compressor", () => utilFileInputRef.current?.click()) : (
-                <div className="space-y-6 animate-fade-in-up">
-                    <div className="relative rounded-xl overflow-hidden shadow-neu-pressed bg-[#1e212d] max-h-80 flex items-center justify-center">
-                        <img src={processedImage || utilImage} className="max-w-full max-h-full object-contain" alt="Preview" />
-                    </div>
-                    
-                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                        <div className="flex justify-between">
-                            <span className="text-xs font-bold text-gray-500 uppercase">Quality</span>
-                            <span className="text-xs font-bold text-cyan-400">{compressQuality}%</span>
-                        </div>
-                        <input type="range" min="10" max="100" value={compressQuality} onChange={e => setCompressQuality(parseInt(e.target.value))} className="w-full accent-cyan-400" />
-                        
-                        {processedMeta && (
-                            <div className="flex justify-between items-center text-xs font-mono bg-[#292d3e] shadow-neu-pressed p-3 rounded-lg text-gray-400">
-                                <span>New Size: <b className="text-green-400">{processedMeta.size}</b></span>
-                                <span>{processedMeta.dimensions}</span>
-                            </div>
-                        )}
-
-                        <button onClick={handleCompress} className="w-full bg-[#292d3e] text-cyan-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all flex items-center justify-center gap-2">
-                            <Minimize size={18} /> Compress Image
-                        </button>
-                        
-                        {processedImage && (
-                            <a href={processedImage} download="compressed.jpg" className="block w-full bg-[#292d3e] text-green-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all text-center">
-                                Download Result
-                            </a>
-                        )}
-                        <button onClick={() => {setUtilImage(null); setProcessedImage(null);}} className="w-full text-xs text-gray-500 py-2">Start Over</button>
-                    </div>
-                </div>
-            )
-        )}
-
-        {/* 2. RESIZE */}
-        {activeTool === 'resize' && (
-            !utilImage ? renderUploadUI(Maximize, "Image Resizer", () => utilFileInputRef.current?.click()) : (
-                <div className="space-y-6 animate-fade-in-up">
-                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Width</label>
-                                <input type="number" value={resizeWidth} onChange={e => {setResizeWidth(parseInt(e.target.value)); if(maintainAspect) setResizeHeight(Math.round(parseInt(e.target.value) / aspectRatio));}} className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-gray-200 outline-none" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Height</label>
-                                <input type="number" value={resizeHeight} onChange={e => {setResizeHeight(parseInt(e.target.value)); if(maintainAspect) setResizeWidth(Math.round(parseInt(e.target.value) * aspectRatio));}} className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-gray-200 outline-none" />
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between px-2">
-                            <span className="text-xs text-gray-500 font-bold">Maintain Aspect Ratio</span>
-                            <button onClick={() => setMaintainAspect(!maintainAspect)} className={`text-indigo-400 transition-transform ${maintainAspect ? '' : 'opacity-50'}`}>
-                                {maintainAspect ? <Lock size={20} /> : <Unlock size={20} />}
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-                            {[{l:'Story', w:1080, h:1920}, {l:'Post', w:1080, h:1080}, {l:'HD', w:1280, h:720}].map((p, i) => (
-                                <button key={i} onClick={() => {setResizeWidth(p.w); setResizeHeight(p.h);}} className="px-3 py-1 bg-[#292d3e] shadow-neu rounded-lg text-xs font-bold text-gray-400 whitespace-nowrap active:shadow-neu-pressed">{p.l}</button>
-                            ))}
-                        </div>
-
-                        <button onClick={handleResize} className="w-full bg-[#292d3e] text-indigo-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
-                            Resize Now
-                        </button>
-
-                        {processedImage && (
-                            <a href={processedImage} download="resized.png" className="block w-full bg-[#292d3e] text-green-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all text-center">
-                                Download
-                            </a>
-                        )}
-                        <button onClick={() => {setUtilImage(null); setProcessedImage(null);}} className="w-full text-xs text-gray-500 py-2">Start Over</button>
-                    </div>
-                </div>
-            )
-        )}
-
-        {/* 3. PALETTE */}
-        {activeTool === 'palette' && (
-            !utilImage ? renderUploadUI(Palette, "Color Extractor", () => utilFileInputRef.current?.click()) : (
-                <div className="space-y-6 animate-fade-in-up">
-                    <div className="relative rounded-xl overflow-hidden shadow-neu-pressed max-h-60 bg-[#1e212d] flex items-center justify-center">
-                        <img src={utilImage} className="max-w-full max-h-full object-contain" alt="Source" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                        {extractedColors.map((color, i) => (
-                            <div key={i} className="bg-[#292d3e] shadow-neu p-4 rounded-2xl flex items-center gap-3 cursor-pointer active:scale-95 transition-transform" onClick={() => {navigator.clipboard.writeText(color); showToast("Copied hex!", "success")}}>
-                                <div className="w-10 h-10 rounded-full shadow-inner border border-white/10" style={{backgroundColor: color}}></div>
-                                <span className="text-xs font-mono font-bold text-gray-400">{color}</span>
-                            </div>
-                        ))}
-                    </div>
-                    <button onClick={() => setUtilImage(null)} className="w-full text-xs text-gray-500 py-2 mt-4">New Image</button>
-                </div>
-            )
-        )}
-
-        {/* 4. MEME */}
-        {activeTool === 'meme' && (
-            !utilImage ? renderUploadUI(Smile, "Meme Maker", () => utilFileInputRef.current?.click()) : (
-                <div className="space-y-6 animate-fade-in-up">
-                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                        <input value={memeTop} onChange={e => setMemeTop(e.target.value)} placeholder="Top Text" className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-center font-bold text-gray-200 outline-none uppercase" />
-                        <input value={memeBottom} onChange={e => setMemeBottom(e.target.value)} placeholder="Bottom Text" className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-center font-bold text-gray-200 outline-none uppercase" />
-                        
-                        <button onClick={renderMeme} className="w-full bg-[#292d3e] text-red-400 py-4 rounded-xl font-bold shadow-neu active:shadow-neu-pressed transition-all">
-                            Generate Meme
-                        </button>
-                    </div>
-                    
-                    {memeCanvasUrl && (
-                        <div className="relative rounded-xl overflow-hidden shadow-neu">
-                            <img src={memeCanvasUrl} className="w-full h-auto" alt="Meme" />
-                            <a href={memeCanvasUrl} download="meme.png" className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg text-white"><Download size={20}/></a>
-                        </div>
-                    )}
-                    <button onClick={() => {setUtilImage(null); setMemeCanvasUrl(null);}} className="w-full text-xs text-gray-500 py-2">Start Over</button>
-                </div>
-            )
-        )}
-
-        {/* 5. METADATA */}
-        {activeTool === 'meta' && (
-            !utilImage ? renderUploadUI(Info, "EXIF Viewer", () => utilFileInputRef.current?.click()) : (
-                <div className="space-y-6 animate-fade-in-up">
-                    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl">
-                        <h3 className="text-sm font-bold text-gray-200 mb-4 flex items-center gap-2"><Info size={16} className="text-yellow-400"/> Image Details</h3>
-                        <div className="space-y-3 text-xs">
-                            {imageMeta ? Object.entries(imageMeta).slice(0, 10).map(([k, v], i) => (
-                                <div key={i} className="flex justify-between border-b border-gray-800 pb-2">
-                                    <span className="text-gray-500 font-bold capitalize">{k}</span>
-                                    <span className="text-gray-300 font-mono text-right max-w-[150px] truncate">{String(v)}</span>
-                                </div>
-                            )) : <p>Extracting data...</p>}
-                        </div>
-                        <button onClick={() => setUtilImage(null)} className="w-full mt-6 bg-[#292d3e] shadow-neu py-3 rounded-xl text-gray-400 font-bold active:shadow-neu-pressed">Check Another</button>
-                    </div>
-                </div>
-            )
-        )}
-
-        {/* 6. PUZZLE */}
-        {activeTool === 'puzzle' && (
-            !utilImage ? renderUploadUI(Gamepad, "Slide Puzzle", () => utilFileInputRef.current?.click()) : (
-                <div className="space-y-6 animate-fade-in-up text-center">
-                    <div className="inline-block p-1 bg-[#292d3e] shadow-neu rounded-xl">
-                        <div className="grid grid-cols-3 gap-1 w-72 h-72">
-                            {puzzleTiles.map((tileIndex, positionIndex) => (
-                                <div 
-                                    key={positionIndex}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, positionIndex)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, positionIndex)}
-                                    className={`relative w-full h-full cursor-move overflow-hidden rounded-md transition-transform active:scale-95 ${draggedTileIndex === positionIndex ? 'opacity-50' : ''}`}
-                                >
-                                    <div 
-                                        className="absolute w-[300%] h-[300%]"
-                                        style={{
-                                            backgroundImage: `url(${utilImage})`,
-                                            backgroundSize: '300% 300%',
-                                            backgroundPosition: `${(tileIndex % 3) * 50}% ${Math.floor(tileIndex / 3) * 50}%`,
-                                            left: `-${(positionIndex % 3) * 100}%`,
-                                            top: `-${Math.floor(positionIndex / 3) * 100}%`
-                                        }}
-                                    />
-                                    <div className="absolute inset-0 border border-black/10 pointer-events-none"></div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    
-                    {puzzleWin ? (
-                        <div className="bg-[#292d3e] shadow-neu p-4 rounded-xl text-green-400 font-bold animate-bounce">
-                            🎉 Puzzle Solved!
-                        </div>
-                    ) : (
-                        <p className="text-xs text-gray-500">Drag and drop tiles to swap positions</p>
-                    )}
-
-                    <button onClick={() => {setUtilImage(null); setPuzzleWin(false);}} className="text-xs text-gray-500 underline">Quit Game</button>
-                </div>
-            )
-        )}
-        
-        {/* Hidden Upload for Util Tools */}
-        <input type="file" ref={utilFileInputRef} onChange={handleUtilImageUpload} className="hidden" accept="image/*" />
-        {/* Hidden Upload for QR Scanner */}
-        <input type="file" ref={qrFileInputRef} onChange={handleQrFileUpload} className="hidden" accept="image/*" />
-      </div>
+        <div className="relative z-10">
+            {activeTool === 'menu' && renderMenu()}
+            {activeTool === 'qr-tools' && <QrTools />}
+            {activeTool === 'finance' && <FinancialTools />}
+            {activeTool === 'units' && <UnitConverter />}
+            {activeTool === 'links' && <LinkShortener />}
+            {activeTool === 'photo-utils' && <PhotoUtils />}
+            
+            {activeTool === 'notes' && <SmartNotes />}
+            {activeTool === 'social-growth' && <SocialGrowth />}
+            {activeTool === 'profile-studio' && <ProfileStudio />}
+            {activeTool === 'moodboard' && <MoodboardGenerator />}
+            {activeTool === 'football-hub' && <FootballHub />}
+            {activeTool === 'pdf-tools' && <PdfTools />}
+        </div>
     </div>
   );
 };
 
-const MenuCard = ({icon: Icon, color, title, onClick}: any) => (
-    <div onClick={onClick} className="bg-[#292d3e] shadow-neu p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer active:shadow-neu-pressed transition-all aspect-square hover:scale-[1.02]">
-        <div className={`p-3 rounded-full bg-[#292d3e] shadow-neu-pressed ${color}`}>
-            <Icon size={24} strokeWidth={2.5} />
+// --- RESTORED SUB TOOLS ---
+
+const QrTools = () => {
+    const [mode, setMode] = useState<'scan' | 'gen'>('scan');
+    const [genText, setGenText] = useState('');
+    const [qrCode, setQrCode] = useState('');
+    const [scanResult, setScanResult] = useState<string | null>(null);
+    const [scanType, setScanType] = useState<'url'|'text'|'wifi'|null>(null);
+    const scannerRef = useRef<any>(null);
+
+    const generateQr = () => {
+        if(!genText) return;
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(genText)}`;
+        setQrCode(url);
+    };
+
+    const handleScan = (decodedText: string) => {
+        setScanResult(decodedText);
+        if (decodedText.startsWith('WIFI:')) setScanType('wifi');
+        else if (decodedText.startsWith('http')) setScanType('url');
+        else setScanType('text');
+        
+        // Stop scanning upon success
+        if (scannerRef.current) {
+            scannerRef.current.stop().catch((e: any) => console.error(e));
+        }
+    };
+
+    useEffect(() => {
+        let html5QrCode: any;
+        if (mode === 'scan' && !scanResult) {
+            // Small delay to ensure the element is in the DOM
+            const timer = setTimeout(() => {
+                try {
+                    html5QrCode = new Html5Qrcode("reader");
+                    scannerRef.current = html5QrCode;
+                    
+                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                    
+                    html5QrCode.start(
+                        { facingMode: "environment" }, 
+                        config, 
+                        handleScan,
+                        (error: any) => { /* ignore frame errors */ }
+                    ).catch((err: any) => {
+                        console.error("Camera start failed", err);
+                        showToast("Camera access failed. Check permissions.", "error");
+                    });
+                } catch (e) {
+                    console.error("Init failed", e);
+                }
+            }, 100);
+
+            return () => {
+                clearTimeout(timer);
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => html5QrCode.clear()).catch((e:any) => {});
+                }
+            };
+        }
+    }, [mode, scanResult]);
+
+    return (
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl">
+                <button onClick={() => setMode('scan')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${mode === 'scan' ? 'bg-[#292d3e] shadow-neu text-blue-400' : 'text-gray-500'}`}>Scan</button>
+                <button onClick={() => setMode('gen')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${mode === 'gen' ? 'bg-[#292d3e] shadow-neu text-blue-400' : 'text-gray-500'}`}>Generate</button>
+            </div>
+
+            {mode === 'scan' && (
+                <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl relative overflow-hidden">
+                    {!scanResult ? (
+                        <div className="relative">
+                            {/* Camera Feed Container */}
+                            <div id="reader" className="w-full h-[300px] bg-black rounded-xl overflow-hidden shadow-neu-pressed"></div>
+                            
+                            {/* Cinematic Overlay */}
+                            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                                <div className="w-64 h-64 border-2 border-blue-400/30 rounded-2xl relative">
+                                    {/* Corners */}
+                                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-400 rounded-tl-lg -mt-1 -ml-1"></div>
+                                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-400 rounded-tr-lg -mt-1 -mr-1"></div>
+                                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-400 rounded-bl-lg -mb-1 -ml-1"></div>
+                                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-lg -mb-1 -mr-1"></div>
+                                    
+                                    {/* Laser Scan Line */}
+                                    <div className="absolute top-0 left-2 right-2 h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-[laserY_3s_infinite] opacity-80"></div>
+                                </div>
+                                <p className="mt-4 text-xs font-bold text-white bg-black/50 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 animate-pulse">
+                                    Align QR code within frame
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 animate-fade-in-up">
+                            <SmartCard 
+                                title={scanType === 'wifi' ? "WiFi Network" : scanType === 'url' ? "Website Link" : "Scanned Text"}
+                                content={scanResult}
+                                icon={QrCode}
+                            />
+                            {scanType === 'url' && (
+                                <a href={scanResult} target="_blank" rel="noreferrer" className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all">
+                                    <ExternalLink size={18} /> Open Link
+                                </a>
+                            )}
+                            <button onClick={() => setScanResult(null)} className="w-full py-4 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 font-bold active:shadow-neu-pressed transition-all">Scan Again</button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {mode === 'gen' && (
+                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6">
+                    <input 
+                        value={genText}
+                        onChange={e => setGenText(e.target.value)}
+                        placeholder="Enter text or URL..."
+                        className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 text-sm outline-none"
+                    />
+                    <button onClick={generateQr} className="w-full bg-[#292d3e] shadow-neu text-blue-400 py-4 rounded-xl font-bold active:shadow-neu-pressed">Create QR Code</button>
+                    {qrCode && (
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="p-4 bg-white rounded-xl shadow-neu">
+                                <img src={qrCode} alt="QR" className="w-48 h-48" />
+                            </div>
+                            <a href={qrCode} download="snapaura-qr.png" className="text-xs text-gray-500 font-bold hover:text-white flex items-center gap-1"><Download size={12}/> Download PNG</a>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
-        <span className="text-xs font-bold text-gray-400">{title}</span>
-    </div>
-);
+    );
+};
+
+const FinancialTools = () => {
+    const [tab, setTab] = useState<'crypto'|'currency'>('crypto');
+    const [coin, setCoin] = useState('Bitcoin (BTC)');
+    const [cryptoData, setCryptoData] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+
+    // Currency State
+    const [amount, setAmount] = useState('100');
+    const [fromCur, setFromCur] = useState('USD');
+    const [toCur, setToCur] = useState('KES');
+    const [currencyResult, setCurrencyResult] = useState<any>(null);
+
+    const fetchCrypto = async () => {
+        setLoading(true);
+        try { setCryptoData(await getCryptoData(coin)); }
+        catch(e) { showToast("Error fetching crypto", "error"); }
+        finally { setLoading(false); }
+    };
+
+    const fetchCurrency = async () => {
+        setLoading(true);
+        try { setCurrencyResult(await getCurrencyData(amount, fromCur, toCur)); }
+        catch(e) { showToast("Error converting", "error"); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl">
+                <button onClick={() => setTab('crypto')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${tab === 'crypto' ? 'bg-[#292d3e] shadow-neu text-yellow-400' : 'text-gray-500'}`}>Crypto</button>
+                <button onClick={() => setTab('currency')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${tab === 'currency' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}>Currency</button>
+            </div>
+
+            {tab === 'crypto' && (
+                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                    <select value={coin} onChange={e => setCoin(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none text-sm font-bold appearance-none">
+                        <option>Bitcoin (BTC)</option>
+                        <option>Ethereum (ETH)</option>
+                        <option>Solana (SOL)</option>
+                        <option>Cardano (ADA)</option>
+                    </select>
+                    <button onClick={fetchCrypto} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-yellow-400 py-4 rounded-xl font-bold active:shadow-neu-pressed flex items-center justify-center gap-2">
+                        {loading ? <RefreshCw className="animate-spin"/> : 'Analyze Market'}
+                    </button>
+                    {cryptoData && (
+                        <SmartCard 
+                            title={cryptoData.price}
+                            subtitle={cryptoData.signal}
+                            icon={Activity}
+                            content={
+                                <div className="space-y-2">
+                                    <div className={`text-sm font-bold ${cryptoData.change.includes('+') ? 'text-green-400' : 'text-red-400'}`}>{cryptoData.change} (24h)</div>
+                                    <p className="text-gray-400">{cryptoData.analysis}</p>
+                                </div>
+                            }
+                        />
+                    )}
+                </div>
+            )}
+
+            {tab === 'currency' && (
+                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                    <div className="flex gap-2">
+                        <input value={amount} onChange={e => setAmount(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none text-sm" placeholder="100"/>
+                        <select value={fromCur} onChange={e => setFromCur(e.target.value)} className="w-24 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 text-sm font-bold outline-none"><option>USD</option><option>EUR</option><option>GBP</option><option>KES</option></select>
+                    </div>
+                    <div className="flex justify-center"><RefreshCw size={16} className="text-gray-500"/></div>
+                    <select value={toCur} onChange={e => setToCur(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none text-sm font-bold"><option>KES</option><option>USD</option><option>EUR</option><option>GBP</option><option>NGN</option><option>ZAR</option></select>
+                    
+                    <button onClick={fetchCurrency} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-green-400 py-4 rounded-xl font-bold active:shadow-neu-pressed flex items-center justify-center gap-2">
+                        {loading ? <RefreshCw className="animate-spin"/> : 'Convert'}
+                    </button>
+                    {currencyResult && (
+                        <SmartCard 
+                            title={currencyResult.result}
+                            subtitle={currencyResult.rate}
+                            icon={DollarSign}
+                            content=""
+                        />
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const UnitConverter = () => {
+    const [cat, setCat] = useState('length');
+    const [val, setVal] = useState('');
+    const [res, setRes] = useState('');
+
+    const convert = () => {
+        const n = parseFloat(val);
+        if(isNaN(n)) return;
+        if (cat === 'length') setRes(`${(n * 3.28084).toFixed(2)} ft`); // m to ft
+        if (cat === 'mass') setRes(`${(n * 2.20462).toFixed(2)} lbs`); // kg to lbs
+        if (cat === 'temp') setRes(`${((n * 9/5) + 32).toFixed(1)} °F`); // C to F
+    };
+
+    return (
+        <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 animate-fade-in-up">
+            <div className="flex justify-between px-2">
+                {['length', 'mass', 'temp'].map(c => (
+                    <button key={c} onClick={() => {setCat(c); setVal(''); setRes('');}} className={`text-xs font-bold uppercase ${cat === c ? 'text-green-400' : 'text-gray-500'}`}>{c}</button>
+                ))}
+            </div>
+            <div className="space-y-4">
+                <input value={val} onChange={e => setVal(e.target.value)} type="number" placeholder={cat === 'length' ? 'Meters' : cat === 'mass' ? 'Kilograms' : 'Celsius'} className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none"/>
+                <button onClick={convert} className="w-full bg-[#292d3e] shadow-neu text-gray-200 py-3 rounded-xl font-bold active:shadow-neu-pressed">Convert</button>
+                {res && (
+                    <div className="bg-[#292d3e] shadow-neu p-4 rounded-xl text-center">
+                        <span className="text-2xl font-black text-green-400">{res}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const LinkShortener = () => {
+    const [url, setUrl] = useState('');
+    const [short, setShort] = useState('');
+    const shorten = async () => {
+        if(!url) return;
+        try {
+            const res = await fetch(`https://tinyurl.com/api-create.php?url=${url}`);
+            const text = await res.text();
+            setShort(text);
+        } catch(e) { showToast("Failed to shorten", "error"); }
+    };
+    return (
+        <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 animate-fade-in-up">
+            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Paste long URL..." className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none text-sm"/>
+            <button onClick={shorten} className="w-full bg-[#292d3e] shadow-neu text-purple-400 py-3 rounded-xl font-bold active:shadow-neu-pressed">Shorten Link</button>
+            {short && <SmartCard title="Shortened Link" content={short} icon={LinkIcon} />}
+        </div>
+    );
+};
+
+const PhotoUtils = () => {
+    const [mode, setMode] = useState('compress');
+    const [file, setFile] = useState<File|null>(null);
+    const [preview, setPreview] = useState<string|null>(null);
+    const [processed, setProcessed] = useState<string|null>(null);
+    const [stat, setStat] = useState('');
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    // Resize state
+    const [width, setWidth] = useState(1080);
+    const [quality, setQuality] = useState(80);
+
+    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const f = e.target.files?.[0];
+        if(f) {
+            setFile(f);
+            setPreview(URL.createObjectURL(f));
+            setProcessed(null);
+            setStat(`Original: ${(f.size/1024).toFixed(1)} KB`);
+        }
+    };
+
+    const process = () => {
+        if(!file || !preview) return;
+        const img = new Image();
+        img.src = preview;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let w = img.width;
+            let h = img.height;
+
+            if (mode === 'resize') {
+                const aspect = h / w;
+                w = width;
+                h = w * aspect;
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+            ctx?.drawImage(img, 0, 0, w, h);
+
+            const q = mode === 'compress' ? quality/100 : 0.9;
+            const data = canvas.toDataURL('image/jpeg', q);
+            setProcessed(data);
+            
+            // Calculate size reduction
+            const head = 'data:image/jpeg;base64,';
+            const size = Math.round((data.length - head.length)*3/4) / 1024;
+            setStat(prev => `${prev} -> New: ${size.toFixed(1)} KB`);
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl overflow-x-auto hide-scrollbar">
+                {['compress', 'resize', 'meme'].map(m => (
+                    <button key={m} onClick={() => {setMode(m); setProcessed(null);}} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap ${mode === m ? 'bg-[#292d3e] shadow-neu text-red-400' : 'text-gray-500'}`}>{m}</button>
+                ))}
+            </div>
+
+            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                {!file ? (
+                    <button onClick={() => fileRef.current?.click()} className="w-full py-10 bg-[#292d3e] shadow-neu rounded-xl active:shadow-neu-pressed flex flex-col items-center text-gray-400 gap-2">
+                        <Upload size={24}/> <span className="font-bold">Select Image</span>
+                    </button>
+                ) : (
+                    <>
+                        <img src={processed || preview!} className="w-full h-48 object-contain rounded-xl bg-[#1e212d]" alt="Preview"/>
+                        <p className="text-center text-xs font-bold text-gray-500">{stat}</p>
+                        
+                        {mode === 'compress' && (
+                             <div className="space-y-2">
+                                 <label className="text-xs font-bold text-gray-500">Quality: {quality}%</label>
+                                 <input type="range" min="10" max="90" value={quality} onChange={e => setQuality(parseInt(e.target.value))} className="w-full"/>
+                             </div>
+                        )}
+                        {mode === 'resize' && (
+                             <div className="space-y-2">
+                                 <label className="text-xs font-bold text-gray-500">Width: {width}px</label>
+                                 <input type="number" value={width} onChange={e => setWidth(parseInt(e.target.value))} className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-white outline-none"/>
+                             </div>
+                        )}
+                        
+                        <div className="flex gap-3">
+                            <button onClick={process} className="flex-1 bg-[#292d3e] shadow-neu text-red-400 py-3 rounded-xl font-bold active:shadow-neu-pressed">Process</button>
+                            {processed && (
+                                <a href={processed} download="processed.jpg" className="flex-1 bg-[#292d3e] shadow-neu text-green-400 py-3 rounded-xl font-bold active:shadow-neu-pressed flex items-center justify-center gap-2">
+                                    <Download size={16}/> Save
+                                </a>
+                            )}
+                            <button onClick={() => {setFile(null); setProcessed(null);}} className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-gray-400"><RefreshCw/></button>
+                        </div>
+                    </>
+                )}
+            </div>
+            <input type="file" ref={fileRef} onChange={handleUpload} className="hidden"/>
+        </div>
+    );
+};
 
 export default Toolkit;
