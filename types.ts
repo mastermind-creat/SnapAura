@@ -59,7 +59,11 @@ export interface GeneratedImage {
 
 export interface UserProfile {
   name: string;
+  username?: string; // New: Unique handle for P2P
   email: string;
+  bio?: string; // New: AI generated bio
+  location?: string; // New
+  interests?: string[]; // New: For AI context
   joinDate: string;
   stats: {
     edits: number;

@@ -116,7 +116,9 @@ import {
   ChevronUp,
   ChevronDown,
   Power,
-  Server
+  Server,
+  Edit2,
+  MapPin
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -249,5 +251,7 @@ export {
   ChevronUp,
   ChevronDown,
   Power,
-  Server
+  Server,
+  Edit2,
+  MapPin
 };

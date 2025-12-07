@@ -156,12 +156,15 @@ const Chat: React.FC<any> = () => {
   useEffect(() => {
       const storedHistory = localStorage.getItem('SNAPAURA_CHAT_HISTORY');
       const storedAvatar = localStorage.getItem('SNAPAURA_AVATAR');
-      const storedName = localStorage.getItem('SNAPAURA_USERNAME');
+      
+      // Load Username: Check Global Profile FIRST, then fallback to local chat storage
+      let effectiveUsername = state.userProfile?.username || localStorage.getItem('SNAPAURA_USERNAME');
       
       if (storedAvatar) setUserAvatar(storedAvatar);
-      if (storedName) {
-          setUsername(storedName);
-          setIsSetup(true);
+      
+      if (effectiveUsername) {
+          setUsername(effectiveUsername);
+          setIsSetup(true); // Skip setup if we have a name
       }
       
       if (storedHistory) {
@@ -169,7 +172,7 @@ const Chat: React.FC<any> = () => {
       } else {
           setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id, id: Date.now() }]);
       }
-  }, []);
+  }, [state.userProfile]); // Re-run if profile loads late
 
   // 2. AI History Persistence
   useEffect(() => {
