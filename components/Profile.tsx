@@ -1,19 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, Save, X, Hash, MapPin, Edit2, Sparkles, Plus, BookOpen, PenTool, Activity } from './Icons';
+import { User, LogOut, Settings, Save, X, Hash, MapPin, Edit2, Sparkles, Plus, BookOpen, PenTool, Activity, CheckCircle } from './Icons';
 import { UserProfile } from '../types';
 import { useNeural } from './NeuralContext';
 import { generateSocialContent } from '../services/geminiService';
 import { showToast } from './Toast';
 
 interface ProfileProps {
-  user: UserProfile | null;
-  onLogout: () => void;
   onOpenSettings: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => {
-  const { updateState } = useNeural();
+const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
+  const { state, updateState } = useNeural();
   const [avatar, setAvatar] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
@@ -26,25 +24,26 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
   const [newHobby, setNewHobby] = useState('');
   const [newSkill, setNewSkill] = useState('');
 
+  // Initial Load from Global State
   useEffect(() => {
       const loadAvatar = () => setAvatar(localStorage.getItem('SNAPAURA_AVATAR'));
       loadAvatar();
       window.addEventListener('avatar-update', loadAvatar);
       
-      if (user) {
+      if (state.userProfile) {
           setFormData({
-              ...user,
-              username: user.username || user.email.split('@')[0],
-              bio: user.bio || "Digital Creator using SnapAura OS",
-              interests: user.interests || [],
-              hobbies: user.hobbies || [],
-              skills: user.skills || [],
-              location: user.location || 'Global'
+              ...state.userProfile,
+              username: state.userProfile.username || state.userProfile.email.split('@')[0],
+              bio: state.userProfile.bio || "Digital Creator using SnapAura OS",
+              interests: state.userProfile.interests || [],
+              hobbies: state.userProfile.hobbies || [],
+              skills: state.userProfile.skills || [],
+              location: state.userProfile.location || 'Global'
           });
       }
 
       return () => window.removeEventListener('avatar-update', loadAvatar);
-  }, [user]);
+  }, [state.userProfile]);
 
   const handleSave = () => {
       if (formData) {
@@ -52,7 +51,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
           localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(formData));
           if(formData.username) localStorage.setItem('SNAPAURA_USERNAME', formData.username);
           setIsEditing(false);
-          showToast("Profile Updated Successfully", "success");
+          showToast("Profile Saved!", "success");
       }
   };
 
@@ -80,13 +79,19 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
   };
 
   const addTag = (type: 'interests' | 'hobbies' | 'skills', value: string, setter: (v: string) => void) => {
-      if (value.trim() && formData) {
-          setFormData({
-              ...formData,
-              [type]: [...(formData[type] || []), value.trim()]
-          });
-          setter('');
-      }
+      if (!value.trim() || !formData) return;
+      
+      // Allow comma separated inputs
+      const newTags = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+      
+      setFormData(prev => {
+          if (!prev) return null;
+          const currentTags = prev[type] || [];
+          // Avoid duplicates
+          const updatedTags = [...currentTags, ...newTags.filter(t => !currentTags.includes(t))];
+          return { ...prev, [type]: updatedTags };
+      });
+      setter('');
   };
 
   const removeTag = (type: 'interests' | 'hobbies' | 'skills', tagToRemove: string) => {
@@ -98,7 +103,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
       }
   };
 
-  if (!formData) return null;
+  if (!formData) return <div className="p-8 text-center text-gray-500">Loading Profile...</div>;
 
   return (
     <div className="h-full overflow-y-auto hide-scrollbar bg-[#292d3e] relative pb-24">
@@ -244,50 +249,28 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
                                 </span>
                             ))}
                             {isEditing && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e212d] border border-dashed border-white/20 rounded-lg">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e212d] border border-dashed border-white/20 rounded-lg flex-1 min-w-[100px]">
                                     <Plus size={10} className="text-gray-500"/>
                                     <input 
                                         value={section.val}
                                         onChange={e => section.set(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && addTag(section.field as any, section.val, section.set)}
-                                        placeholder="Add..."
-                                        className="bg-transparent w-16 text-xs text-white outline-none placeholder-gray-600"
+                                        placeholder="Add tag (enter)"
+                                        className="bg-transparent w-full text-xs text-white outline-none placeholder-gray-600"
                                     />
+                                    <button onClick={() => addTag(section.field as any, section.val, section.set)} className="text-primary font-bold text-xs">
+                                        <CheckCircle size={12}/>
+                                    </button>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             ))}
-
-            {isEditing && (
-                <div className="space-y-3 animate-fade-in-up delay-500">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Details</h3>
-                    <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-3">
-                            <MapPin size={18} className="text-gray-500"/>
-                            <input 
-                                value={formData.location}
-                                onChange={e => setFormData({...formData, location: e.target.value})}
-                                placeholder="Location"
-                                className="flex-1 bg-transparent border-b border-white/10 py-2 text-sm text-white outline-none focus:border-primary"
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="pt-4">
-                <button onClick={onLogout} className="w-full p-4 rounded-xl flex items-center justify-between group hover:bg-red-500/5 transition-colors bg-[#292d3e] shadow-neu">
-                    <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-full bg-[#292d3e] shadow-neu-pressed flex items-center justify-center text-red-400"><LogOut size={16} /></div>
-                        <span className="text-sm font-bold text-gray-300 group-hover:text-red-400 transition-colors">Sign Out</span>
-                    </div>
-                </button>
-            </div>
         </div>
     </div>
   );
 };
 
 export default Profile;
+    

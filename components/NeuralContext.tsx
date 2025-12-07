@@ -30,9 +30,27 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const storedProfile = localStorage.getItem('SNAPAURA_PROFILE');
           const storedActions = localStorage.getItem('SNAPAURA_ACTIONS');
           
+          let profile = storedProfile ? JSON.parse(storedProfile) : null;
+          
+          // Create Default Local User if none exists
+          if (!profile) {
+              profile = {
+                  name: "Local User",
+                  email: "user@local.device",
+                  joinDate: new Date().toLocaleDateString(),
+                  stats: { edits: 0, generated: 0, chats: 0 },
+                  username: "user_" + Math.floor(Math.random() * 1000),
+                  bio: "Ready to create.",
+                  interests: [],
+                  hobbies: [],
+                  skills: []
+              };
+              localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(profile));
+          }
+
           setState(prev => ({
               ...prev,
-              userProfile: storedProfile ? JSON.parse(storedProfile) : null,
+              userProfile: profile,
               recentActions: storedActions ? JSON.parse(storedActions) : []
           }));
       } catch (e) {

@@ -13,13 +13,18 @@ const SocialGrowth: React.FC = () => {
     const [topic, setTopic] = useState('');
     const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'hashtag' | 'idea' | 'reply' | 'timing'>('hashtag');
+    const [activeTab, setActiveTab] = useState<'hashtag' | 'idea' | 'reply' | 'timing' | 'bio'>('hashtag');
 
     const handleGenerate = async () => {
         if(!topic) return;
         setLoading(true);
         try {
-            const res = await generateSocialContent(topic, activeTab, activeTab === 'reply' ? topic : undefined);
+            // Map 'bio' tab to 'reply' logic but with specific instruction handled by prompt generator if needed, 
+            // or just reuse 'reply' logic but treat topic as profile context.
+            const type = activeTab === 'bio' ? 'reply' : activeTab;
+            const context = activeTab === 'bio' ? "Professional yet creative social media bio" : (activeTab === 'reply' ? topic : undefined);
+            
+            const res = await generateSocialContent(topic, type, context);
             setResult(res);
         } catch(e) {
             showToast("Failed to generate", "error");
@@ -38,7 +43,7 @@ const SocialGrowth: React.FC = () => {
             return;
         }
         // Clean markdown and quotes
-        const bioText = result.replace(/[*#"`]/g, '').trim();
+        const bioText = result.split('||')[0].replace(/[*#"`]/g, '').trim();
         updateState({
             userProfile: {
                 ...state.userProfile,
@@ -105,7 +110,7 @@ const SocialGrowth: React.FC = () => {
                 />
 
                 {/* Automation Button for Reply/Bio context */}
-                {activeTab === 'reply' && (
+                {(activeTab === 'reply' || activeTab === 'bio') && (
                     <button 
                         onClick={handleSetAsBio}
                         className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-xs font-bold text-green-400 flex items-center justify-center gap-2 active:shadow-neu-pressed"
@@ -137,8 +142,11 @@ const SocialGrowth: React.FC = () => {
                     <button onClick={() => {setActiveTab('idea'); setResult('');}} className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1 transition-all ${activeTab === 'idea' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>
                         <Lightbulb size={18} /> <span className="text-[10px] font-bold">Ideas</span>
                     </button>
+                    <button onClick={() => {setActiveTab('bio'); setResult('');}} className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1 transition-all ${activeTab === 'bio' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>
+                        <User size={18} /> <span className="text-[10px] font-bold">Bio Generator</span>
+                    </button>
                     <button onClick={() => {setActiveTab('reply'); setResult('');}} className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1 transition-all ${activeTab === 'reply' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>
-                        <MessageSquare size={18} /> <span className="text-[10px] font-bold">Bio/Reply</span>
+                        <MessageSquare size={18} /> <span className="text-[10px] font-bold">Reply</span>
                     </button>
                     <button onClick={() => {setActiveTab('timing'); setResult('');}} className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1 transition-all ${activeTab === 'timing' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>
                         <Clock size={18} /> <span className="text-[10px] font-bold">Time</span>
@@ -149,7 +157,7 @@ const SocialGrowth: React.FC = () => {
                     <textarea 
                         value={topic}
                         onChange={e => setTopic(e.target.value)}
-                        placeholder={activeTab === 'reply' ? "Describe yourself for a Bio, or paste a comment..." : "Enter your Niche / Topic..."}
+                        placeholder={activeTab === 'bio' ? "Enter your interests, job, and vibe..." : activeTab === 'reply' ? "Paste the comment to reply to..." : "Enter your Niche / Topic..."}
                         className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-300 placeholder-gray-600 outline-none resize-none min-h-[120px] text-sm leading-relaxed"
                     />
                     
