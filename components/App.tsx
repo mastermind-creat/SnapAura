@@ -10,12 +10,12 @@ import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
 import Profile from './components/Profile';
-import { Tab, UserProfile } from './types';
+import { Tab } from './types';
 import { Smartphone, Download } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
-  const { activeTab, setActiveTab, updateState, state } = useNeural();
+  const { activeTab, setActiveTab, state } = useNeural();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Navbar Visibility State
@@ -49,7 +49,9 @@ const App: React.FC = () => {
   // Check for API Key on mount
   useEffect(() => {
     const checkApiKey = () => {
+      // 1. Check LocalStorage
       const localKey = localStorage.getItem('GEMINI_API_KEY');
+      // 2. Check Env (fallback, though in browser strictly rely on local or injected env)
       const envKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
 
       if ((!localKey || localKey.trim() === '') && (!envKey || envKey.trim() === '')) {
@@ -143,7 +145,6 @@ const App: React.FC = () => {
                     onOpenSettings={handleOpenSettings}
                     onUserClick={handleUserIconClick}
                     setActiveTab={setActiveTab}
-                    isAuthenticated={true}
                   />
                 )}
                 

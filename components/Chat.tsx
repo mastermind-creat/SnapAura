@@ -236,16 +236,19 @@ const Chat: React.FC<any> = () => {
   const processAiResponse = async (history: any[], lastMsg: string, persona: typeof activePersona, img?: string) => {
       setLoading(true);
       try {
+          // FIX: Exclude the very last message from history because sendChatMessage adds it again
+          const historyForApi = history.slice(0, -1).filter(m => m.role).map(m => ({ role: m.role, parts: [{ text: m.text }] }));
+          
           const res = await sendChatMessage(
-              history.filter(m => m.role).map(m => ({ role: m.role, parts: [{ text: m.text }] })), 
+              historyForApi, 
               lastMsg, 
               persona.prompt, 
               img, 
               state 
           );
           setMessages(prev => [...prev, { role: 'model', text: res, personaId: persona.id, id: Date.now() }]);
-      } catch (e) {
-          setMessages(prev => [...prev, { role: 'model', text: "Connection error.", personaId: persona.id, id: Date.now() }]);
+      } catch (e: any) {
+          setMessages(prev => [...prev, { role: 'model', text: e.message || "Connection error.", personaId: persona.id, id: Date.now() }]);
       } finally {
           setLoading(false);
       }

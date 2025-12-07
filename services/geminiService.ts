@@ -148,9 +148,11 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
         // Fix: Pass an object with 'message' property to satisfy ContentUnion
         const result = await chatSession.sendMessage({ message: { parts: messageParts } });
         return result.text;
-    } catch (e) {
+    } catch (e: any) {
         console.error("Chat Error", e);
-        return "I'm having trouble connecting right now. Try again?";
+        if (e.message?.includes('400')) return "I got confused by the conversation history. Try clearing the chat.";
+        if (e.message?.includes('429')) return "I'm overloaded right now. Give me a sec.";
+        return "I'm having trouble connecting right now. Check your internet or API Key.";
     }
 }
 
@@ -254,6 +256,8 @@ export const generateSocialContent = async (topic: string, type: string, context
     else if (type === 'idea') prompt = `3 viral ideas for "${topic}". Markdown.`;
     else if (type === 'reply') prompt = `3 replies to "${context}". Separated by ||.`;
     else if (type === 'timing') prompt = `Best posting times for "${topic}". Markdown.`;
+    else if (type === 'bio') prompt = `Generate a professional yet creative social media bio for: "${topic}". Include emojis. Max 150 chars. Return only the bio.`;
+    
     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-lite', contents: prompt });
     return response.text || "";
 };

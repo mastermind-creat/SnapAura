@@ -19,10 +19,9 @@ const SocialGrowth: React.FC = () => {
         if(!topic) return;
         setLoading(true);
         try {
-            // Map 'bio' tab to 'reply' logic but with specific instruction handled by prompt generator if needed, 
-            // or just reuse 'reply' logic but treat topic as profile context.
-            const type = activeTab === 'bio' ? 'reply' : activeTab;
-            const context = activeTab === 'bio' ? "Professional yet creative social media bio" : (activeTab === 'reply' ? topic : undefined);
+            // Map 'bio' tab to specific 'bio' type in service
+            const type = activeTab;
+            const context = activeTab === 'reply' ? topic : undefined;
             
             const res = await generateSocialContent(topic, type, context);
             setResult(res);

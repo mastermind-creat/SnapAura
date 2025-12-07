@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, Save, X, Hash, MapPin, Edit2, Sparkles, Plus, BookOpen, PenTool, Activity, CheckCircle } from './Icons';
+import { User, LogOut, Settings, Save, X, Hash, MapPin, Edit2, Sparkles, Plus, BookOpen, PenTool, Activity, CheckCircle, Trash2 } from './Icons';
 import { UserProfile } from '../types';
 import { useNeural } from './NeuralContext';
 import { generateSocialContent } from '../services/geminiService';
@@ -55,6 +55,14 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
       }
   };
 
+  const handleResetProfile = () => {
+      if(confirm("Clear all profile data? This action cannot be undone.")) {
+          localStorage.removeItem('SNAPAURA_PROFILE');
+          localStorage.removeItem('SNAPAURA_AVATAR');
+          window.location.reload();
+      }
+  };
+
   const handleGenerateBio = async () => {
       if (!formData) return;
       setIsGeneratingBio(true);
@@ -66,7 +74,8 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
           ].join(', ');
           
           const promptTopic = `A cool, aesthetic bio for a creator who likes: ${keywords}. Username: ${formData.username}`;
-          const bioRes = await generateSocialContent(promptTopic, 'reply', "Short, punchy bio"); 
+          // Use direct bio generation
+          const bioRes = await generateSocialContent(promptTopic, 'bio'); 
           const cleanBio = bioRes.split('||')[0].replace(/[*"]/g, '').trim();
           
           setFormData(prev => prev ? ({ ...prev, bio: cleanBio }) : null);
@@ -267,10 +276,17 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
                     </div>
                 </div>
             ))}
+
+            {isEditing && (
+                <div className="pt-8">
+                    <button onClick={handleResetProfile} className="w-full py-3 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500/10 flex items-center justify-center gap-2">
+                        <Trash2 size={14} /> Clear Profile Data (Danger Zone)
+                    </button>
+                </div>
+            )}
         </div>
     </div>
   );
 };
 
 export default Profile;
-    

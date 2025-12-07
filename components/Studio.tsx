@@ -14,7 +14,6 @@ interface StudioProps {
   onOpenSettings: () => void;
   onUserClick: () => void;
   setActiveTab: (tab: Tab) => void;
-  isAuthenticated: boolean;
 }
 
 // Global confetti
@@ -23,7 +22,7 @@ declare global { interface Window { confetti: any; } }
 type FilterType = 'none' | 'bw' | 'warm' | 'vivid' | 'cool';
 type CaptionStyle = 'modern' | 'neon' | 'polaroid' | 'bold';
 
-const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUserClick, setActiveTab, isAuthenticated }) => {
+const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUserClick, setActiveTab }) => {
   const { state, updateState, dispatchIntent } = useNeural(); // Unified State
   
   const fileInputRef = useRef<HTMLInputElement>(null);
