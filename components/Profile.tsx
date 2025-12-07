@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, Save, X, Hash, MapPin, Edit2, Sparkles, Plus, BookOpen, PenTool, Activity, CheckCircle, Trash2, Download, QrCode, Shield, Zap, LogIn } from './Icons';
+import { User, LogOut, Settings, Save, X, Hash, BookOpen, PenTool, Plus, CheckCircle, Trash2, Download, QrCode, Shield, LogIn, Wifi, CreditCard, Edit2, Activity, Sparkles } from './Icons';
 import { UserProfile } from '../types';
 import { useNeural } from './NeuralContext';
 import { generateSocialContent } from '../services/geminiService';
@@ -84,127 +84,133 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings, onLogin, onLogout }) 
   const downloadIdCard = async () => {
       if (!formData) return;
       setIsDownloading(true);
-      showToast("Generating Golden ID...", "info");
+      showToast("Minting Card...", "info");
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const W = 600;
-      const H = 360;
+      const W = 856; // Standard credit card ratio
+      const H = 540;
       canvas.width = W;
       canvas.height = H;
 
-      // 1. Background (Luxurious Dark)
+      // 1. Background (Matte Black Metal Texture)
       const grad = ctx.createLinearGradient(0, 0, W, H);
-      grad.addColorStop(0, '#1a1a1a');
-      grad.addColorStop(1, '#000000');
+      grad.addColorStop(0, '#1a1c29');
+      grad.addColorStop(1, '#0f0f11');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
 
-      // 2. Golden Accents (Borders)
-      const goldGrad = ctx.createLinearGradient(0, 0, W, 0);
-      goldGrad.addColorStop(0, '#BF953F');
-      goldGrad.addColorStop(0.3, '#FCF6BA'); // Shine
-      goldGrad.addColorStop(0.6, '#B38728');
-      goldGrad.addColorStop(1, '#FBF5B7');
-      
-      ctx.strokeStyle = goldGrad;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(20, 20, W-40, H-40); 
-      
-      // Corners
-      ctx.fillStyle = goldGrad;
-      const cornerSize = 50;
-      ctx.fillRect(20, 20, cornerSize, 6); 
-      ctx.fillRect(20, 20, 6, cornerSize);
-      ctx.fillRect(W-20-cornerSize, H-26, cornerSize, 6);
-      ctx.fillRect(W-26, H-20-cornerSize, 6, cornerSize);
+      // Noise texture simulation
+      for (let i = 0; i < 5000; i++) {
+          ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+          ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+      }
 
-      // 3. Avatar
+      // 2. Chip
+      const chipX = 120;
+      const chipY = 200;
+      // Gold gradient for chip
+      const goldGrad = ctx.createLinearGradient(chipX, chipY, chipX + 90, chipY + 70);
+      goldGrad.addColorStop(0, '#FCD34D');
+      goldGrad.addColorStop(1, '#B45309');
+      
+      ctx.fillStyle = goldGrad;
+      ctx.beginPath();
+      ctx.roundRect(chipX, chipY, 90, 70, 10);
+      ctx.fill();
+      
+      // Chip details
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(chipX + 15, chipY + 20, 60, 30);
+      ctx.moveTo(chipX, chipY + 35); ctx.lineTo(chipX + 25, chipY + 35);
+      ctx.moveTo(chipX + 90, chipY + 35); ctx.lineTo(chipX + 65, chipY + 35);
+      ctx.stroke();
+
+      // 3. Contactless Symbol
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(W - 80, 80, 10, -Math.PI/2, Math.PI/2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(W - 80, 80, 20, -Math.PI/2, Math.PI/2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(W - 80, 80, 30, -Math.PI/2, Math.PI/2);
+      ctx.stroke();
+
+      // 4. Bank Logo (SnapAura)
+      ctx.font = 'bold italic 36px "Inter", sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.fillText("SnapAura", W - 220, 80);
+      ctx.font = '12px "Inter", sans-serif';
+      ctx.fillStyle = '#00f3ff';
+      ctx.fillText("INFINITE MEMBER", W - 220, 100);
+
+      // 5. Card Number (Embossed Effect)
+      ctx.font = '36px "Courier New", monospace';
+      const cardNumber = `4242  9000  ${Date.now().toString().slice(0, 4)}  ${Date.now().toString().slice(-4)}`;
+      
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillText(cardNumber, 80, 340);
+      // Highlight
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(cardNumber, 78, 338);
+
+      // 6. Validity
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText("VALID THRU", 400, 380);
+      ctx.font = '18px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.fillText("12/30", 400, 405);
+
+      // 7. Card Holder Name (Embossed)
+      const name = formData.name.toUpperCase();
+      ctx.font = '28px "Courier New", monospace';
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillText(name, 80, 450);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(name, 78, 448);
+
+      // 8. Avatar (Holographic Sticker style)
       if (avatar) {
           const img = new Image();
           img.src = avatar;
           await new Promise(r => img.onload = r);
           
+          const avSize = 120;
+          const avX = W - 160;
+          const avY = H - 160;
+
           ctx.save();
           ctx.beginPath();
-          ctx.arc(100, 100, 55, 0, Math.PI * 2);
-          ctx.closePath();
+          ctx.roundRect(avX, avY, avSize, avSize, 10);
           ctx.clip();
-          ctx.drawImage(img, 45, 45, 110, 110);
+          ctx.filter = 'grayscale(100%) contrast(120%)';
+          ctx.drawImage(img, avX, avY, avSize, avSize);
           ctx.restore();
           
-          // Golden Ring
-          ctx.beginPath();
-          ctx.arc(100, 100, 58, 0, Math.PI * 2);
-          ctx.strokeStyle = goldGrad;
-          ctx.lineWidth = 4;
-          ctx.stroke();
+          // Holo overlay
+          const holo = ctx.createLinearGradient(avX, avY, avX + avSize, avY + avSize);
+          holo.addColorStop(0, 'rgba(0, 243, 255, 0.2)');
+          holo.addColorStop(0.5, 'rgba(255, 0, 153, 0.2)');
+          holo.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+          ctx.fillStyle = holo;
+          ctx.fillRect(avX, avY, avSize, avSize);
       }
-
-      // 4. Text Info
-      ctx.font = 'bold 32px "Courier New", monospace';
-      ctx.fillStyle = '#fff';
-      ctx.shadowColor = "rgba(255, 215, 0, 0.5)";
-      ctx.shadowBlur = 10;
-      ctx.fillText(formData.name.toUpperCase(), 180, 85);
-      ctx.shadowBlur = 0;
-
-      ctx.font = '22px "Courier New", monospace';
-      ctx.fillStyle = '#FCD34D'; // Amber-300
-      ctx.fillText(`@${formData.username}`, 180, 120);
-
-      ctx.font = '14px sans-serif';
-      ctx.fillStyle = '#ccc';
-      ctx.fillText(formData.bio?.substring(0, 55) + '...' || '', 180, 155);
-
-      // 5. Stats
-      const statY = 230;
-      ctx.fillStyle = '#111';
-      ctx.fillRect(40, statY, W-80, 70);
-      ctx.strokeStyle = '#333';
-      ctx.strokeRect(40, statY, W-80, 70);
-
-      const drawStat = (label: string, val: number, x: number) => {
-          ctx.font = 'bold 12px sans-serif';
-          ctx.fillStyle = '#888';
-          ctx.fillText(label, x, statY + 25);
-          
-          ctx.font = 'bold 30px monospace';
-          ctx.fillStyle = '#fff'; // White text
-          ctx.fillText(val.toString(), x, statY + 58);
-      };
-
-      drawStat('EDITS', formData.stats.edits, 80);
-      drawStat('GENERATED', formData.stats.generated, 250);
-      drawStat('CHATS', formData.stats.chats, 450);
-
-      // 6. QR Code Placeholder
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=snapaura:${formData.username}&color=ffd700&bgcolor=1a1a1a`;
-      const qrImg = new Image();
-      qrImg.crossOrigin = "Anonymous";
-      qrImg.src = qrUrl;
-      try {
-          await new Promise((r, j) => { qrImg.onload = r; qrImg.onerror = j; });
-          ctx.drawImage(qrImg, W - 110, 40, 70, 70);
-      } catch(e) {
-          ctx.fillStyle = '#FCD34D';
-          ctx.fillRect(W - 110, 40, 70, 70);
-      }
-
-      // 7. Footer
-      ctx.font = '10px sans-serif';
-      ctx.fillStyle = '#666';
-      ctx.fillText("SNAPAURA GOLD MEMBER • VERIFIED IDENTITY", 40, H-15);
 
       // Download
       const link = document.createElement('a');
-      link.download = `snapaura-gold-id-${formData.username}.png`;
+      link.download = `snapaura-card-${formData.username}.png`;
       link.href = canvas.toDataURL();
       link.click();
       setIsDownloading(false);
-      showToast("Golden ID Downloaded", "success");
+      showToast("Card Minted Successfully", "success");
   };
 
   const addTag = (type: 'interests' | 'hobbies' | 'skills', value: string, setter: (v: string) => void) => {
@@ -234,15 +240,15 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings, onLogin, onLogout }) 
     <div className="h-full overflow-y-auto hide-scrollbar bg-[#292d3e] relative pb-24">
         {/* Cinematic Header Background */}
         <div className="absolute top-0 left-0 right-0 h-80 bg-gradient-to-b from-[#0f0f11] via-[#1e212d] to-[#292d3e] z-0 overflow-hidden">
-            <div className="absolute top-[-50%] left-0 right-0 h-full bg-yellow-500/10 blur-[100px] rounded-full animate-pulse-slow"></div>
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(252,211,77,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(252,211,77,0.05)_1px,transparent_1px)] bg-[size:40px_40px] opacity-30 transform perspective-500 rotateX-60"></div>
+            <div className="absolute top-[-50%] left-0 right-0 h-full bg-blue-500/10 blur-[100px] rounded-full animate-pulse-slow"></div>
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] opacity-30 transform perspective-500 rotateX-60"></div>
         </div>
 
         <div className="relative z-10 p-6 space-y-6">
             {/* Toolbar */}
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-black text-gray-200 tracking-tight flex items-center gap-2">
-                    <Shield size={24} className="text-yellow-400"/> Identity Core
+                    <Shield size={24} className="text-blue-400"/> Identity Core
                 </h1>
                 <div className="flex gap-3">
                     {/* Action Bar */}
@@ -273,52 +279,60 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings, onLogin, onLogout }) 
                 </div>
             </div>
 
-            {/* GOLDEN FUTURISTIC ID CARD */}
-            <div className="relative w-full aspect-[1.7/1] rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(252,211,77,0.15)] group animate-fade-in-up border border-yellow-500/20 bg-[#1e212d]">
-                {/* Card Background */}
-                <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_50%,rgba(30,33,45,1)_0%,rgba(10,10,12,1)_100%)]"></div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
-                
-                {/* Golden Border */}
-                <div className="absolute inset-4 border-2 border-yellow-500/30 rounded-2xl z-10 flex flex-col justify-between p-4">
+            {/* FUTURISTIC CREDIT CARD ID */}
+            <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl group animate-fade-in-up border border-white/10 bg-[#1a1c29]">
+                {/* Matte Texture & Lighting */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#2a2d3d] to-[#0f0f11]"></div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/20 blur-3xl rounded-full"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
+
+                {/* Card Content */}
+                <div className="absolute inset-6 flex flex-col justify-between z-10">
+                    {/* Top Row: Chip & NFC */}
                     <div className="flex justify-between items-start">
-                        <div className="flex gap-4 items-center">
-                            {/* Avatar with Golden Ring */}
-                            <div className="relative">
-                                <div className="absolute -inset-1 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full animate-spin-slow blur-sm opacity-70"></div>
-                                <div className="w-16 h-16 rounded-full border-2 border-[#1e212d] relative z-10 overflow-hidden bg-black">
-                                    {avatar ? (
-                                        <img src={avatar} className="w-full h-full object-cover" alt="Profile" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-500"><User size={24}/></div>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-widest">{formData.name.toUpperCase()}</h2>
-                                <p className="text-[10px] text-yellow-400 font-mono tracking-widest">@{formData.username}</p>
-                            </div>
+                        <div className="w-14 h-10 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-lg shadow-sm border border-yellow-700/50 flex items-center justify-center relative overflow-hidden">
+                            {/* Chip Lines */}
+                            <div className="absolute inset-0 border border-black/20 m-2 rounded"></div>
+                            <div className="w-full h-[1px] bg-black/20 absolute top-1/2"></div>
+                            <div className="h-full w-[1px] bg-black/20 absolute left-1/3"></div>
+                            <div className="h-full w-[1px] bg-black/20 absolute right-1/3"></div>
                         </div>
-                        <QrCode className="text-yellow-500/30" size={40} />
+                        <div className="flex flex-col items-end">
+                            <Wifi className="text-gray-400/50 rotate-90" size={24} />
+                            <span className="text-white font-black italic tracking-tighter text-lg mt-1">SnapAura</span>
+                        </div>
                     </div>
 
-                    <div className="flex justify-between items-end">
-                        <div className="space-y-1">
-                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Clearance Level</p>
-                            <div className="flex items-center gap-1 text-yellow-400 font-mono text-xs">
-                                <Shield size={10} fill="currentColor"/> GOLD MEMBER
-                            </div>
+                    {/* Middle: Number */}
+                    <div className="mt-4">
+                        <div className="flex items-center gap-4">
+                            <span className="font-mono text-2xl text-gray-300 tracking-widest drop-shadow-md" style={{textShadow: '1px 1px 0 rgba(0,0,0,0.8)'}}>
+                                4242 9000 {Date.now().toString().slice(0,4)} {Date.now().toString().slice(-4)}
+                            </span>
                         </div>
-                        <div className="text-right">
-                            <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">ID Hash</p>
-                            <p className="text-[10px] text-gray-400 font-mono">#{Date.now().toString().slice(-6)}</p>
+                        <div className="flex items-center gap-2 mt-2 ml-1">
+                            <span className="text-[8px] text-gray-500 uppercase font-bold">Valid<br/>Thru</span>
+                            <span className="font-mono text-sm text-gray-300">12/30</span>
+                        </div>
+                    </div>
+
+                    {/* Bottom: Name & Avatar */}
+                    <div className="flex justify-between items-end">
+                        <div className="font-mono text-lg text-gray-300 uppercase tracking-widest drop-shadow-md" style={{textShadow: '1px 1px 0 rgba(0,0,0,0.8)'}}>
+                            {formData.name}
+                        </div>
+                        <div className="w-12 h-12 rounded-lg bg-black/50 border border-white/10 overflow-hidden shadow-inner relative">
+                             {avatar ? (
+                                 <img src={avatar} className="w-full h-full object-cover grayscale opacity-80" alt="Chip" />
+                             ) : (
+                                 <User className="text-gray-600 m-auto mt-2" size={24}/>
+                             )}
+                             {/* Hologram Overlay */}
+                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent animate-shimmer"></div>
                         </div>
                     </div>
                 </div>
-
-                {/* Golden Sheen Animation */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-200/10 to-transparent w-full h-full animate-shimmer pointer-events-none z-20" style={{backgroundSize: '200% 100%'}}></div>
             </div>
 
             {/* Actions Row */}
@@ -326,9 +340,9 @@ const Profile: React.FC<ProfileProps> = ({ onOpenSettings, onLogin, onLogout }) 
                 <button 
                     onClick={downloadIdCard} 
                     disabled={isDownloading}
-                    className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-yellow-400 font-bold text-xs flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all hover:text-yellow-300"
+                    className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-blue-400 font-bold text-xs flex items-center justify-center gap-2 active:shadow-neu-pressed transition-all hover:text-blue-300"
                 >
-                    {isDownloading ? <Activity className="animate-spin"/> : <Download size={16} />} Save ID Card
+                    {isDownloading ? <Activity className="animate-spin"/> : <CreditCard size={16} />} Mint Card to Photos
                 </button>
             </div>
 

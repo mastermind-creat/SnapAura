@@ -22,13 +22,15 @@ const App: React.FC = () => {
   // Navbar Visibility State
   const [isNavVisible, setIsNavVisible] = useState(true);
 
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   // Modal States
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isKeyRequired, setIsKeyRequired] = useState(false);
-  
-  // Auth State
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -103,31 +105,21 @@ const App: React.FC = () => {
   };
 
   const handleUserIconClick = () => {
+      // Unconditionally open profile, bypassing auth modal check
       setActiveTab(Tab.PROFILE);
   };
 
-  const handleLoginSuccess = (userData: UserProfile) => {
-      updateState({ userProfile: userData });
-      localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(userData));
+  const handleLogin = (userData: UserProfile) => {
+      setUser(userData);
+      setIsAuthenticated(true);
       setShowAuthModal(false);
   };
 
   const handleLogout = () => {
-      const guestProfile = {
-          name: "Guest User",
-          email: "guest@local",
-          joinDate: new Date().toLocaleDateString(),
-          stats: { edits: 0, generated: 0, chats: 0 },
-          username: "guest",
-          bio: "Ready to create.",
-          interests: [],
-          hobbies: [],
-          skills: []
-      };
-      updateState({ userProfile: guestProfile });
-      localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(guestProfile));
-      localStorage.removeItem('SNAPAURA_AVATAR');
-      window.location.reload();
+      setUser(null);
+      setIsAuthenticated(false);
+      setActiveTab(Tab.HOME);
+      setShowSettingsModal(false);
   };
 
   return (
@@ -163,11 +155,11 @@ const App: React.FC = () => {
         canClose={!isKeyRequired} 
       />
 
-      {/* Auth Modal */}
+      {/* Auth Modal (Overlay) */}
       {showAuthModal && (
           <Auth 
-            onLogin={handleLoginSuccess}
-            onClose={() => setShowAuthModal(false)}
+            onLogin={handleLogin} 
+            onClose={() => setShowAuthModal(false)} 
           />
       )}
 
@@ -206,9 +198,9 @@ const App: React.FC = () => {
 
                 {activeTab === Tab.PROFILE && (
                     <Profile 
-                        onOpenSettings={handleOpenSettings}
                         onLogin={() => setShowAuthModal(true)}
                         onLogout={handleLogout}
+                        onOpenSettings={handleOpenSettings}
                     />
                 )}
             </>
