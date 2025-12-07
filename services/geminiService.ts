@@ -104,7 +104,8 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
     const systemPrompt = PromptEngine.getChatSystemInstruction(personaPrompt) + 
                          (globalContext?.activeAnalysis ? `\n[CONTEXT]: User is looking at an image analyzed as: ${JSON.stringify(globalContext.activeAnalysis).slice(0,300)}` : '');
 
-    const model = (imageAttachment || globalContext?.activeImage) ? 'gemini-2.5-flash' : 'gemini-2.5-flash-lite';
+    // Use standard Flash model for best reliability with chat sessions
+    const model = 'gemini-2.5-flash';
 
     const chatSession = ai.chats.create({ 
         model: model, 
@@ -112,30 +113,40 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
         config: { systemInstruction: systemPrompt } 
     });
 
-    let messageParts: any[] = [{ text: newMessage }];
-    
-    if (imageAttachment) {
-        const { mimeType, data } = processBase64Image(imageAttachment);
-        messageParts = [{ inlineData: { mimeType, data } }, { text: newMessage || "Analyze this." }];
-    } else if (globalContext?.activeImage && !history.length) {
-        const { mimeType, data } = processBase64Image(globalContext.activeImage);
-        messageParts = [{ inlineData: { mimeType, data } }, { text: `[Context Image attached] ${newMessage}` }];
-    }
-
     try {
-        // Correctly format message for SDK compatibility
-        const result = await chatSession.sendMessage({ parts: messageParts }); 
-        // Note: SDK v1.x usually takes { parts: ... } inside sendMessage if using chatSession
-        // If that fails, try passing messageParts directly: await chatSession.sendMessage(messageParts);
+        let result;
+        if (imageAttachment) {
+            const { mimeType, data } = processBase64Image(imageAttachment);
+            const messageParts = [
+                { inlineData: { mimeType, data } }, 
+                { text: newMessage || "Analyze this." }
+            ];
+            // Fix: Use named parameter 'message' for strict SDK compliance
+            result = await chatSession.sendMessage({ message: messageParts });
+        } else if (globalContext?.activeImage && !history.length) {
+            // First message context injection
+            const { mimeType, data } = processBase64Image(globalContext.activeImage);
+            const messageParts = [
+                { inlineData: { mimeType, data } }, 
+                { text: `[Context Image attached] ${newMessage}` }
+            ];
+            // Fix: Use named parameter 'message'
+            result = await chatSession.sendMessage({ message: messageParts });
+        } else {
+            // Text only
+            // Fix: Use named parameter 'message'
+            result = await chatSession.sendMessage({ message: newMessage });
+        }
+        
         return result.text;
     } catch (e: any) {
-        // Retry with direct array if object wrapper fails (ContentUnion fix)
+        console.error("Chat Error Details:", e);
+        // Fallback retry
         try {
-             // @ts-ignore
-             const result = await chatSession.sendMessage(messageParts);
+             // Fix: Use named parameter 'message' in retry too
+             const result = await chatSession.sendMessage({ message: newMessage }); 
              return result.text;
         } catch (retryError) {
-             console.error("Chat Error", retryError);
              return "I'm having trouble connecting right now. Try refreshing.";
         }
     }
