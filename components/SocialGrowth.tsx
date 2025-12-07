@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { TrendingUp, Hash, Clock, MessageSquare, RefreshCw, Copy, Lightbulb, FileText } from './Icons';
+import { TrendingUp, Hash, Clock, MessageSquare, RefreshCw, Copy, Lightbulb, FileText, User } from './Icons';
 import { generateSocialContent } from '../services/geminiService';
 import { showToast } from './Toast';
 import { useNeural } from './NeuralContext';
@@ -9,7 +9,7 @@ import { useNeural } from './NeuralContext';
 declare const marked: any;
 
 const SocialGrowth: React.FC = () => {
-    const { dispatchIntent } = useNeural();
+    const { dispatchIntent, updateState, state } = useNeural();
     const [topic, setTopic] = useState('');
     const [result, setResult] = useState('');
     const [loading, setLoading] = useState(false);
@@ -30,6 +30,22 @@ const SocialGrowth: React.FC = () => {
 
     const handleSaveToNotes = (content: string, type: string) => {
         dispatchIntent({ type: 'SEND_TO_NOTES', payload: { text: content, title: `${type} for ${topic}` } });
+    };
+
+    const handleSetAsBio = () => {
+        if (!state.userProfile) {
+            showToast("Log in to set profile bio", "error");
+            return;
+        }
+        // Clean markdown and quotes
+        const bioText = result.replace(/[*#"`]/g, '').trim();
+        updateState({
+            userProfile: {
+                ...state.userProfile,
+                bio: bioText
+            }
+        });
+        showToast("Profile Bio Updated!", "success");
     };
 
     const renderResult = () => {
@@ -57,32 +73,7 @@ const SocialGrowth: React.FC = () => {
                         >
                             <Copy size={16} /> Copy All
                         </button>
-                        <button 
-                            onClick={() => handleSaveToNotes(result, 'Hashtags')}
-                            className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-sm font-bold text-yellow-400 active:shadow-neu-pressed transition-all flex items-center justify-center gap-2"
-                        >
-                            <FileText size={16} /> Save
-                        </button>
                     </div>
-                </div>
-            );
-        }
-
-        if (activeTab === 'reply') {
-            const replies = result.split('||').filter(r => r.trim().length > 0);
-            return (
-                <div className="space-y-4">
-                    {replies.map((reply, i) => (
-                        <div key={i} className="bg-[#292d3e] shadow-neu p-5 rounded-2xl relative group">
-                            <p className="text-sm text-gray-300 leading-relaxed pr-8">"{reply.trim()}"</p>
-                            <button 
-                                onClick={() => {navigator.clipboard.writeText(reply.trim()); showToast("Copied reply", "success")}}
-                                className="absolute top-4 right-4 p-2 bg-[#292d3e] shadow-neu active:shadow-neu-pressed rounded-lg text-gray-400 hover:text-white transition-all"
-                            >
-                                <Copy size={14} />
-                            </button>
-                        </div>
-                    ))}
                 </div>
             );
         }
@@ -109,9 +100,19 @@ const SocialGrowth: React.FC = () => {
                 </div>
                 
                 <div 
-                    className="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed"
+                    className="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed mb-4"
                     dangerouslySetInnerHTML={{ __html: htmlContent }}
                 />
+
+                {/* Automation Button for Reply/Bio context */}
+                {activeTab === 'reply' && (
+                    <button 
+                        onClick={handleSetAsBio}
+                        className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-xs font-bold text-green-400 flex items-center justify-center gap-2 active:shadow-neu-pressed"
+                    >
+                        <User size={14} /> Set as Profile Bio
+                    </button>
+                )}
             </div>
         );
     };
@@ -137,7 +138,7 @@ const SocialGrowth: React.FC = () => {
                         <Lightbulb size={18} /> <span className="text-[10px] font-bold">Ideas</span>
                     </button>
                     <button onClick={() => {setActiveTab('reply'); setResult('');}} className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1 transition-all ${activeTab === 'reply' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>
-                        <MessageSquare size={18} /> <span className="text-[10px] font-bold">Reply</span>
+                        <MessageSquare size={18} /> <span className="text-[10px] font-bold">Bio/Reply</span>
                     </button>
                     <button onClick={() => {setActiveTab('timing'); setResult('');}} className={`flex-1 py-3 px-2 rounded-xl flex flex-col items-center gap-1 transition-all ${activeTab === 'timing' ? 'bg-[#292d3e] text-blue-400 shadow-neu' : 'text-gray-500'}`}>
                         <Clock size={18} /> <span className="text-[10px] font-bold">Time</span>
@@ -148,7 +149,7 @@ const SocialGrowth: React.FC = () => {
                     <textarea 
                         value={topic}
                         onChange={e => setTopic(e.target.value)}
-                        placeholder={activeTab === 'reply' ? "Paste the comment to reply to..." : "Enter your Niche / Topic (e.g. Travel, Tech)..."}
+                        placeholder={activeTab === 'reply' ? "Describe yourself for a Bio, or paste a comment..." : "Enter your Niche / Topic..."}
                         className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-300 placeholder-gray-600 outline-none resize-none min-h-[120px] text-sm leading-relaxed"
                     />
                     

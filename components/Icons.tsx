@@ -118,7 +118,8 @@ import {
   Power,
   Server,
   Edit2,
-  MapPin
+  MapPin,
+  PenTool
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -253,5 +254,6 @@ export {
   Power,
   Server,
   Edit2,
-  MapPin
+  MapPin,
+  PenTool
 };

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Settings, Camera, ImageIcon, MessageCircle, Star, ShieldCheck, Zap, Activity, Edit2, Save, X, Hash, MapPin, Globe, Sparkles, Plus } from './Icons';
+import React, { useState, useEffect } from 'react';
+import { User, LogOut, Settings, Save, X, Hash, MapPin, Edit2, Sparkles, Plus, BookOpen, PenTool, Activity } from './Icons';
 import { UserProfile } from '../types';
 import { useNeural } from './NeuralContext';
 import { generateSocialContent } from '../services/geminiService';
@@ -20,7 +20,11 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
 
   // Form State
   const [formData, setFormData] = useState<UserProfile | null>(null);
-  const [newTag, setNewTag] = useState('');
+  
+  // Tag Inputs
+  const [newInterest, setNewInterest] = useState('');
+  const [newHobby, setNewHobby] = useState('');
+  const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
       const loadAvatar = () => setAvatar(localStorage.getItem('SNAPAURA_AVATAR'));
@@ -32,7 +36,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
               ...user,
               username: user.username || user.email.split('@')[0],
               bio: user.bio || "Digital Creator using SnapAura OS",
-              interests: user.interests || ['Photography', 'AI Art'],
+              interests: user.interests || [],
+              hobbies: user.hobbies || [],
+              skills: user.skills || [],
               location: user.location || 'Global'
           });
       }
@@ -44,9 +50,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
       if (formData) {
           updateState({ userProfile: formData });
           localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(formData));
-          // Also sync username specifically for P2P backward compatibility
           if(formData.username) localStorage.setItem('SNAPAURA_USERNAME', formData.username);
-          
           setIsEditing(false);
           showToast("Profile Updated Successfully", "success");
       }
@@ -56,17 +60,14 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
       if (!formData) return;
       setIsGeneratingBio(true);
       try {
-          // Use the keywords to generate a bio
-          const keywords = [...(formData.interests || []), formData.username].join(', ');
-          const promptTopic = `A cool, aesthetic bio for a creator interested in: ${keywords}`;
-          const res = await generateSocialContent(promptTopic, 'idea'); 
-          // Note: utilizing the 'idea' type returns structured markdown, let's use a simpler prompt specifically for bio
-          // Or better, let's assume generateSocialContent is flexible enough or we parse it.
-          // Actually, let's use the explicit generateSocialBio tool we made earlier if available, or just reuse social content.
-          // Let's use a direct call for best results:
-          const bioRes = await generateSocialContent(promptTopic, 'reply', "Short, punchy bio"); 
+          const keywords = [
+              ...(formData.interests || []), 
+              ...(formData.hobbies || []),
+              ...(formData.skills || [])
+          ].join(', ');
           
-          // Clean up result (sometimes it gives multiple options separated by ||)
+          const promptTopic = `A cool, aesthetic bio for a creator who likes: ${keywords}. Username: ${formData.username}`;
+          const bioRes = await generateSocialContent(promptTopic, 'reply', "Short, punchy bio"); 
           const cleanBio = bioRes.split('||')[0].replace(/[*"]/g, '').trim();
           
           setFormData(prev => prev ? ({ ...prev, bio: cleanBio }) : null);
@@ -78,21 +79,21 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
       }
   };
 
-  const addTag = () => {
-      if (newTag.trim() && formData) {
+  const addTag = (type: 'interests' | 'hobbies' | 'skills', value: string, setter: (v: string) => void) => {
+      if (value.trim() && formData) {
           setFormData({
               ...formData,
-              interests: [...(formData.interests || []), newTag.trim()]
+              [type]: [...(formData[type] || []), value.trim()]
           });
-          setNewTag('');
+          setter('');
       }
   };
 
-  const removeTag = (tagToRemove: string) => {
+  const removeTag = (type: 'interests' | 'hobbies' | 'skills', tagToRemove: string) => {
       if (formData) {
           setFormData({
               ...formData,
-              interests: (formData.interests || []).filter(t => t !== tagToRemove)
+              [type]: (formData[type] || []).filter(t => t !== tagToRemove)
           });
       }
   };
@@ -146,29 +147,22 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
                                 <div className="w-full h-full flex items-center justify-center text-gray-500"><User size={32}/></div>
                             )}
                         </div>
-                        {!isEditing && (
-                            <div className="absolute bottom-0 right-0 bg-green-500 w-6 h-6 rounded-full border-4 border-[#292d3e] z-20" title="Online"></div>
-                        )}
                     </div>
 
                     {isEditing ? (
                         <div className="w-full space-y-4 animate-fade-in-up">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Display Name</label>
-                                <input 
-                                    value={formData.name} 
-                                    onChange={e => setFormData({...formData, name: e.target.value})}
-                                    className="w-full bg-[#1e212d] border border-white/10 rounded-xl px-4 py-2 text-center text-white font-bold outline-none focus:border-primary/50"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Username (@)</label>
-                                <input 
-                                    value={formData.username} 
-                                    onChange={e => setFormData({...formData, username: e.target.value})}
-                                    className="w-full bg-[#1e212d] border border-white/10 rounded-xl px-4 py-2 text-center text-blue-400 font-mono text-sm outline-none focus:border-blue-400/50"
-                                />
-                            </div>
+                            <input 
+                                value={formData.name} 
+                                onChange={e => setFormData({...formData, name: e.target.value})}
+                                placeholder="Display Name"
+                                className="w-full bg-[#1e212d] border border-white/10 rounded-xl px-4 py-2 text-center text-white font-bold outline-none focus:border-primary/50"
+                            />
+                            <input 
+                                value={formData.username} 
+                                onChange={e => setFormData({...formData, username: e.target.value})}
+                                placeholder="Username"
+                                className="w-full bg-[#1e212d] border border-white/10 rounded-xl px-4 py-2 text-center text-blue-400 font-mono text-sm outline-none focus:border-blue-400/50"
+                            />
                         </div>
                     ) : (
                         <>
@@ -215,19 +209,12 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
                 </div>
                 
                 {isEditing ? (
-                    <div className="relative">
-                        <textarea 
-                            value={formData.bio}
-                            onChange={e => setFormData({...formData, bio: e.target.value})}
-                            className="w-full bg-[#292d3e] shadow-neu-pressed rounded-2xl p-4 text-sm text-gray-300 outline-none resize-none min-h-[100px] border border-transparent focus:border-white/5 transition-all"
-                            placeholder="Tell us about yourself..."
-                        />
-                        {isGeneratingBio && (
-                            <div className="absolute inset-0 bg-[#292d3e]/80 backdrop-blur-sm flex items-center justify-center rounded-2xl">
-                                <span className="text-xs font-bold text-primary animate-pulse">Consulting Neural Core...</span>
-                            </div>
-                        )}
-                    </div>
+                    <textarea 
+                        value={formData.bio}
+                        onChange={e => setFormData({...formData, bio: e.target.value})}
+                        className="w-full bg-[#292d3e] shadow-neu-pressed rounded-2xl p-4 text-sm text-gray-300 outline-none resize-none min-h-[100px] border border-transparent focus:border-white/5 transition-all"
+                        placeholder="Tell us about yourself..."
+                    />
                 ) : (
                     <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl">
                         <p className="text-sm text-gray-300 leading-relaxed font-medium">"{formData.bio}"</p>
@@ -235,42 +222,46 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
                 )}
             </div>
 
-            {/* Interests Section */}
-            <div className="space-y-3 animate-fade-in-up delay-200">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Interests & Vibe</h3>
-                
-                <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl min-h-[80px]">
-                    <div className="flex flex-wrap gap-2">
-                        {formData.interests?.map((tag, i) => (
-                            <span key={i} className="px-3 py-1.5 bg-[#1e212d] border border-white/5 rounded-lg text-xs font-bold text-gray-300 flex items-center gap-2 group">
-                                <Hash size={10} className="text-gray-500"/> {tag}
-                                {isEditing && (
-                                    <button onClick={() => removeTag(tag)} className="text-gray-500 hover:text-red-400">
-                                        <X size={12}/>
-                                    </button>
-                                )}
-                            </span>
-                        ))}
-                        
-                        {isEditing && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e212d] border border-dashed border-white/20 rounded-lg">
-                                <Plus size={12} className="text-gray-500"/>
-                                <input 
-                                    value={newTag}
-                                    onChange={e => setNewTag(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && addTag()}
-                                    placeholder="Add tag..."
-                                    className="bg-transparent w-20 text-xs text-white outline-none placeholder-gray-600"
-                                />
-                            </div>
-                        )}
+            {/* Tags Sections Helper */}
+            {[{ title: 'Interests', field: 'interests', val: newInterest, set: setNewInterest, icon: Hash },
+              { title: 'Hobbies', field: 'hobbies', val: newHobby, set: setNewHobby, icon: BookOpen },
+              { title: 'Skills', field: 'skills', val: newSkill, set: setNewSkill, icon: PenTool }]
+              .map((section, idx) => (
+                <div key={section.title} className="space-y-3 animate-fade-in-up" style={{ animationDelay: `${(idx + 2) * 100}ms` }}>
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1 flex items-center gap-2">
+                        <section.icon size={12}/> {section.title}
+                    </h3>
+                    <div className="bg-[#292d3e] shadow-neu p-5 rounded-2xl min-h-[60px]">
+                        <div className="flex flex-wrap gap-2">
+                            {(formData[section.field as keyof UserProfile] as string[])?.map((tag, i) => (
+                                <span key={i} className="px-3 py-1.5 bg-[#1e212d] border border-white/5 rounded-lg text-xs font-bold text-gray-300 flex items-center gap-2 group">
+                                    {tag}
+                                    {isEditing && (
+                                        <button onClick={() => removeTag(section.field as any, tag)} className="text-gray-500 hover:text-red-400">
+                                            <X size={10}/>
+                                        </button>
+                                    )}
+                                </span>
+                            ))}
+                            {isEditing && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e212d] border border-dashed border-white/20 rounded-lg">
+                                    <Plus size={10} className="text-gray-500"/>
+                                    <input 
+                                        value={section.val}
+                                        onChange={e => section.set(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && addTag(section.field as any, section.val, section.set)}
+                                        placeholder="Add..."
+                                        className="bg-transparent w-16 text-xs text-white outline-none placeholder-gray-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            ))}
 
-            {/* Additional Info (Location, etc) */}
             {isEditing && (
-                <div className="space-y-3 animate-fade-in-up delay-300">
+                <div className="space-y-3 animate-fade-in-up delay-500">
                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Details</h3>
                     <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl space-y-4">
                         <div className="flex items-center gap-3">
@@ -278,7 +269,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
                             <input 
                                 value={formData.location}
                                 onChange={e => setFormData({...formData, location: e.target.value})}
-                                placeholder="Location (City, Country)"
+                                placeholder="Location"
                                 className="flex-1 bg-transparent border-b border-white/10 py-2 text-sm text-white outline-none focus:border-primary"
                             />
                         </div>
@@ -286,16 +277,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onLogout, onOpenSettings }) => 
                 </div>
             )}
 
-            {/* Menu Actions */}
-            <div className="space-y-2 pt-4">
-                <button className="w-full p-4 rounded-xl flex items-center justify-between group hover:bg-[#1e212d] transition-colors bg-[#292d3e] shadow-neu">
-                    <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-full bg-[#292d3e] shadow-neu-pressed flex items-center justify-center text-yellow-400"><Star size={16} /></div>
-                        <span className="text-sm font-bold text-gray-300">Subscription Plan</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-500 bg-[#1e212d] px-2 py-1 rounded">FREE TIER</span>
-                </button>
-                
+            <div className="pt-4">
                 <button onClick={onLogout} className="w-full p-4 rounded-xl flex items-center justify-between group hover:bg-red-500/5 transition-colors bg-[#292d3e] shadow-neu">
                     <div className="flex items-center gap-4">
                         <div className="w-8 h-8 rounded-full bg-[#292d3e] shadow-neu-pressed flex items-center justify-center text-red-400"><LogOut size={16} /></div>

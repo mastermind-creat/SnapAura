@@ -7,6 +7,7 @@ interface NeuralContextType {
   state: GlobalContextState;
   dispatchIntent: (intent: AppIntent) => void;
   updateState: (updates: Partial<GlobalContextState>) => void;
+  incrementStat: (type: 'edits' | 'generated' | 'chats') => void;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
 }
@@ -54,6 +55,21 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setState(prev => ({ ...prev, ...updates }));
   };
 
+  // Helper to increment stats and auto-save
+  const incrementStat = (type: 'edits' | 'generated' | 'chats') => {
+      setState(prev => {
+          if (!prev.userProfile) return prev;
+          const updatedProfile = {
+              ...prev.userProfile,
+              stats: {
+                  ...prev.userProfile.stats,
+                  [type]: (prev.userProfile.stats[type] || 0) + 1
+              }
+          };
+          return { ...prev, userProfile: updatedProfile };
+      });
+  };
+
   // THE INTENT ENGINE: Routes actions between tools
   const dispatchIntent = (intent: AppIntent) => {
     console.log("Processing Intent:", intent.type);
@@ -63,15 +79,13 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     switch (intent.type) {
       case 'ANALYZE_IMAGE':
-        // Handled locally in Studio, but updates state
         updateState({ activeImage: intent.payload });
         break;
 
       case 'SEND_TO_CHAT':
         if (intent.payload.image) updateState({ activeImage: intent.payload.image });
-        // Switch to Chat Tab
+        incrementStat('chats'); 
         setActiveTab(Tab.CHAT);
-        // Dispatch event for Chat component to pick up
         setTimeout(() => {
             window.dispatchEvent(new CustomEvent('neural-chat-intent', { detail: intent.payload }));
         }, 100);
@@ -80,7 +94,6 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       case 'SEND_TO_NOTES':
         setActiveTab(Tab.TOOLKIT);
-        // Use local storage as a bridge to pass data to the decoupled component
         localStorage.setItem('NEURAL_NOTE_DRAFT', JSON.stringify(intent.payload));
         window.dispatchEvent(new CustomEvent('neural-tool-select', { detail: 'notes' }));
         showToast("Draft created in Smart Notes", "success");
@@ -93,20 +106,18 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         break;
         
       case 'SMART_EDIT':
-        // Auto-switch to Editor with the image
         updateState({ activeImage: intent.payload.image });
         setActiveTab(Tab.EDIT);
         showToast("Opened in Editor", "success");
         break;
         
       case 'GENERATE_CAPTION':
-        // Internal logic
         break;
     }
   };
 
   return (
-    <NeuralContext.Provider value={{ state, dispatchIntent, updateState, activeTab, setActiveTab }}>
+    <NeuralContext.Provider value={{ state, dispatchIntent, updateState, incrementStat, activeTab, setActiveTab }}>
       {children}
     </NeuralContext.Provider>
   );
