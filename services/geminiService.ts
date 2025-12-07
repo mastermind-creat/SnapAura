@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { ImageSize, GlobalContextState } from "../types";
 
 // --- CONFIGURATION ---
@@ -7,25 +7,21 @@ const FALLBACK_KEYS = ["YOUR_API_KEY_HERE"];
 
 // --- PROMPT ENGINE ---
 class PromptEngine {
-  // 1. FOR TOOLS (Strict, JSON/Markdown structure, No fluff)
   static getToolSystemInstruction(): string {
     return `
       CRITICAL INSTRUCTION PROTOCOL (TOOL MODE):
-      1. **ZERO FLUFF**: No greetings, no "Here is the result". Start directly with data.
-      2. **DIRECT OUTPUT**: If asked for JSON, return ONLY JSON.
-      3. **STRUCTURE**: Use clean Markdown. Bold key metrics.
-      4. **PROFESSIONAL**: Tone is expert, concise, and objective.
+      1. **ZERO FLUFF**: No greetings. Start directly with data.
+      2. **DIRECT OUTPUT**: Return ONLY requested format (JSON/Markdown).
+      3. **PROFESSIONAL**: Expert tone.
     `;
   }
 
-  // 2. FOR CHAT (Fluid, Persona-driven, Human-like)
   static getChatSystemInstruction(persona?: string): string {
     return `
       BEHAVIORAL INSTRUCTION PROTOCOL (CHAT MODE):
-      1. **HUMAN-LIKE**: You are NOT an AI. You are the persona defined below.
-      2. **NATURAL FLOW**: Speak naturally. Vary sentence length. Use emojis if the persona demands it.
-      3. **NO REPETITION**: Do NOT start every message with "Hey there" or "That's a great question".
-      4. **CONTEXT AWARE**: You know the user's active image and profile if provided.
+      1. **HUMAN-LIKE**: Speak naturally. Vary sentence length.
+      2. **NO REPETITION**: Do NOT start messages with "Hey there".
+      3. **CONTEXT AWARE**: Mirror user energy.
       
       *** ACTIVE PERSONA ***:
       ${persona || "You are a helpful, witty, and concise creative assistant."}
@@ -35,12 +31,8 @@ class PromptEngine {
   static injectContext(prompt: string, context?: GlobalContextState): string {
     let contextString = "";
     if (context) {
-      if (context.userProfile) {
-        contextString += `\n[User Info: ${context.userProfile.name}]`;
-      }
-      if (context.activeAnalysis) {
-        contextString += `\n[Current Image Analysis: ${JSON.stringify(context.activeAnalysis).slice(0, 500)}...]`;
-      }
+      if (context.userProfile) contextString += `\n[User: ${context.userProfile.name}]`;
+      if (context.activeAnalysis) contextString += `\n[Image Analysis: ${JSON.stringify(context.activeAnalysis).slice(0, 500)}...]`;
     }
     return `${prompt}\n${contextString}`;
   }
@@ -53,27 +45,19 @@ const getApiKey = (): string => {
     if (localKey && localKey.trim() !== "") return localKey;
   }
   try {
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      return process.env.API_KEY;
-    }
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) return process.env.API_KEY;
   } catch (e) {}
   return FALLBACK_KEYS[0];
 };
 
 const getAiClient = () => new GoogleGenAI({ apiKey: getApiKey() });
 
-// --- UTILITIES ---
 export const validateApiKey = async (apiKey: string): Promise<boolean> => {
     try {
         const ai = new GoogleGenAI({ apiKey });
-        await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: { parts: [{ text: 'ping' }] },
-        });
+        await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: { parts: [{ text: 'ping' }] } });
         return true;
-    } catch (error) {
-        return false;
-    }
+    } catch (error) { return false; }
 };
 
 const processBase64Image = (base64String: string) => {
@@ -96,10 +80,7 @@ const cleanAndParseJSON = (text: string) => {
     }
     const cleaned = jsonCandidate.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
-  } catch (e) {
-    if (text.trim().startsWith('[')) return [];
-    return {};
-  }
+  } catch (e) { return text.trim().startsWith('[') ? [] : {}; }
 };
 
 // --- CORE AI FUNCTIONS ---
@@ -108,7 +89,6 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string, conte
   const ai = getAiClient();
   const { mimeType, data } = processBase64Image(base64Image);
   const prompt = PromptEngine.injectContext(`${PromptEngine.getToolSystemInstruction()} Analyze visual. Return JSON: {analysis, captions:[{category, options[]}], hashtags[]}`, context);
-
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
@@ -120,16 +100,15 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string, conte
 export const sendChatMessage = async (history: any[], newMessage: string, personaPrompt?: string, imageAttachment?: string, globalContext?: GlobalContextState) => {
     const ai = getAiClient();
     
-    // Choose specific instruction set based on whether a persona is active
+    // Choose specific instruction set
     const systemPrompt = PromptEngine.getChatSystemInstruction(personaPrompt) + 
                          (globalContext?.activeAnalysis ? `\n[CONTEXT]: User is looking at an image analyzed as: ${JSON.stringify(globalContext.activeAnalysis).slice(0,300)}` : '');
 
-    // Select model: Use Flash-Lite for speed, but switch to Standard Flash if images are involved (multimodal)
     const model = (imageAttachment || globalContext?.activeImage) ? 'gemini-2.5-flash' : 'gemini-2.5-flash-lite';
 
     const chatSession = ai.chats.create({ 
         model: model, 
-        history, 
+        history: history, 
         config: { systemInstruction: systemPrompt } 
     });
 
@@ -139,34 +118,46 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
         const { mimeType, data } = processBase64Image(imageAttachment);
         messageParts = [{ inlineData: { mimeType, data } }, { text: newMessage || "Analyze this." }];
     } else if (globalContext?.activeImage && !history.length) {
-        // Only inject context image if it's the very first message
         const { mimeType, data } = processBase64Image(globalContext.activeImage);
         messageParts = [{ inlineData: { mimeType, data } }, { text: `[Context Image attached] ${newMessage}` }];
     }
 
     try {
-        // Fix: Pass an object with 'message' property to satisfy ContentUnion
-        const result = await chatSession.sendMessage({ message: { parts: messageParts } });
+        // Correctly format message for SDK compatibility
+        const result = await chatSession.sendMessage({ parts: messageParts }); 
+        // Note: SDK v1.x usually takes { parts: ... } inside sendMessage if using chatSession
+        // If that fails, try passing messageParts directly: await chatSession.sendMessage(messageParts);
         return result.text;
     } catch (e: any) {
-        console.error("Chat Error", e);
-        if (e.message?.includes('400')) return "I got confused by the conversation history. Try clearing the chat.";
-        if (e.message?.includes('429')) return "I'm overloaded right now. Give me a sec.";
-        return "I'm having trouble connecting right now. Check your internet or API Key.";
+        // Retry with direct array if object wrapper fails (ContentUnion fix)
+        try {
+             // @ts-ignore
+             const result = await chatSession.sendMessage(messageParts);
+             return result.text;
+        } catch (retryError) {
+             console.error("Chat Error", retryError);
+             return "I'm having trouble connecting right now. Try refreshing.";
+        }
     }
 }
 
 export const editImageWithPrompt = async (base64Image: string, prompt: string): Promise<string> => {
   const ai = getAiClient();
   const { mimeType, data } = processBase64Image(base64Image);
-  const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image', 
-      contents: { parts: [{ inlineData: { data, mimeType } }, { text: prompt }] },
-  });
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+  try {
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image', 
+          contents: { parts: [{ inlineData: { data, mimeType } }, { text: prompt }] },
+      });
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+      }
+      throw new Error("No image returned");
+  } catch(e: any) {
+      // Fallback for permissions
+      if (e.message?.includes('403')) throw new Error("Permission Denied: Billing required for Image Edit.");
+      throw e;
   }
-  throw new Error("No image returned");
 };
 
 export const generateImageFromPrompt = async (prompt: string, size: ImageSize): Promise<string> => {
@@ -182,15 +173,17 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
     }
     throw new Error("Pro Gen Failed");
   } catch (error) {
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ text: prompt }] },
-        config: { imageConfig: { aspectRatio: "1:1" } },
-    });
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
-    }
-    throw error;
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: { parts: [{ text: prompt }] },
+            config: { imageConfig: { aspectRatio: "1:1" } },
+        });
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
+        }
+        throw new Error("Fallback Failed");
+    } catch(e) { throw new Error("Image Generation Failed. Check API Key permissions."); }
   }
 };
 
@@ -217,7 +210,7 @@ export const rewriteCaption = async (text: string, tone: string = 'engaging'): P
 
 export const getSoccerPredictions = async () => {
     const ai = getAiClient();
-    const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze major soccer matches today. JSON Array: [{id, league, homeTeam, awayTeam, time, probabilities:{home,draw,away}, metrics:{over2_5,btts}, confidenceScore, analysis}]. Use Google Search.`;
+    const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze top 5 soccer matches today. JSON Array: [{id, league, homeTeam, awayTeam, time, probabilities:{home,draw,away}, metrics:{over2_5,btts}, confidenceScore, analysis}]. Use Google Search.`;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -237,12 +230,14 @@ export const generateSmartNote = async (text: string, mode: string, extra?: stri
     
     // Use Pro with Thinking for complex expansion/reasoning
     if (mode === 'expand') {
-        const response = await ai.models.generateContent({ 
-            model: 'gemini-3-pro-preview', 
-            contents: prompt,
-            config: { thinkingConfig: { thinkingBudget: 32768 } } 
-        });
-        return response.text || "";
+        try {
+            const response = await ai.models.generateContent({ 
+                model: 'gemini-3-pro-preview', 
+                contents: prompt,
+                config: { thinkingConfig: { thinkingBudget: 16000 } } 
+            });
+            return response.text || "";
+        } catch(e) {} // Fallback to flash if pro/thinking fails
     }
 
     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });

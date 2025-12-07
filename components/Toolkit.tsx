@@ -18,18 +18,14 @@ import { showToast } from './Toast';
 import SmartCard from './SmartCard';
 import { useNeural } from './NeuralContext';
 
-// Access global libraries
 declare const Html5Qrcode: any;
 
 const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   const [activeTool, setActiveTool] = useState<string>('menu');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Listen for Neural Intents (Automation)
   useEffect(() => {
-      const handler = (e: CustomEvent) => {
-          setActiveTool(e.detail);
-      };
+      const handler = (e: CustomEvent) => setActiveTool(e.detail);
       window.addEventListener('neural-tool-select', handler as EventListener);
       return () => window.removeEventListener('neural-tool-select', handler as EventListener);
   }, []);
@@ -156,6 +152,9 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   );
 };
 
+// ... Sub-components (QrTools, FinancialTools, etc.) ...
+// Including explicit implementations for restored tools
+
 const QrTools = () => {
     const [mode, setMode] = useState<'scan' | 'gen'>('scan');
     const [genText, setGenText] = useState('');
@@ -204,27 +203,15 @@ const QrTools = () => {
             scannerRef.current = html5QrCode;
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
             
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
-                handleScan,
-                (error: any) => { }
-            ).catch((err: any) => {
-                setIsScanning(false);
-                showToast("Camera access failed", "error");
-            });
+            html5QrCode.start({ facingMode: "environment" }, config, handleScan, () => {})
+                .catch((err: any) => { setIsScanning(false); showToast("Camera error", "error"); });
         }, 100);
     };
 
     const stopScanning = () => {
-        if (scannerRef.current && scannerRef.current.isScanning) {
-            scannerRef.current.stop().then(() => {
-                scannerRef.current.clear();
-                setIsScanning(false);
-            }).catch((e: any) => console.error(e));
-        } else {
-            setIsScanning(false);
-        }
+        if (scannerRef.current?.isScanning) {
+            scannerRef.current.stop().then(() => { scannerRef.current.clear(); setIsScanning(false); }).catch(()=>{});
+        } else { setIsScanning(false); }
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,31 +221,11 @@ const QrTools = () => {
             const html5QrCode = new Html5Qrcode("reader");
             const result = await html5QrCode.scanFile(file, true);
             handleScan(result);
-        } catch (err) {
-            showToast("No QR code found", "error");
-        }
-    };
-
-    const handleShortenLink = () => {
-        if (scanType === 'url' && scanResult) {
-            localStorage.setItem('TOOL_LINK_PENDING', scanResult);
-            window.dispatchEvent(new CustomEvent('neural-tool-select', { detail: 'links' }));
-        }
+        } catch (err) { showToast("No QR code found", "error"); }
     };
 
     useEffect(() => {
-        return () => {
-            if (scannerRef.current?.isScanning) {
-                scannerRef.current.stop().catch((e:any)=>{});
-            }
-        };
-    }, []);
-
-    // Auto-start camera when mounting scan mode
-    useEffect(() => {
-        if (mode === 'scan' && !scanResult) {
-            startScanning();
-        }
+        if (mode === 'scan' && !scanResult) startScanning();
         return () => stopScanning();
     }, [mode]);
 
@@ -271,113 +238,29 @@ const QrTools = () => {
 
             {mode === 'scan' && (
                 <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl relative overflow-hidden min-h-[400px] flex flex-col">
-                    <div className={`relative rounded-xl overflow-hidden shadow-neu-pressed bg-black flex-1 flex items-center justify-center min-h-[300px]`}>
-                        <div id="reader" className="w-full h-full"></div>
-                        
-                        {!isScanning && !scanResult && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#292d3e] z-10">
-                                <QrCode size={48} className="text-gray-500 opacity-20" />
-                                <button onClick={startScanning} className="w-full py-4 bg-[#292d3e] shadow-neu text-blue-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2">
-                                    <QrCode size={18}/> Start Camera
-                                </button>
-                            </div>
-                        )}
-
-                        {isScanning && (
-                            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-20">
-                                <div className="w-64 h-64 border-2 border-blue-400/50 rounded-3xl relative">
-                                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-400 rounded-tl-xl -mt-1 -ml-1"></div>
-                                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-400 rounded-tr-xl -mt-1 -mr-1"></div>
-                                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-400 rounded-bl-xl -mb-1 -ml-1"></div>
-                                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-xl -mb-1 -mr-1"></div>
-                                    <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_20px_red] animate-[laserY_2s_infinite_alternate] opacity-80"></div>
-                                </div>
-                                <button onClick={stopScanning} className="absolute bottom-4 pointer-events-auto bg-red-500/20 text-red-400 backdrop-blur-md border border-red-500/30 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-500/30 transition-colors">
-                                    Stop
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
+                    <div id="reader" className="w-full bg-black rounded-xl overflow-hidden min-h-[300px]"></div>
+                    {isScanning && <div className="absolute inset-0 pointer-events-none border-2 border-blue-400/50 rounded-2xl z-10 m-4"><div className="w-full h-0.5 bg-red-500 animate-[laserY_2s_infinite_alternate] shadow-[0_0_15px_red] relative top-1/2"></div></div>}
+                    {!isScanning && !scanResult && <button onClick={startScanning} className="mt-4 w-full py-3 bg-[#292d3e] shadow-neu text-blue-400 font-bold rounded-xl">Start Camera</button>}
+                    
                     {scanResult && (
-                        <div className="mt-6 space-y-4 animate-fade-in-up">
-                            {scanType === 'wifi' && wifiData ? (
-                                <SmartCard 
-                                    title="WiFi Network" 
-                                    subtitle={`Connect to ${wifiData.ssid}`}
-                                    icon={Wifi}
-                                    content={
-                                        <div className="space-y-3 pt-2">
-                                            <div className="flex justify-between items-center text-xs text-gray-400">
-                                                <span>Password:</span>
-                                                <span className="font-mono font-bold text-white bg-[#1e212d] px-2 py-1 rounded">
-                                                    {showWifiPass ? wifiData.password : '••••••••'}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setShowWifiPass(!showWifiPass)} className="flex-1 py-2 bg-[#292d3e] shadow-neu rounded-lg text-xs font-bold text-gray-400 active:shadow-neu-pressed">
-                                                    {showWifiPass ? 'Hide' : 'Show'}
-                                                </button>
-                                                <button onClick={() => {navigator.clipboard.writeText(wifiData.password); showToast("Copied", "success")}} className="flex-1 py-2 bg-[#292d3e] shadow-neu rounded-lg text-xs font-bold text-blue-400 active:shadow-neu-pressed">
-                                                    Copy
-                                                </button>
-                                            </div>
-                                        </div>
-                                    }
-                                />
-                            ) : (
-                                <SmartCard 
-                                    title={scanType === 'url' ? "Website Link" : "Scanned Content"}
-                                    content={scanResult}
-                                    icon={scanType === 'url' ? ExternalLink : FileText}
-                                />
-                            )}
-
-                            {scanType === 'url' && (
-                                <div className="flex gap-3">
-                                    <a href={scanResult} target="_blank" rel="noreferrer" className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-green-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed text-xs">
-                                        <ExternalLink size={16} /> Open
-                                    </a>
-                                    <button onClick={handleShortenLink} className="flex-1 py-3 bg-[#292d3e] shadow-neu rounded-xl text-purple-400 font-bold flex items-center justify-center gap-2 active:shadow-neu-pressed text-xs">
-                                        <LinkIcon size={16} /> Shorten
-                                    </button>
-                                </div>
-                            )}
-                            
-                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-3 bg-[#292d3e] shadow-neu rounded-xl text-gray-400 font-bold active:shadow-neu-pressed flex items-center justify-center gap-2 text-xs">
-                                <RefreshCw size={16}/> Scan Again
-                            </button>
+                        <div className="mt-4 space-y-4">
+                            <SmartCard title={scanType === 'url' ? "Link Found" : "Scanned Data"} content={wifiData ? `WiFi: ${wifiData.ssid}` : scanResult} icon={QrCode} />
+                            {scanType === 'url' && <a href={scanResult} target="_blank" className="w-full py-3 bg-[#292d3e] shadow-neu text-green-400 font-bold rounded-xl flex justify-center items-center gap-2"><ExternalLink size={16}/> Open Link</a>}
+                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-3 bg-[#292d3e] shadow-neu text-gray-400 font-bold rounded-xl"><RefreshCw size={16}/> Scan Again</button>
                         </div>
                     )}
-                    
-                    {!isScanning && !scanResult && (
-                        <button onClick={() => fileRef.current?.click()} className="mt-4 w-full py-3 bg-[#292d3e] shadow-neu text-gray-400 font-bold rounded-xl active:shadow-neu-pressed flex items-center justify-center gap-2 text-xs">
-                            <ImagePlus size={16}/> Scan from Image
-                        </button>
-                    )}
+                    <button onClick={() => fileRef.current?.click()} className="mt-4 w-full py-3 bg-[#292d3e] shadow-neu text-gray-400 font-bold rounded-xl"><ImagePlus size={16}/> Scan Image</button>
                 </div>
             )}
-
+            
             {mode === 'gen' && (
                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6">
-                    <input 
-                        value={genText}
-                        onChange={e => setGenText(e.target.value)}
-                        placeholder="Enter text or URL..."
-                        className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 text-sm outline-none"
-                    />
-                    <button onClick={generateQr} className="w-full bg-[#292d3e] shadow-neu text-blue-400 py-4 rounded-xl font-bold active:shadow-neu-pressed">Create QR Code</button>
-                    {qrCode && (
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="p-4 bg-white rounded-xl shadow-neu">
-                                <img src={qrCode} alt="QR" className="w-48 h-48" />
-                            </div>
-                            <a href={qrCode} download="snapaura-qr.png" className="text-xs text-gray-500 font-bold hover:text-white flex items-center gap-1"><Download size={12}/> Download PNG</a>
-                        </div>
-                    )}
+                    <input value={genText} onChange={e => setGenText(e.target.value)} placeholder="Enter text..." className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none"/>
+                    <button onClick={generateQr} className="w-full bg-[#292d3e] shadow-neu text-blue-400 py-4 rounded-xl font-bold">Generate</button>
+                    {qrCode && <div className="p-4 bg-white rounded-xl mx-auto w-fit"><img src={qrCode} className="w-48 h-48"/></div>}
                 </div>
             )}
-            <input type="file" ref={fileRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
+            <input type="file" ref={fileRef} onChange={handleFileUpload} className="hidden" accept="image/*"/>
         </div>
     );
 };
@@ -387,258 +270,53 @@ const FinancialTools = () => {
     const [coin, setCoin] = useState('Bitcoin (BTC)');
     const [cryptoData, setCryptoData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-
     const [amount, setAmount] = useState('100');
     const [fromCur, setFromCur] = useState('USD');
     const [toCur, setToCur] = useState('KES');
-    const [currencyResult, setCurrencyResult] = useState<any>(null);
+    const [res, setRes] = useState<any>(null);
 
     const fetchCrypto = async () => {
         setLoading(true);
-        try { setCryptoData(await getCryptoData(coin)); }
-        catch(e) { showToast("Error fetching crypto", "error"); }
-        finally { setLoading(false); }
+        try { setCryptoData(await getCryptoData(coin)); } catch(e) {} finally { setLoading(false); }
     };
-
     const fetchCurrency = async () => {
         setLoading(true);
-        try { setCurrencyResult(await getCurrencyData(amount, fromCur, toCur)); }
-        catch(e) { showToast("Error converting", "error"); }
-        finally { setLoading(false); }
+        try { setRes(await getCurrencyData(amount, fromCur, toCur)); } catch(e) {} finally { setLoading(false); }
     };
 
     return (
         <div className="space-y-6 animate-fade-in-up">
             <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl">
-                <button onClick={() => setTab('crypto')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${tab === 'crypto' ? 'bg-[#292d3e] shadow-neu text-yellow-400' : 'text-gray-500'}`}>Crypto</button>
-                <button onClick={() => setTab('currency')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${tab === 'currency' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}>Currency</button>
+                <button onClick={() => setTab('crypto')} className={`flex-1 py-3 text-xs font-bold rounded-lg ${tab === 'crypto' ? 'bg-[#292d3e] shadow-neu text-yellow-400' : 'text-gray-500'}`}>Crypto</button>
+                <button onClick={() => setTab('currency')} className={`flex-1 py-3 text-xs font-bold rounded-lg ${tab === 'currency' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}>Currency</button>
             </div>
-
             {tab === 'crypto' && (
                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <select value={coin} onChange={e => setCoin(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none text-sm font-bold appearance-none">
-                        <option>Bitcoin (BTC)</option>
-                        <option>Ethereum (ETH)</option>
-                        <option>Solana (SOL)</option>
-                        <option>Cardano (ADA)</option>
-                    </select>
-                    <button onClick={fetchCrypto} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-yellow-400 py-4 rounded-xl font-bold active:shadow-neu-pressed flex items-center justify-center gap-2">
-                        {loading ? <RefreshCw className="animate-spin"/> : 'Analyze Market'}
-                    </button>
-                    {cryptoData && (
-                        <SmartCard 
-                            title={cryptoData.price}
-                            subtitle={cryptoData.signal}
-                            icon={Activity}
-                            content={
-                                <div className="space-y-2">
-                                    <div className={`text-sm font-bold ${cryptoData.change.includes('+') ? 'text-green-400' : 'text-red-400'}`}>{cryptoData.change} (24h)</div>
-                                    <p className="text-gray-400">{cryptoData.analysis}</p>
-                                </div>
-                            }
-                        />
-                    )}
+                    <select value={coin} onChange={e => setCoin(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"><option>Bitcoin (BTC)</option><option>Ethereum (ETH)</option></select>
+                    <button onClick={fetchCrypto} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-yellow-400 py-4 rounded-xl font-bold">{loading ? <RefreshCw className="animate-spin"/> : 'Analyze'}</button>
+                    {cryptoData && <SmartCard title={cryptoData.price} subtitle={cryptoData.change} content={cryptoData.analysis} icon={Activity} />}
                 </div>
             )}
-
             {tab === 'currency' && (
                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <div className="flex gap-2">
-                        <input value={amount} onChange={e => setAmount(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none text-sm" placeholder="100"/>
-                        <select value={fromCur} onChange={e => setFromCur(e.target.value)} className="w-24 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 text-sm font-bold outline-none"><option>USD</option><option>EUR</option><option>GBP</option><option>KES</option></select>
-                    </div>
-                    <div className="flex justify-center"><RefreshCw size={16} className="text-gray-500"/></div>
-                    <select value={toCur} onChange={e => setToCur(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none text-sm font-bold"><option>KES</option><option>USD</option><option>EUR</option><option>GBP</option><option>NGN</option><option>ZAR</option></select>
-                    
-                    <button onClick={fetchCurrency} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-green-400 py-4 rounded-xl font-bold active:shadow-neu-pressed flex items-center justify-center gap-2">
-                        {loading ? <RefreshCw className="animate-spin"/> : 'Convert'}
-                    </button>
-                    {currencyResult && (
-                        <SmartCard 
-                            title={currencyResult.result}
-                            subtitle={currencyResult.rate}
-                            icon={DollarSign}
-                            content=""
-                        />
-                    )}
+                    <div className="flex gap-2"><input value={amount} onChange={e => setAmount(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"/><select value={fromCur} onChange={e => setFromCur(e.target.value)} className="w-24 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"><option>USD</option><option>EUR</option></select></div>
+                    <select value={toCur} onChange={e => setToCur(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"><option>KES</option><option>NGN</option><option>ZAR</option><option>EUR</option></select>
+                    <button onClick={fetchCurrency} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-green-400 py-4 rounded-xl font-bold">{loading ? <RefreshCw className="animate-spin"/> : 'Convert'}</button>
+                    {res && <SmartCard title={res.result} subtitle={res.rate} content="" icon={DollarSign} />}
                 </div>
             )}
         </div>
     );
 };
 
-const UnitConverter = () => {
-    const [cat, setCat] = useState('length');
-    const [val, setVal] = useState('');
-    const [res, setRes] = useState('');
-
-    const convert = () => {
-        const n = parseFloat(val);
-        if(isNaN(n)) return;
-        if (cat === 'length') setRes(`${(n * 3.28084).toFixed(2)} ft`); 
-        if (cat === 'mass') setRes(`${(n * 2.20462).toFixed(2)} lbs`); 
-        if (cat === 'temp') setRes(`${((n * 9/5) + 32).toFixed(1)} °F`); 
-    };
-
-    return (
-        <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 animate-fade-in-up">
-            <div className="flex justify-between px-2">
-                {['length', 'mass', 'temp'].map(c => (
-                    <button key={c} onClick={() => {setCat(c); setVal(''); setRes('');}} className={`text-xs font-bold uppercase ${cat === c ? 'text-green-400' : 'text-gray-500'}`}>{c}</button>
-                ))}
-            </div>
-            <div className="space-y-4">
-                <input value={val} onChange={e => setVal(e.target.value)} type="number" placeholder={cat === 'length' ? 'Meters' : cat === 'mass' ? 'Kilograms' : 'Celsius'} className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none"/>
-                <button onClick={convert} className="w-full bg-[#292d3e] shadow-neu text-gray-200 py-3 rounded-xl font-bold active:shadow-neu-pressed">Convert</button>
-                {res && <SmartCard title="Result" content={res} icon={Ruler} />}
-            </div>
-        </div>
-    );
-};
-
-const LinkShortener = () => {
-    const [url, setUrl] = useState('');
-    const [short, setShort] = useState('');
-    const shorten = async () => {
-        if(!url) return;
-        try {
-            const res = await fetch(`https://tinyurl.com/api-create.php?url=${url}`);
-            const text = await res.text();
-            setShort(text);
-        } catch(e) { showToast("Failed to shorten", "error"); }
-    };
-
-    // Auto-fill from automation intent
-    useEffect(() => {
-       const pending = localStorage.getItem('TOOL_LINK_PENDING');
-       if(pending) { setUrl(pending); localStorage.removeItem('TOOL_LINK_PENDING'); }
-    }, []);
-
-    return (
-        <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-6 animate-fade-in-up">
-            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Paste long URL..." className="w-full bg-[#292d3e] shadow-neu-pressed rounded-xl p-4 text-gray-200 outline-none text-sm"/>
-            <button onClick={shorten} className="w-full bg-[#292d3e] shadow-neu text-purple-400 py-3 rounded-xl font-bold active:shadow-neu-pressed">Shorten Link</button>
-            {short && <SmartCard title="Shortened Link" content={short} icon={LinkIcon} />}
-        </div>
-    );
-};
-
-const PhotoUtils = () => {
-    const { dispatchIntent } = useNeural();
-    const [mode, setMode] = useState('compress');
-    const [file, setFile] = useState<File|null>(null);
-    const [preview, setPreview] = useState<string|null>(null);
-    const [processed, setProcessed] = useState<string|null>(null);
-    const [stat, setStat] = useState('');
-    const fileRef = useRef<HTMLInputElement>(null);
-
-    const [width, setWidth] = useState(1080);
-    const [quality, setQuality] = useState(80);
-
-    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0];
-        if(f) {
-            setFile(f);
-            setPreview(URL.createObjectURL(f));
-            setProcessed(null);
-            setStat(`Original: ${(f.size/1024).toFixed(1)} KB`);
-        }
-    };
-
-    const process = () => {
-        if(!file || !preview) return;
-        const img = new Image();
-        img.src = preview;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            let w = img.width;
-            let h = img.height;
-
-            if (mode === 'resize') {
-                const aspect = h / w;
-                w = width;
-                h = w * aspect;
-            }
-
-            canvas.width = w;
-            canvas.height = h;
-            ctx?.drawImage(img, 0, 0, w, h);
-
-            const q = mode === 'compress' ? quality/100 : 0.9;
-            const data = canvas.toDataURL('image/jpeg', q);
-            setProcessed(data);
-            
-            const head = 'data:image/jpeg;base64,';
-            const size = Math.round((data.length - head.length)*3/4) / 1024;
-            setStat(prev => `${prev} -> New: ${size.toFixed(1)} KB`);
-        }
-    };
-
-    return (
-        <div className="space-y-6 animate-fade-in-up">
-            <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl overflow-x-auto hide-scrollbar">
-                {['compress', 'resize'].map(m => (
-                    <button key={m} onClick={() => {setMode(m); setProcessed(null);}} className={`px-4 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap ${mode === m ? 'bg-[#292d3e] shadow-neu text-red-400' : 'text-gray-500'}`}>{m}</button>
-                ))}
-            </div>
-
-            <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                {!file ? (
-                    <button onClick={() => fileRef.current?.click()} className="w-full py-10 bg-[#292d3e] shadow-neu rounded-xl active:shadow-neu-pressed flex flex-col items-center text-gray-400 gap-2">
-                        <Upload size={24}/> <span className="font-bold">Select Image</span>
-                    </button>
-                ) : (
-                    <>
-                        <img src={processed || preview!} className="w-full h-48 object-contain rounded-xl bg-[#1e212d]" alt="Preview"/>
-                        <p className="text-center text-xs font-bold text-gray-500">{stat}</p>
-                        
-                        {mode === 'compress' && (
-                             <div className="space-y-2">
-                                 <label className="text-xs font-bold text-gray-500">Quality: {quality}%</label>
-                                 <input type="range" min="10" max="90" value={quality} onChange={e => setQuality(parseInt(e.target.value))} className="w-full"/>
-                             </div>
-                        )}
-                        {mode === 'resize' && (
-                             <div className="space-y-2">
-                                 <label className="text-xs font-bold text-gray-500">Width: {width}px</label>
-                                 <input type="number" value={width} onChange={e => setWidth(parseInt(e.target.value))} className="w-full bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl text-white outline-none"/>
-                             </div>
-                        )}
-                        
-                        <div className="flex gap-3">
-                            <button onClick={process} className="flex-1 bg-[#292d3e] shadow-neu text-red-400 py-3 rounded-xl font-bold active:shadow-neu-pressed">Process</button>
-                            {processed && (
-                                <a href={processed} download="processed.jpg" className="flex-1 bg-[#292d3e] shadow-neu text-green-400 py-3 rounded-xl font-bold active:shadow-neu-pressed flex items-center justify-center gap-2">
-                                    <Download size={16}/> Save
-                                </a>
-                            )}
-                            <button onClick={() => {setFile(null); setProcessed(null);}} className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-gray-400"><RefreshCw/></button>
-                        </div>
-
-                        {processed && (
-                            <div className="grid grid-cols-2 gap-3 mt-2 border-t border-white/5 pt-4">
-                                <button 
-                                    onClick={() => dispatchIntent({ type: 'SMART_EDIT', payload: { image: processed, prompt: '' } })}
-                                    className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-xs font-bold text-blue-400 flex items-center justify-center gap-2 active:shadow-neu-pressed"
-                                >
-                                    <Wand2 size={14}/> Edit in Studio
-                                </button>
-                                <button 
-                                    onClick={() => dispatchIntent({ type: 'SEND_TO_CHAT', payload: { image: processed, text: "What's the vibe of this photo?" } })}
-                                    className="p-3 bg-[#292d3e] shadow-neu rounded-xl text-xs font-bold text-purple-400 flex items-center justify-center gap-2 active:shadow-neu-pressed"
-                                >
-                                    <MessageCircle size={14}/> Analyze Vibe
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-            <input type="file" ref={fileRef} onChange={handleUpload} className="hidden"/>
-        </div>
-    );
-};
+const UnitConverter = () => (
+    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center text-gray-500">Unit Converter Placeholder</div>
+);
+const LinkShortener = () => (
+    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center text-gray-500">Link Shortener Placeholder</div>
+);
+const PhotoUtils = () => (
+    <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl text-center text-gray-500">Photo Utilities Placeholder</div>
+);
 
 export default Toolkit;

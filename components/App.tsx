@@ -10,12 +10,13 @@ import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
 import Profile from './components/Profile';
-import { Tab } from './types';
+import Auth from './components/Auth';
+import { Tab, UserProfile } from './types';
 import { Smartphone, Download } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
-  const { activeTab, setActiveTab, state } = useNeural();
+  const { activeTab, setActiveTab, updateState, state } = useNeural();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Navbar Visibility State
@@ -25,6 +26,9 @@ const App: React.FC = () => {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isKeyRequired, setIsKeyRequired] = useState(false);
+  
+  // Auth State
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -102,6 +106,30 @@ const App: React.FC = () => {
       setActiveTab(Tab.PROFILE);
   };
 
+  const handleLoginSuccess = (userData: UserProfile) => {
+      updateState({ userProfile: userData });
+      localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(userData));
+      setShowAuthModal(false);
+  };
+
+  const handleLogout = () => {
+      const guestProfile = {
+          name: "Guest User",
+          email: "guest@local",
+          joinDate: new Date().toLocaleDateString(),
+          stats: { edits: 0, generated: 0, chats: 0 },
+          username: "guest",
+          bio: "Ready to create.",
+          interests: [],
+          hobbies: [],
+          skills: []
+      };
+      updateState({ userProfile: guestProfile });
+      localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(guestProfile));
+      localStorage.removeItem('SNAPAURA_AVATAR');
+      window.location.reload();
+  };
+
   return (
     <div className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
@@ -134,6 +162,14 @@ const App: React.FC = () => {
         onClose={() => setShowKeyModal(false)}
         canClose={!isKeyRequired} 
       />
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+          <Auth 
+            onLogin={handleLoginSuccess}
+            onClose={() => setShowAuthModal(false)}
+          />
+      )}
 
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">
@@ -171,6 +207,8 @@ const App: React.FC = () => {
                 {activeTab === Tab.PROFILE && (
                     <Profile 
                         onOpenSettings={handleOpenSettings}
+                        onLogin={() => setShowAuthModal(true)}
+                        onLogout={handleLogout}
                     />
                 )}
             </>
