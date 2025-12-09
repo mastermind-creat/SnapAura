@@ -121,8 +121,8 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
                 { inlineData: { mimeType, data } }, 
                 { text: newMessage || "Analyze this." }
             ];
-            // Fix: Use named parameter 'message' for strict SDK compliance
-            result = await chatSession.sendMessage({ message: messageParts });
+            // Fix: Wrap in { message: { parts: ... } } for ContentUnion compliance
+            result = await chatSession.sendMessage({ message: { parts: messageParts } });
         } else if (globalContext?.activeImage && !history.length) {
             // First message context injection
             const { mimeType, data } = processBase64Image(globalContext.activeImage);
@@ -130,25 +130,17 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
                 { inlineData: { mimeType, data } }, 
                 { text: `[Context Image attached] ${newMessage}` }
             ];
-            // Fix: Use named parameter 'message'
-            result = await chatSession.sendMessage({ message: messageParts });
+            // Fix: Wrap in { message: { parts: ... } }
+            result = await chatSession.sendMessage({ message: { parts: messageParts } });
         } else {
-            // Text only
-            // Fix: Use named parameter 'message'
+            // Text only - Wrap in { message: ... }
             result = await chatSession.sendMessage({ message: newMessage });
         }
         
         return result.text;
     } catch (e: any) {
         console.error("Chat Error Details:", e);
-        // Fallback retry
-        try {
-             // Fix: Use named parameter 'message' in retry too
-             const result = await chatSession.sendMessage({ message: newMessage }); 
-             return result.text;
-        } catch (retryError) {
-             return "I'm having trouble connecting right now. Try refreshing.";
-        }
+        return "I'm having trouble connecting right now. Try refreshing.";
     }
 }
 
