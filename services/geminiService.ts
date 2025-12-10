@@ -288,9 +288,57 @@ export const getYesterdayAccuracy = async () => {
     return cleanAndParseJSON(response.text || "[]");
 };
 
+// --- ENHANCED CRYPTO & FIAT SERVICE ---
+
+export const getCryptoMarketOverview = async () => {
+    const ai = getAiClient();
+    const prompt = `
+      ${PromptEngine.getToolSystemInstruction()}
+      Analyze the current crypto market (Top 10 coins by market cap + trending).
+      Use Google Search for real-time data.
+      Return a JSON ARRAY of objects:
+      [
+        {
+          "symbol": "BTC",
+          "name": "Bitcoin",
+          "price": "e.g. $65,000",
+          "change": "e.g. +2.5%",
+          "signal": "BUY/SELL",
+          "sentiment": "Bullish/Bearish"
+        },
+        ...
+      ]
+    `;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return cleanAndParseJSON(response.text || "[]");
+};
+
 export const getCryptoData = async (coin: string) => {
     const ai = getAiClient();
-    const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze current market data for ${coin}. JSON Output: {price, change (e.g. +5%), signal (BUY/SELL/HOLD), analysis}. Use Google Search.`;
+    const prompt = `
+      ${PromptEngine.getToolSystemInstruction()}
+      Perform a deep technical analysis for ${coin}.
+      Use Google Search for real-time charts and data.
+      JSON Output:
+      {
+        "price": "current price",
+        "change": "24h % change",
+        "marketCap": "market cap",
+        "volume": "24h volume",
+        "signal": "STRONG BUY / BUY / NEUTRAL / SELL / STRONG SELL",
+        "technical": {
+           "rsi": "value",
+           "macd": "sentiment",
+           "support": "price level",
+           "resistance": "price level"
+        },
+        "analysis": "Brief trader-focused summary."
+      }
+    `;
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,

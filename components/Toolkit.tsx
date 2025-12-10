@@ -5,7 +5,7 @@ import {
   ImageIcon, Scissors, Palette, FileText, Smartphone,
   Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
   Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
-  Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle
+  Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle, BarChart, TrendingDown
 } from './Icons';
 import SocialGrowth from './SocialGrowth';
 import SmartNotes from './SmartNotes';
@@ -13,7 +13,7 @@ import ProfileStudio from './ProfileStudio';
 import MoodboardGenerator from './MoodboardGenerator';
 import PdfTools from './PdfTools';
 import FootballHub from './FootballHub';
-import { getCryptoData, getCurrencyData } from '../services/geminiService';
+import { getCryptoData, getCurrencyData, getCryptoMarketOverview } from '../services/geminiService';
 import { showToast } from './Toast';
 import SmartCard from './SmartCard';
 import { useNeural } from './NeuralContext';
@@ -153,7 +153,6 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
 };
 
 // ... Sub-components (QrTools, FinancialTools, etc.) ...
-// Including explicit implementations for restored tools
 
 const QrTools = () => {
     const [mode, setMode] = useState<'scan' | 'gen'>('scan');
@@ -163,7 +162,6 @@ const QrTools = () => {
     const [scanType, setScanType] = useState<'url'|'text'|'wifi'|null>(null);
     const [wifiData, setWifiData] = useState<any>(null);
     const [isScanning, setIsScanning] = useState(false);
-    const [showWifiPass, setShowWifiPass] = useState(false);
     
     const scannerRef = useRef<any>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -265,10 +263,25 @@ const QrTools = () => {
     );
 };
 
+const CRYPTO_LIST = [
+    "Bitcoin (BTC)", "Ethereum (ETH)", "Solana (SOL)", "Cardano (ADA)", 
+    "Ripple (XRP)", "Polkadot (DOT)", "Dogecoin (DOGE)", "Shiba Inu (SHIB)",
+    "Litecoin (LTC)", "Avalanche (AVAX)", "Chainlink (LINK)", "Polygon (MATIC)",
+    "Binance Coin (BNB)", "Uniswap (UNI)", "Stellar (XLM)", "Cosmos (ATOM)",
+    "Monero (XMR)", "Ethereum Classic (ETC)", "Bitcoin Cash (BCH)", "Filecoin (FIL)"
+];
+
+const FIAT_LIST = [
+    "USD", "EUR", "GBP", "JPY", "CNY", "INR", "KES", "NGN", "ZAR", 
+    "CAD", "AUD", "CHF", "SGD", "AED", "SAR", "GHS", "UGX", "TZS",
+    "BRL", "RUB", "MXN", "KRW", "TRY", "SEK", "NOK", "DKK"
+];
+
 const FinancialTools = () => {
-    const [tab, setTab] = useState<'crypto'|'currency'>('crypto');
+    const [tab, setTab] = useState<'overview'|'analyze'|'currency'>('overview');
     const [coin, setCoin] = useState('Bitcoin (BTC)');
     const [cryptoData, setCryptoData] = useState<any>(null);
+    const [marketOverview, setMarketOverview] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [amount, setAmount] = useState('100');
     const [fromCur, setFromCur] = useState('USD');
@@ -279,29 +292,145 @@ const FinancialTools = () => {
         setLoading(true);
         try { setCryptoData(await getCryptoData(coin)); } catch(e) {} finally { setLoading(false); }
     };
+    
+    const fetchOverview = async () => {
+        setLoading(true);
+        try { setMarketOverview(await getCryptoMarketOverview()); } catch(e) {} finally { setLoading(false); }
+    };
+
     const fetchCurrency = async () => {
         setLoading(true);
         try { setRes(await getCurrencyData(amount, fromCur, toCur)); } catch(e) {} finally { setLoading(false); }
     };
 
+    useEffect(() => {
+        if(tab === 'overview' && marketOverview.length === 0) fetchOverview();
+    }, [tab]);
+
     return (
         <div className="space-y-6 animate-fade-in-up">
-            <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl">
-                <button onClick={() => setTab('crypto')} className={`flex-1 py-3 text-xs font-bold rounded-lg ${tab === 'crypto' ? 'bg-[#292d3e] shadow-neu text-yellow-400' : 'text-gray-500'}`}>Crypto</button>
-                <button onClick={() => setTab('currency')} className={`flex-1 py-3 text-xs font-bold rounded-lg ${tab === 'currency' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}>Currency</button>
+            <div className="flex bg-[#292d3e] shadow-neu-pressed p-1 rounded-xl overflow-x-auto hide-scrollbar">
+                <button onClick={() => setTab('overview')} className={`flex-1 py-3 px-4 whitespace-nowrap text-xs font-bold rounded-lg transition-all ${tab === 'overview' ? 'bg-[#292d3e] shadow-neu text-blue-400' : 'text-gray-500'}`}>Overview</button>
+                <button onClick={() => setTab('analyze')} className={`flex-1 py-3 px-4 whitespace-nowrap text-xs font-bold rounded-lg transition-all ${tab === 'analyze' ? 'bg-[#292d3e] shadow-neu text-yellow-400' : 'text-gray-500'}`}>Analysis</button>
+                <button onClick={() => setTab('currency')} className={`flex-1 py-3 px-4 whitespace-nowrap text-xs font-bold rounded-lg transition-all ${tab === 'currency' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}>Currency</button>
             </div>
-            {tab === 'crypto' && (
-                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <select value={coin} onChange={e => setCoin(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"><option>Bitcoin (BTC)</option><option>Ethereum (ETH)</option></select>
-                    <button onClick={fetchCrypto} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-yellow-400 py-4 rounded-xl font-bold">{loading ? <RefreshCw className="animate-spin"/> : 'Analyze'}</button>
-                    {cryptoData && <SmartCard title={cryptoData.price} subtitle={cryptoData.change} content={cryptoData.analysis} icon={Activity} />}
+
+            {tab === 'overview' && (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center px-2">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Top Performers</h3>
+                        <button onClick={fetchOverview} className="p-2 bg-[#292d3e] shadow-neu rounded-lg text-gray-400 active:shadow-neu-pressed">
+                            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                        </button>
+                    </div>
+                    {loading && marketOverview.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500 bg-[#292d3e] shadow-neu rounded-2xl">Loading Market Data...</div>
+                    ) : (
+                        <div className="bg-[#292d3e] shadow-neu rounded-2xl overflow-hidden">
+                            <div className="grid grid-cols-4 bg-[#1e212d] p-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                <div className="col-span-1">Asset</div>
+                                <div className="col-span-1 text-right">Price</div>
+                                <div className="col-span-1 text-right">24h</div>
+                                <div className="col-span-1 text-center">Signal</div>
+                            </div>
+                            <div className="divide-y divide-white/5">
+                                {marketOverview.map((item, i) => (
+                                    <div key={i} className="grid grid-cols-4 p-4 items-center hover:bg-white/5 transition-colors">
+                                        <div className="col-span-1">
+                                            <div className="font-bold text-gray-200 text-sm">{item.symbol}</div>
+                                            <div className="text-[9px] text-gray-500 truncate">{item.name}</div>
+                                        </div>
+                                        <div className="col-span-1 text-right text-xs font-mono text-gray-300">{item.price}</div>
+                                        <div className={`col-span-1 text-right text-xs font-bold ${item.change?.includes('+') ? 'text-green-400' : 'text-red-400'}`}>
+                                            {item.change}
+                                        </div>
+                                        <div className="col-span-1 flex justify-center">
+                                            <span className={`text-[9px] font-black px-2 py-1 rounded-md ${
+                                                item.signal?.includes('BUY') ? 'bg-green-400/10 text-green-400' : 
+                                                item.signal?.includes('SELL') ? 'bg-red-400/10 text-red-400' : 'bg-gray-500/10 text-gray-400'
+                                            }`}>
+                                                {item.signal}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
+
+            {tab === 'analyze' && (
+                <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
+                    <div className="relative">
+                        <select value={coin} onChange={e => setCoin(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none appearance-none">
+                            {CRYPTO_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                    </div>
+
+                    <button onClick={fetchCrypto} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-yellow-400 py-4 rounded-xl font-bold active:shadow-neu-pressed transition-all">
+                        {loading ? <RefreshCw className="animate-spin" /> : 'Analyze Deeply'}
+                    </button>
+
+                    {cryptoData && (
+                        <div className="space-y-4 pt-4 border-t border-white/5">
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <div className="text-2xl font-black text-gray-200">{cryptoData.price}</div>
+                                    <div className={`text-sm font-bold ${cryptoData.change?.includes('-') ? 'text-red-400' : 'text-green-400'}`}>
+                                        {cryptoData.change}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] text-gray-500 uppercase font-bold">Signal</div>
+                                    <div className={`text-sm font-black uppercase ${
+                                        cryptoData.signal?.includes('BUY') ? 'text-green-400' : 
+                                        cryptoData.signal?.includes('SELL') ? 'text-red-400' : 'text-gray-400'
+                                    }`}>{cryptoData.signal}</div>
+                                </div>
+                            </div>
+                            
+                            <SmartCard title="Technical Analysis" content={
+                                <div className="space-y-2">
+                                    <p className="text-gray-400">{cryptoData.analysis}</p>
+                                    {cryptoData.technical && (
+                                        <div className="grid grid-cols-2 gap-2 mt-3">
+                                            <div className="bg-[#1e212d] p-2 rounded-lg text-xs text-gray-400">RSI: <span className="text-white font-bold">{cryptoData.technical.rsi}</span></div>
+                                            <div className="bg-[#1e212d] p-2 rounded-lg text-xs text-gray-400">MACD: <span className="text-white font-bold">{cryptoData.technical.macd}</span></div>
+                                            <div className="bg-[#1e212d] p-2 rounded-lg text-xs text-gray-400">Supp: <span className="text-green-400 font-bold">{cryptoData.technical.support}</span></div>
+                                            <div className="bg-[#1e212d] p-2 rounded-lg text-xs text-gray-400">Res: <span className="text-red-400 font-bold">{cryptoData.technical.resistance}</span></div>
+                                        </div>
+                                    )}
+                                </div>
+                            } icon={Activity} />
+                        </div>
+                    )}
+                </div>
+            )}
+
             {tab === 'currency' && (
                 <div className="bg-[#292d3e] shadow-neu p-6 rounded-2xl space-y-4">
-                    <div className="flex gap-2"><input value={amount} onChange={e => setAmount(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"/><select value={fromCur} onChange={e => setFromCur(e.target.value)} className="w-24 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"><option>USD</option><option>EUR</option></select></div>
-                    <select value={toCur} onChange={e => setToCur(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none"><option>KES</option><option>NGN</option><option>ZAR</option><option>EUR</option></select>
-                    <button onClick={fetchCurrency} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-green-400 py-4 rounded-xl font-bold">{loading ? <RefreshCw className="animate-spin"/> : 'Convert'}</button>
+                    <div className="flex gap-2">
+                        <input value={amount} onChange={e => setAmount(e.target.value)} className="flex-1 bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none" placeholder="Amount"/>
+                        <div className="relative w-24">
+                            <select value={fromCur} onChange={e => setFromCur(e.target.value)} className="w-full h-full bg-[#292d3e] shadow-neu-pressed pl-3 pr-6 rounded-xl text-gray-200 outline-none appearance-none font-bold text-sm">
+                                {FIAT_LIST.map(c => <option key={c}>{c}</option>)}
+                            </select>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 text-[10px]">▼</div>
+                        </div>
+                    </div>
+                    
+                    <div className="relative">
+                        <select value={toCur} onChange={e => setToCur(e.target.value)} className="w-full bg-[#292d3e] shadow-neu-pressed p-4 rounded-xl text-gray-200 outline-none appearance-none font-bold">
+                             {FIAT_LIST.map(c => <option key={c}>{c}</option>)}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                    </div>
+
+                    <button onClick={fetchCurrency} disabled={loading} className="w-full bg-[#292d3e] shadow-neu text-green-400 py-4 rounded-xl font-bold active:shadow-neu-pressed transition-all">
+                        {loading ? <RefreshCw className="animate-spin" /> : 'Convert Now'}
+                    </button>
                     {res && <SmartCard title={res.result} subtitle={res.rate} content="" icon={DollarSign} />}
                 </div>
             )}

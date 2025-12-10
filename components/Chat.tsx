@@ -117,7 +117,7 @@ const Chat: React.FC<any> = () => {
   // --- TTS & ACTION MENU State ---
   const [speakingMsgId, setSpeakingMsgId] = useState<number | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{x: number, y: number} | null>(null);
+  const [replyingTo, setReplyingTo] = useState<any>(null); // New Reply State
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -216,7 +216,7 @@ const Chat: React.FC<any> = () => {
 
   useEffect(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, p2pMessages, mode, input]);
+  }, [messages, p2pMessages, mode, input, replyingTo]);
 
   const processAiResponse = async (history: any[], lastMsg: string, persona: typeof activePersona, img?: string) => {
       setLoading(true);
@@ -261,12 +261,19 @@ const Chat: React.FC<any> = () => {
 
   const handleSend = () => {
       if (!input.trim()) return;
+      
+      const textToSend = replyingTo 
+          ? `[Replying to "${replyingTo.text.substring(0, 50)}..."]: ${input}` 
+          : input;
+
       if (mode === 'AI') {
-          const newMsgs = [...messages, { role: 'user', text: input, id: Date.now() }];
+          const newMsgs = [...messages, { role: 'user', text: textToSend, id: Date.now() }];
           setMessages(newMsgs);
-          processAiResponse(newMsgs, input, activePersona);
-      } else { sendP2P(input); }
+          processAiResponse(newMsgs, textToSend, activePersona);
+      } else { sendP2P(textToSend); }
+      
       setInput('');
+      setReplyingTo(null);
       if(textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
@@ -299,24 +306,22 @@ const Chat: React.FC<any> = () => {
   const saveUsername = () => { if(username.trim()) { localStorage.setItem('SNAPAURA_USERNAME', username); setIsSetup(true); } };
 
   // --- MENU ACTIONS ---
-  const handleOpenMenu = (id: number, x: number, y: number) => {
+  const handleOpenMenu = (id: number) => {
       if (navigator.vibrate) navigator.vibrate(50);
       setMenuOpenId(id);
-      // Adjust position to stay on screen
-      const screenW = window.innerWidth;
-      const safeX = Math.min(Math.max(x, 50), screenW - 150);
-      setMenuPosition({ x: safeX, y });
   };
 
   const handleAction = (action: string, msg: any) => {
       setMenuOpenId(null);
+      if (!msg) return;
+
       switch(action) {
           case 'copy':
               navigator.clipboard.writeText(msg.text);
               showToast("Copied", "success");
               break;
           case 'reply':
-              setInput(`> "${msg.text.substring(0, 50)}..."\n`);
+              setReplyingTo(msg);
               textareaRef.current?.focus();
               break;
           case 'save':
@@ -393,8 +398,7 @@ const Chat: React.FC<any> = () => {
                         persona={persona} 
                         isSpeaking={isSpeaking} 
                         onToggleSpeech={() => toggleSpeech(m.text, m.id)}
-                        onOpenMenu={handleOpenMenu}
-                        menuOpen={menuOpenId === m.id}
+                        onOpenMenu={() => handleOpenMenu(m.id)}
                         mode={mode}
                     />
                 );
@@ -408,18 +412,32 @@ const Chat: React.FC<any> = () => {
             )}
         </div>
 
-        {/* Floating Action Menu */}
-        {menuOpenId && menuPosition && (
-            <div 
-                className="fixed z-[100] bg-[#1e212d]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 flex gap-1 animate-fade-in-up"
-                style={{ top: menuPosition.y - 60, left: menuPosition.x - 100 }}
-            >
-                <button onClick={() => handleAction('copy', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="p-3 hover:bg-white/10 rounded-xl text-gray-300 flex flex-col items-center gap-1 min-w-[60px] active:scale-95 transition-transform"><Copy size={18}/><span className="text-[9px] font-bold">Copy</span></button>
-                <button onClick={() => handleAction('reply', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="p-3 hover:bg-white/10 rounded-xl text-blue-400 flex flex-col items-center gap-1 min-w-[60px] active:scale-95 transition-transform"><Reply size={18}/><span className="text-[9px] font-bold">Reply</span></button>
-                <button onClick={() => handleAction('save', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="p-3 hover:bg-white/10 rounded-xl text-yellow-400 flex flex-col items-center gap-1 min-w-[60px] active:scale-95 transition-transform"><FileText size={18}/><span className="text-[9px] font-bold">Save</span></button>
-                {mode === 'AI' && (
-                    <button onClick={() => handleAction('regenerate', null)} className="p-3 hover:bg-white/10 rounded-xl text-green-400 flex flex-col items-center gap-1 min-w-[60px] active:scale-95 transition-transform"><RefreshCw size={18}/><span className="text-[9px] font-bold">Retry</span></button>
-                )}
+        {/* --- FIXED ACTION SHEET MENU (Mobile Friendly) --- */}
+        {menuOpenId && (
+            <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in-up" onClick={() => setMenuOpenId(null)}>
+                <div className="bg-[#292d3e] w-full sm:w-auto sm:min-w-[320px] p-6 pb-8 rounded-t-3xl sm:rounded-3xl shadow-2xl border-t border-white/10 sm:border-0" onClick={e => e.stopPropagation()}>
+                    <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6 sm:hidden"></div>
+                    <div className="grid grid-cols-4 gap-4">
+                        <button onClick={() => handleAction('copy', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
+                            <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-gray-300 group-active:scale-95 transition-transform"><Copy size={20}/></div>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase">Copy</span>
+                        </button>
+                        <button onClick={() => handleAction('reply', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
+                            <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-blue-400 group-active:scale-95 transition-transform"><Reply size={20}/></div>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase">Reply</span>
+                        </button>
+                        <button onClick={() => handleAction('save', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
+                            <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-yellow-400 group-active:scale-95 transition-transform"><FileText size={20}/></div>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase">Save</span>
+                        </button>
+                        {mode === 'AI' && (
+                            <button onClick={() => handleAction('regenerate', null)} className="flex flex-col items-center gap-2 group">
+                                <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-green-400 group-active:scale-95 transition-transform"><RefreshCw size={20}/></div>
+                                <span className="text-[10px] text-gray-500 font-bold uppercase">Retry</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
         )}
 
@@ -432,12 +450,30 @@ const Chat: React.FC<any> = () => {
                     </div>
                     <button onClick={() => setIsPlusOpen(!isPlusOpen)} className={`w-10 h-10 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center text-gray-400 active:shadow-neu-pressed transition-transform duration-300 ${isPlusOpen ? 'rotate-45 text-red-400' : ''}`}><Plus size={20} /></button>
                 </div>
+                
                 <div className="flex-1 relative group rounded-2xl bg-gradient-to-r from-[#00f3ff] via-[#ff0099] to-[#39ff14] p-[1px] shadow-neon-blue">
-                    <div className="bg-[#292d3e] rounded-2xl flex items-end p-1">
+                    <div className="bg-[#292d3e] rounded-2xl flex flex-col p-1">
+                        {/* Reply Preview */}
+                        {replyingTo && (
+                            <div className="mx-2 mt-2 mb-1 p-3 bg-[#1e212d] border-l-4 border-blue-500 rounded-r-lg flex justify-between items-center relative animate-fade-in-up">
+                                <div className="overflow-hidden pr-6">
+                                    <span className="text-[10px] font-bold text-blue-400 block mb-1">
+                                        Replying to {replyingTo.role === 'user' || replyingTo.isMe ? 'You' : (replyingTo.sender || 'AI')}
+                                    </span>
+                                    <p className="text-xs text-gray-400 truncate">{replyingTo.text}</p>
+                                </div>
+                                <button 
+                                    onClick={() => setReplyingTo(null)}
+                                    className="absolute top-2 right-2 text-gray-500 hover:text-white"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        )}
                         <textarea ref={textareaRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={mode === 'AI' ? `Message ${activePersona.name}...` : "Type a secure message..."} className="w-full bg-transparent px-3 py-3 text-gray-200 outline-none text-sm placeholder-gray-600 resize-none max-h-32 min-h-[44px] hide-scrollbar leading-relaxed" rows={1} disabled={mode === 'P2P' && p2pStatus !== 'connected'}/>
                     </div>
                 </div>
-                <button onClick={handleSend} disabled={!input.trim() || (mode === 'P2P' && p2pStatus !== 'connected')} className="w-10 h-10 bg-[#292d3e] shadow-neu rounded-full text-blue-400 active:shadow-neu-pressed disabled:opacity-50 flex items-center justify-center transition-all hover:scale-105 active:scale-95"><Send size={18} className={input.trim() ? "fill-current" : ""} /></button>
+                <button onClick={handleSend} disabled={!input.trim() || (mode === 'P2P' && p2pStatus !== 'connected')} className="w-10 h-10 bg-[#292d3e] shadow-neu rounded-full text-blue-400 active:shadow-neu-pressed disabled:opacity-50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 flex-shrink-0"><Send size={18} className={input.trim() ? "fill-current" : ""} /></button>
             </div>
             <input type="file" ref={fileRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
         </div>
@@ -446,21 +482,10 @@ const Chat: React.FC<any> = () => {
 };
 
 // Extracted Message Item for better hook usage
-const MessageItem = ({ msg, isUser, persona, isSpeaking, onToggleSpeech, onOpenMenu, menuOpen, mode }: any) => {
+const MessageItem = ({ msg, isUser, persona, isSpeaking, onToggleSpeech, onOpenMenu, mode }: any) => {
     const longPress = useLongPress(() => {
-        // Trigger generic open menu event, handled by parent with coordinates
-        // We'll simulate coordinates or use a fixed fallback if event is missing
-        // For accurate positioning, onTouchStart is better in the parent, but we do this for structure
+        onOpenMenu(); // Trigger menu on long press
     });
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        longPress.onTouchStart();
-        // Capture coordinates for menu
-        if (e.touches[0]) {
-            // We pass this up or store locally if we wanted per-item state
-            // But parent manages menuOpenId
-        }
-    };
 
     return (
         <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in-up group relative`}>
@@ -468,17 +493,29 @@ const MessageItem = ({ msg, isUser, persona, isSpeaking, onToggleSpeech, onOpenM
             
             <div 
                 className={`max-w-[85%] space-y-1 relative`}
-                onContextMenu={(e) => { e.preventDefault(); onOpenMenu(msg.id, e.clientX, e.clientY); }}
-                onTouchStart={(e) => { longPress.onTouchStart(); if(e.touches[0]) onOpenMenu(msg.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                // Support both Right Click and Long Press
+                onContextMenu={(e) => { e.preventDefault(); onOpenMenu(); }}
+                onTouchStart={longPress.onTouchStart}
                 onTouchEnd={longPress.onTouchEnd}
                 onMouseDown={longPress.onMouseDown}
                 onMouseUp={longPress.onMouseUp}
+                onClick={(e) => {
+                    // Mobile fix: if user just taps, verify if we should open menu or not
+                    // Ideally taps shouldn't trigger menu, only long press
+                }}
             >
                 {!isUser && mode === 'P2P' && <p className="text-[9px] text-gray-500 ml-2">{msg.sender}</p>}
                 {msg.image && <img src={msg.image} className="w-48 rounded-xl border border-white/10" alt="Upload" />}
                 {msg.text && (
                     <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-neu relative select-none transition-transform active:scale-[0.98] ${isUser ? 'bg-[#292d3e] text-blue-400 rounded-tr-none border border-blue-500/10' : 'bg-[#292d3e] text-gray-300 rounded-tl-none border border-white/5'}`}>
-                        <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                        {/* Quote visualization if message contains Reply metadata */}
+                        {msg.text.includes('[Replying to') && (
+                             <div className="text-[10px] text-gray-500 italic mb-2 border-l-2 border-white/20 pl-2">
+                                 {msg.text.split(']:')[0].replace('[Replying to "', 'Replying: "')}
+                             </div>
+                        )}
+                        <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\[Replying to.*?\]:\s/, '').replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                        
                         {!isUser && mode === 'AI' && <button onClick={(e) => {e.stopPropagation(); onToggleSpeech();}} className={`absolute -right-8 bottom-0 p-2 text-gray-500 hover:text-white transition-opacity ${isSpeaking ? 'opacity-100 text-green-400' : 'opacity-0 group-hover:opacity-100'}`}>{isSpeaking ? <Activity className="animate-pulse" size={14}/> : <Volume2 size={14}/>}</button>}
                     </div>
                 )}
