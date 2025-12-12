@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Sparkles, ImageIcon, RotateCcw, User, Heart, Zap, Briefcase, Camera, TrendingUp, Smile, Activity, Radio, Users, Copy, Link2, CheckCircle, AlertCircle, Plus, X, Volume2, Reply, FileText, RefreshCw, Trash2, MoreVertical, Mic, Archive, Save, ChevronDown } from './Icons';
+import { Send, Sparkles, ImageIcon, RotateCcw, User, Heart, Zap, Briefcase, Camera, TrendingUp, Smile, Activity, Radio, Users, Copy, Link2, CheckCircle, AlertCircle, Plus, X, Volume2, Reply, FileText, RefreshCw, Trash2, MoreVertical, Mic, Archive, Save, ChevronDown, Headphones } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { useNeural } from './NeuralContext';
 import { showToast } from './Toast';
+import { playTTS, stopTTS, TTS_VOICES } from '../services/ttsService';
 
 // Access PeerJS from global scope (CDN)
 declare const Peer: any;
@@ -109,9 +110,9 @@ const Chat: React.FC<any> = () => {
   const recognitionRef = useRef<any>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [savedSessions, setSavedSessions] = useState<any[]>([]);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>('Kimberly');
   const [showVoiceMenu, setShowVoiceMenu] = useState(false);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
 
   // --- P2P STATE ---
   const [peer, setPeer] = useState<any>(null);
@@ -189,15 +190,9 @@ const Chat: React.FC<any> = () => {
       
       if (storedSessions) { try { setSavedSessions(JSON.parse(storedSessions)); } catch(e) {} }
 
-      // Load Voices
-      const loadVoices = () => {
-          const vs = window.speechSynthesis.getVoices();
-          setVoices(vs);
-          const pref = localStorage.getItem('SNAPAURA_TTS_VOICE');
-          if (pref) setSelectedVoiceURI(pref);
-      };
-      loadVoices();
-      window.speechSynthesis.onvoiceschanged = loadVoices;
+      // Load Voice Pref
+      const pref = localStorage.getItem('SNAPAURA_TTS_VOICE_ID');
+      if (pref) setSelectedVoiceId(pref);
 
   }, [state.userProfile]);
 
@@ -317,7 +312,14 @@ const Chat: React.FC<any> = () => {
       try {
           const historyForApi = history.slice(0, -1).filter(m => m.role).map(m => ({ role: m.role, parts: [{ text: m.text }] }));
           const res = await sendChatMessage(historyForApi, lastMsg, persona.prompt, img, state);
+          
           setMessages(prev => [...prev, { role: 'model', text: res, personaId: persona.id, id: Date.now() }]);
+
+          // AUTO-SPEAK IF IN VOICE MODE
+          if (isVoiceMode) {
+              playTTS(res, selectedVoiceId);
+          }
+
       } catch (e: any) {
           setMessages(prev => [...prev, { role: 'model', text: e.message || "Connection error.", personaId: persona.id, id: Date.now() }]);
       } finally {
@@ -347,29 +349,15 @@ const Chat: React.FC<any> = () => {
       }
   };
 
-  // --- IMPROVED TTS ---
-  const cleanTextForSpeech = (text: string) => {
-      return text
-          .replace(/[*_`#]/g, '') // Markdown
-          .replace(/\[.*?\]/g, '') // Brackets
-          // Remove emojis (replace with silence)
-          .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ' ');
-  };
-
+  // --- INTEGRATED TTS ---
   const toggleSpeech = (text: string, id: number) => {
       if (speakingMsgId === id) { 
-          window.speechSynthesis.cancel(); 
+          stopTTS();
           setSpeakingMsgId(null); 
       } else { 
-          window.speechSynthesis.cancel(); 
-          const utterance = new SpeechSynthesisUtterance(cleanTextForSpeech(text)); 
-          if(selectedVoiceURI) {
-              const v = voices.find(v => v.voiceURI === selectedVoiceURI);
-              if(v) utterance.voice = v;
-          }
-          utterance.onend = () => setSpeakingMsgId(null); 
-          setSpeakingMsgId(id); 
-          window.speechSynthesis.speak(utterance); 
+          playTTS(text, selectedVoiceId);
+          setSpeakingMsgId(id);
+          // Note: In a real app we'd bind an onEnded listener to clear state
       }
   };
 
@@ -413,6 +401,7 @@ const Chat: React.FC<any> = () => {
   };
 
   const handleClear = () => {
+      stopTTS();
       if (mode === 'AI') { setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id, id: Date.now() }]); localStorage.removeItem('SNAPAURA_CHAT_HISTORY'); showToast("Chat Reset", "info"); } 
       else { setP2pMessages([]); showToast("Chat Cleared", "info"); }
   };
@@ -479,8 +468,8 @@ const Chat: React.FC<any> = () => {
                                 <div className="absolute top-full right-0 mt-2 w-48 bg-[#292d3e] shadow-xl border border-white/10 rounded-xl overflow-hidden p-2 z-50">
                                     <h4 className="text-[10px] font-bold text-gray-500 uppercase px-2 mb-2">Select Voice</h4>
                                     <div className="max-h-40 overflow-y-auto hide-scrollbar space-y-1">
-                                        {voices.map(v => (
-                                            <button key={v.voiceURI} onClick={() => { setSelectedVoiceURI(v.voiceURI); localStorage.setItem('SNAPAURA_TTS_VOICE', v.voiceURI); }} className={`w-full text-left text-xs p-2 rounded-lg truncate ${selectedVoiceURI === v.voiceURI ? 'bg-blue-400/20 text-blue-400' : 'text-gray-400 hover:bg-white/5'}`}>
+                                        {TTS_VOICES.map(v => (
+                                            <button key={v.id} onClick={() => { setSelectedVoiceId(v.id); localStorage.setItem('SNAPAURA_TTS_VOICE_ID', v.id); }} className={`w-full text-left text-xs p-2 rounded-lg truncate ${selectedVoiceId === v.id ? 'bg-blue-400/20 text-blue-400' : 'text-gray-400 hover:bg-white/5'}`}>
                                                 {v.name}
                                             </button>
                                         ))}
@@ -645,6 +634,14 @@ const Chat: React.FC<any> = () => {
                         <textarea ref={textareaRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={mode === 'AI' ? `Message ${activePersona.name}...` : "Type a secure message..."} className="w-full bg-transparent px-3 py-3 text-gray-200 outline-none text-sm placeholder-gray-600 resize-none max-h-32 min-h-[44px] hide-scrollbar leading-relaxed" rows={1} disabled={mode === 'P2P' && p2pStatus !== 'connected'}/>
                     </div>
                 </div>
+                 
+                 {/* Voice Toggle */}
+                 {mode === 'AI' && (
+                     <button onClick={() => { setIsVoiceMode(!isVoiceMode); if(!isVoiceMode) showToast("Voice Mode On: AI will speak.", "success"); }} className={`w-10 h-10 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed flex items-center justify-center transition-all flex-shrink-0 ${isVoiceMode ? 'text-green-400 shadow-neon-green' : 'text-gray-400 hover:text-white'}`}>
+                        <Headphones size={18} />
+                     </button>
+                 )}
+
                  <button onClick={handleVoiceInput} className={`w-10 h-10 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed flex items-center justify-center transition-all flex-shrink-0 ${isListening ? 'text-red-400 animate-pulse shadow-neon-pink' : 'text-gray-400 hover:text-white'}`}><Mic size={18} /></button>
                 <button onClick={handleSend} disabled={!input.trim() || (mode === 'P2P' && p2pStatus !== 'connected')} className="w-10 h-10 bg-[#292d3e] shadow-neu rounded-full text-blue-400 active:shadow-neu-pressed disabled:opacity-50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 flex-shrink-0"><Send size={18} className={input.trim() ? "fill-current" : ""} /></button>
             </div>
