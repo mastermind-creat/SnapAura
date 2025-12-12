@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Sparkles, ImageIcon, RotateCcw, User, Heart, Zap, Briefcase, Camera, TrendingUp, Smile, Activity, Radio, Users, Copy, Link2, CheckCircle, AlertCircle, Plus, X, Volume2, Reply, FileText, RefreshCw, Trash2, MoreVertical } from './Icons';
+import { Send, Sparkles, ImageIcon, RotateCcw, User, Heart, Zap, Briefcase, Camera, TrendingUp, Smile, Activity, Radio, Users, Copy, Link2, CheckCircle, AlertCircle, Plus, X, Volume2, Reply, FileText, RefreshCw, Trash2, MoreVertical, Mic, Archive, Save, ChevronDown } from './Icons';
 import { sendChatMessage } from '../services/geminiService';
 import { useNeural } from './NeuralContext';
 import { showToast } from './Toast';
@@ -104,6 +104,15 @@ const Chat: React.FC<any> = () => {
   const [loading, setLoading] = useState(false);
   const [activePersona, setActivePersona] = useState(PERSONAS[0]);
 
+  // --- NEW: VOICE & HISTORY STATE ---
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [savedSessions, setSavedSessions] = useState<any[]>([]);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>('');
+  const [showVoiceMenu, setShowVoiceMenu] = useState(false);
+
   // --- P2P STATE ---
   const [peer, setPeer] = useState<any>(null);
   const [myId, setMyId] = useState('');
@@ -170,12 +179,26 @@ const Chat: React.FC<any> = () => {
   useEffect(() => {
       const storedHistory = localStorage.getItem('SNAPAURA_CHAT_HISTORY');
       const storedAvatar = localStorage.getItem('SNAPAURA_AVATAR');
+      const storedSessions = localStorage.getItem('SNAPAURA_SAVED_SESSIONS');
       let effectiveUsername = state.userProfile?.username || localStorage.getItem('SNAPAURA_USERNAME');
       
       if (storedAvatar) setUserAvatar(storedAvatar);
       if (effectiveUsername) { setUsername(effectiveUsername); setIsSetup(true); }
       if (storedHistory) { try { setMessages(JSON.parse(storedHistory)); } catch(e) {} } 
       else { setMessages([{ role: 'model', text: activePersona.intro, personaId: activePersona.id, id: Date.now() }]); }
+      
+      if (storedSessions) { try { setSavedSessions(JSON.parse(storedSessions)); } catch(e) {} }
+
+      // Load Voices
+      const loadVoices = () => {
+          const vs = window.speechSynthesis.getVoices();
+          setVoices(vs);
+          const pref = localStorage.getItem('SNAPAURA_TTS_VOICE');
+          if (pref) setSelectedVoiceURI(pref);
+      };
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+
   }, [state.userProfile]);
 
   useEffect(() => {
@@ -216,7 +239,78 @@ const Chat: React.FC<any> = () => {
 
   useEffect(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, p2pMessages, mode, input, replyingTo]);
+  }, [messages, p2pMessages, mode, input, replyingTo, isListening]);
+
+  // --- NEW: Voice Input Handler ---
+  const handleVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast("Voice input not supported", "error");
+      return;
+    }
+    
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(prev => prev + (prev ? ' ' : '') + transcript);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      showToast("Voice input failed", "error");
+    };
+    
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  // --- NEW: Session Management ---
+  const saveSession = () => {
+     if(messages.length <= 1) { showToast("Nothing to save", "info"); return; }
+     const title = messages.find(m => m.role === 'user')?.text.substring(0, 30) || "Conversation";
+     const newSession = {
+         id: Date.now(),
+         title: `${title}...`,
+         timestamp: Date.now(),
+         messages: messages,
+         personaId: activePersona.id
+     };
+     const updated = [newSession, ...savedSessions];
+     setSavedSessions(updated);
+     localStorage.setItem('SNAPAURA_SAVED_SESSIONS', JSON.stringify(updated));
+     showToast("Chat Saved to History", "success");
+     setMenuOpenId(null);
+  };
+
+  const loadSession = (session: any) => {
+      if(confirm("Load this chat? Current unsaved chat will be lost.")) {
+          setMessages(session.messages);
+          const p = PERSONAS.find(pr => pr.id === session.personaId);
+          if(p) setActivePersona(p);
+          setShowHistory(false);
+          showToast("Chat Loaded", "success");
+      }
+  };
+
+  const deleteSession = (id: number, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const updated = savedSessions.filter(s => s.id !== id);
+      setSavedSessions(updated);
+      localStorage.setItem('SNAPAURA_SAVED_SESSIONS', JSON.stringify(updated));
+  };
 
   const processAiResponse = async (history: any[], lastMsg: string, persona: typeof activePersona, img?: string) => {
       setLoading(true);
@@ -253,10 +347,30 @@ const Chat: React.FC<any> = () => {
       }
   };
 
-  const cleanTextForSpeech = (text: string) => text.replace(/[*_`#]/g, '').replace(/\[.*?\]/g, '');
+  // --- IMPROVED TTS ---
+  const cleanTextForSpeech = (text: string) => {
+      return text
+          .replace(/[*_`#]/g, '') // Markdown
+          .replace(/\[.*?\]/g, '') // Brackets
+          // Remove emojis (replace with silence)
+          .replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, ' ');
+  };
+
   const toggleSpeech = (text: string, id: number) => {
-      if (speakingMsgId === id) { window.speechSynthesis.cancel(); setSpeakingMsgId(null); } 
-      else { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(cleanTextForSpeech(text)); utterance.onend = () => setSpeakingMsgId(null); setSpeakingMsgId(id); window.speechSynthesis.speak(utterance); }
+      if (speakingMsgId === id) { 
+          window.speechSynthesis.cancel(); 
+          setSpeakingMsgId(null); 
+      } else { 
+          window.speechSynthesis.cancel(); 
+          const utterance = new SpeechSynthesisUtterance(cleanTextForSpeech(text)); 
+          if(selectedVoiceURI) {
+              const v = voices.find(v => v.voiceURI === selectedVoiceURI);
+              if(v) utterance.voice = v;
+          }
+          utterance.onend = () => setSpeakingMsgId(null); 
+          setSpeakingMsgId(id); 
+          window.speechSynthesis.speak(utterance); 
+      }
   };
 
   const handleSend = () => {
@@ -335,11 +449,19 @@ const Chat: React.FC<any> = () => {
                   processAiResponse(newHistory, messages[lastUserIndex].text, activePersona);
               }
               break;
+          case 'delete':
+              if (mode === 'AI') setMessages(prev => prev.filter(m => m.id !== msg.id));
+              else setP2pMessages(prev => prev.filter(m => m.id !== msg.id));
+              showToast("Message deleted", "info");
+              break;
+          case 'speak':
+              toggleSpeech(msg.text, msg.id);
+              break;
       }
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#292d3e] relative overflow-hidden pb-24" onClick={() => setMenuOpenId(null)}>
+    <div className="h-full flex flex-col bg-[#292d3e] relative overflow-hidden pb-24" onClick={() => { setMenuOpenId(null); setShowVoiceMenu(false); }}>
         <canvas id="matrix-bg" className="absolute inset-0 z-0 opacity-10 pointer-events-none"></canvas>
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
 
@@ -347,9 +469,30 @@ const Chat: React.FC<any> = () => {
             <div className="flex justify-between items-center p-4">
                 <div className="flex bg-[#1e212d] rounded-xl p-1 shadow-neu-pressed">
                     <button onClick={() => setMode('AI')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${mode === 'AI' ? 'bg-[#292d3e] shadow-neu text-blue-400' : 'text-gray-500'}`}><Sparkles size={14}/> AI Chat</button>
-                    <button onClick={() => setMode('P2P')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${mode === 'P2P' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}><Users size={14}/> Secure P2P</button>
+                    <button onClick={() => setMode('P2P')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${mode === 'P2P' ? 'bg-[#292d3e] shadow-neu text-green-400' : 'text-gray-500'}`}><Users size={14}/> P2P</button>
                 </div>
-                <button onClick={handleClear} className="p-2 text-gray-500 hover:text-white transition-colors bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed"><RotateCcw size={16}/></button>
+                <div className="flex gap-2">
+                    {mode === 'AI' && (
+                        <div className="relative">
+                            <button onClick={(e) => { e.stopPropagation(); setShowVoiceMenu(!showVoiceMenu); }} className="p-2 text-gray-500 hover:text-white transition-colors bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed"><Volume2 size={16}/></button>
+                            {showVoiceMenu && (
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-[#292d3e] shadow-xl border border-white/10 rounded-xl overflow-hidden p-2 z-50">
+                                    <h4 className="text-[10px] font-bold text-gray-500 uppercase px-2 mb-2">Select Voice</h4>
+                                    <div className="max-h-40 overflow-y-auto hide-scrollbar space-y-1">
+                                        {voices.map(v => (
+                                            <button key={v.voiceURI} onClick={() => { setSelectedVoiceURI(v.voiceURI); localStorage.setItem('SNAPAURA_TTS_VOICE', v.voiceURI); }} className={`w-full text-left text-xs p-2 rounded-lg truncate ${selectedVoiceURI === v.voiceURI ? 'bg-blue-400/20 text-blue-400' : 'text-gray-400 hover:bg-white/5'}`}>
+                                                {v.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <button onClick={() => saveSession()} className="p-2 text-gray-500 hover:text-yellow-400 transition-colors bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed" title="Save Chat"><Save size={16}/></button>
+                    <button onClick={() => setShowHistory(true)} className="p-2 text-gray-500 hover:text-blue-400 transition-colors bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed" title="History"><Archive size={16}/></button>
+                    <button onClick={handleClear} className="p-2 text-gray-500 hover:text-red-400 transition-colors bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed" title="Reset"><RotateCcw size={16}/></button>
+                </div>
             </div>
             {mode === 'AI' && (
                 <div className="flex gap-2 overflow-x-auto hide-scrollbar px-4 pb-3">
@@ -412,7 +555,28 @@ const Chat: React.FC<any> = () => {
             )}
         </div>
 
-        {/* --- FIXED ACTION SHEET MENU (Mobile Friendly) --- */}
+        {/* --- CHAT HISTORY SIDEBAR --- */}
+        {showHistory && (
+            <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-in-up flex justify-end">
+                <div className="w-3/4 max-w-sm h-full bg-[#292d3e] shadow-2xl p-6 overflow-y-auto border-l border-white/10">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-bold text-gray-200">Chat History</h2>
+                        <button onClick={() => setShowHistory(false)} className="p-2 bg-[#292d3e] shadow-neu rounded-full text-gray-400 active:shadow-neu-pressed"><X size={16}/></button>
+                    </div>
+                    <div className="space-y-3">
+                        {savedSessions.length === 0 ? <p className="text-gray-500 text-sm text-center">No saved chats.</p> : savedSessions.map(s => (
+                            <div key={s.id} onClick={() => loadSession(s)} className="bg-[#292d3e] shadow-neu p-4 rounded-xl cursor-pointer active:shadow-neu-pressed group relative">
+                                <h4 className="text-sm font-bold text-gray-300 truncate pr-6">{s.title}</h4>
+                                <p className="text-[10px] text-gray-500 mt-1">{new Date(s.timestamp).toLocaleDateString()} • {PERSONAS.find(p=>p.id===s.personaId)?.name}</p>
+                                <button onClick={(e) => deleteSession(s.id, e)} className="absolute right-3 top-3 text-gray-600 hover:text-red-400"><Trash2 size={14}/></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* --- FIXED ACTION SHEET MENU --- */}
         {menuOpenId && (
             <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in-up" onClick={() => setMenuOpenId(null)}>
                 <div className="bg-[#292d3e] w-full sm:w-auto sm:min-w-[320px] p-6 pb-8 rounded-t-3xl sm:rounded-3xl shadow-2xl border-t border-white/10 sm:border-0" onClick={e => e.stopPropagation()}>
@@ -426,9 +590,13 @@ const Chat: React.FC<any> = () => {
                             <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-blue-400 group-active:scale-95 transition-transform"><Reply size={20}/></div>
                             <span className="text-[10px] text-gray-500 font-bold uppercase">Reply</span>
                         </button>
-                        <button onClick={() => handleAction('save', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
+                         <button onClick={() => handleAction('save', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
                             <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-yellow-400 group-active:scale-95 transition-transform"><FileText size={20}/></div>
                             <span className="text-[10px] text-gray-500 font-bold uppercase">Save</span>
+                        </button>
+                         <button onClick={() => handleAction('speak', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
+                            <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-purple-400 group-active:scale-95 transition-transform"><Volume2 size={20}/></div>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase">Speak</span>
                         </button>
                         {mode === 'AI' && (
                             <button onClick={() => handleAction('regenerate', null)} className="flex flex-col items-center gap-2 group">
@@ -436,6 +604,10 @@ const Chat: React.FC<any> = () => {
                                 <span className="text-[10px] text-gray-500 font-bold uppercase">Retry</span>
                             </button>
                         )}
+                         <button onClick={() => handleAction('delete', messages.find(m=>m.id===menuOpenId) || p2pMessages.find(m=>m.id===menuOpenId))} className="flex flex-col items-center gap-2 group">
+                            <div className="w-12 h-12 bg-[#1e212d] rounded-2xl flex items-center justify-center text-red-400 group-active:scale-95 transition-transform"><Trash2 size={20}/></div>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase">Delete</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -473,6 +645,7 @@ const Chat: React.FC<any> = () => {
                         <textarea ref={textareaRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={mode === 'AI' ? `Message ${activePersona.name}...` : "Type a secure message..."} className="w-full bg-transparent px-3 py-3 text-gray-200 outline-none text-sm placeholder-gray-600 resize-none max-h-32 min-h-[44px] hide-scrollbar leading-relaxed" rows={1} disabled={mode === 'P2P' && p2pStatus !== 'connected'}/>
                     </div>
                 </div>
+                 <button onClick={handleVoiceInput} className={`w-10 h-10 bg-[#292d3e] shadow-neu rounded-full active:shadow-neu-pressed flex items-center justify-center transition-all flex-shrink-0 ${isListening ? 'text-red-400 animate-pulse shadow-neon-pink' : 'text-gray-400 hover:text-white'}`}><Mic size={18} /></button>
                 <button onClick={handleSend} disabled={!input.trim() || (mode === 'P2P' && p2pStatus !== 'connected')} className="w-10 h-10 bg-[#292d3e] shadow-neu rounded-full text-blue-400 active:shadow-neu-pressed disabled:opacity-50 flex items-center justify-center transition-all hover:scale-105 active:scale-95 flex-shrink-0"><Send size={18} className={input.trim() ? "fill-current" : ""} /></button>
             </div>
             <input type="file" ref={fileRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
@@ -519,6 +692,14 @@ const MessageItem = ({ msg, isUser, persona, isSpeaking, onToggleSpeech, onOpenM
                         {!isUser && mode === 'AI' && <button onClick={(e) => {e.stopPropagation(); onToggleSpeech();}} className={`absolute -right-8 bottom-0 p-2 text-gray-500 hover:text-white transition-opacity ${isSpeaking ? 'opacity-100 text-green-400' : 'opacity-0 group-hover:opacity-100'}`}>{isSpeaking ? <Activity className="animate-pulse" size={14}/> : <Volume2 size={14}/>}</button>}
                     </div>
                 )}
+                 
+                 {/* 3-Dots Menu Trigger */}
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onOpenMenu(); }}
+                    className={`absolute top-2 ${isUser ? '-left-8' : '-right-8'} p-1.5 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity bg-[#292d3e]/50 rounded-full md:block hidden`}
+                >
+                   <MoreVertical size={14} />
+                </button>
             </div>
 
             {isUser && <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-2 shadow-neu border border-white/5 bg-[#1e212d] flex items-center justify-center"><User size={14} className="text-gray-500"/></div>}
