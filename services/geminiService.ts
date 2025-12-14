@@ -311,6 +311,60 @@ export const getLeagueData = async (league: string) => {
     return cleanAndParseJSON(response.text || "{}");
 };
 
+// --- GEN Z FEATURES ---
+
+export const analyzeAura = async (base64Image: string) => {
+    const ai = getAiClient();
+    const { mimeType, data } = processBase64Image(base64Image);
+    const prompt = `
+      Analyze the vibe/aura of this person.
+      Return JSON:
+      {
+        "color": "Hex Code (e.g. #FF00FF)",
+        "archetype": "Gen Z Archetype (e.g. Y2K Princess, Gym Rat, Cottagecore)",
+        "reading": "A short, mystical but slang-heavy vibe check reading.",
+        "song": "A song that matches this vibe (Artist - Title)"
+      }
+    `;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text || "{}");
+};
+
+export const generateRizz = async (context: string, tone: string) => {
+    const ai = getAiClient();
+    const prompt = `
+      You are a Rizz God. Generate 3 replies to this text: "${context}".
+      Tone: ${tone} (e.g. Flirty, Unhinged, Nonchalant).
+      Return JSON Array of strings. Use Gen Z slang (no cap, bet, fr).
+    `;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text || "[]");
+};
+
+export const rateAesthetic = async (base64Image: string) => {
+    const ai = getAiClient();
+    const { mimeType, data } = processBase64Image(base64Image);
+    const prompt = `
+      Rate the 'Fit Check' / Aesthetic of this photo out of 10.
+      Be playful. If it's bad, roast them lightly. If it's good, hype them up using slang.
+      Return JSON: { "rating": number, "verdict": "string", "advice": "string" }
+    `;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
+        config: { responseMimeType: "application/json" }
+    });
+    return cleanAndParseJSON(response.text || "{}");
+};
+
 // --- ENHANCED CRYPTO & FIAT SERVICE ---
 
 export const getCryptoMarketOverview = async () => {

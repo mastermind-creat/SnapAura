@@ -16,10 +16,10 @@ import {
   Zap,
   Trash2, 
   Rocket,
-  Palette,
+  Palette, 
   Brain,
-  CheckCircle,
-  AlertCircle,
+  CheckCircle, 
+  AlertCircle, 
   X,
   Briefcase,
   Link,
@@ -121,7 +121,11 @@ import {
   MapPin,
   PenTool,
   CreditCard,
-  Headphones
+  Headphones,
+  Ghost,
+  Flame,
+  Gem,
+  Smile as Happy
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -259,5 +263,9 @@ export {
   MapPin,
   PenTool,
   CreditCard,
-  Headphones
+  Headphones,
+  Ghost,
+  Flame,
+  Gem,
+  Happy
 };
