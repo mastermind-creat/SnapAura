@@ -11,6 +11,46 @@ export const TTS_VOICES = [
 
 let currentAudio: HTMLAudioElement | null = null;
 
+// Common Internet Slang to Natural Speech Map
+const SLANG_MAP: Record<string, string> = {
+    "omg": "oh my god",
+    "lol": "laughing out loud",
+    "lmao": "laughing my ass off",
+    "lmfao": "laughing my freaking ass off",
+    "rofl": "rolling on the floor laughing",
+    "brb": "be right back",
+    "btw": "by the way",
+    "idk": "I don't know",
+    "tbh": "to be honest",
+    "imho": "in my humble opinion",
+    "imo": "in my opinion",
+    "fr": "for real",
+    "rn": "right now",
+    "wbu": "what about you",
+    "hbu": "how about you",
+    "tbf": "to be fair",
+    "ngl": "not gonna lie",
+    "atm": "at the moment",
+    "irl": "in real life",
+    "jk": "just kidding",
+    "nvm": "never mind",
+    "bc": "because",
+    "msg": "message",
+    "plz": "please",
+    "pls": "please",
+    "thx": "thanks",
+    "ty": "thank you",
+    "gr8": "great",
+    "ur": "your",
+    "u": "you",
+    "r": "are",
+    "iykyk": "if you know you know",
+    "fyi": "for your information",
+    "asap": "as soon as possible",
+    "dm": "direct message",
+    "pov": "point of view"
+};
+
 export const stopTTS = () => {
     if (currentAudio) {
         currentAudio.pause();
@@ -26,21 +66,31 @@ export const stopTTS = () => {
 export const playTTS = async (text: string, voiceId: string = 'Kimberly'): Promise<void> => {
     stopTTS(); // Stop any active playback
 
-    // Advanced Text Cleaning for Human-like Speech
-    let cleanText = text
-        // 1. Remove Markdown links [text](url) -> text
+    let processedText = text;
+
+    // 1. Expand Slang/Abbreviations
+    // We iterate through the map and replace occurrences using Regex with word boundaries (\b)
+    // so we don't accidentally replace parts of words (e.g. "turn" won't trigger "ur")
+    Object.entries(SLANG_MAP).forEach(([slang, expansion]) => {
+        const regex = new RegExp(`\\b${slang}\\b`, 'gi'); // 'gi' = global, case-insensitive
+        processedText = processedText.replace(regex, expansion);
+    });
+
+    // 2. Advanced Text Cleaning for Human-like Speech
+    let cleanText = processedText
+        // Remove Markdown links [text](url) -> text
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        // 2. Remove raw URLs
+        // Remove raw URLs
         .replace(/(?:https?|ftp):\/\/[\n\S]+/g, '')
-        // 3. Remove Markdown formatting characters (*, _, `, ~, #, >, -)
+        // Remove Markdown formatting characters (*, _, `, ~, #, >, -)
         .replace(/[*_`~#>]/g, '')
-        // 4. Remove block context like [Replying to...] or [Image attached]
+        // Remove block context like [Replying to...] or [Image attached]
         .replace(/\[.*?\]/g, '')
-        // 5. Remove Emojis (Modern Unicode Property Escape)
+        // Remove Emojis (Modern Unicode Property Escape)
         .replace(/\p{Extended_Pictographic}/gu, '')
-        // 6. Remove specific symbols often used in bot responses that shouldn't be read
+        // Remove specific symbols often used in bot responses that shouldn't be read
         .replace(/[|]/g, '') 
-        // 7. Collapse whitespace
+        // Collapse whitespace
         .replace(/\s+/g, ' ')
         .trim();
         
