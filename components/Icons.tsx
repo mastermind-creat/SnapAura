@@ -125,7 +125,9 @@ import {
   Ghost,
   Flame,
   Gem,
-  Smile as Happy
+  Smile as Happy,
+  Thermometer,
+  Newspaper
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -267,5 +269,7 @@ export {
   Ghost,
   Flame,
   Gem,
-  Happy
+  Happy,
+  Thermometer,
+  Newspaper
 };

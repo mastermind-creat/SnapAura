@@ -6,7 +6,7 @@ import {
   Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
   Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
   Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle, BarChart, TrendingDown, Trophy,
-  Ghost, Flame, Gem
+  Ghost, Flame, Gem, Globe
 } from './Icons';
 import SocialGrowth from './SocialGrowth';
 import SmartNotes from './SmartNotes';
@@ -16,6 +16,7 @@ import PdfTools from './PdfTools';
 import FootballHub from './FootballHub';
 import LeagueCentral from './LeagueCentral';
 import GenZLab from './GenZLab';
+import AuraState from './AuraState';
 import { getCryptoData, getCurrencyData, getCryptoMarketOverview } from '../services/geminiService';
 import { showToast } from './Toast';
 import SmartCard from './SmartCard';
@@ -39,6 +40,7 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
     { id: 'units', label: 'Converter', icon: Ruler, color: 'text-green-400', cat: 'Essentials' },
     { id: 'links', label: 'Link Shortener', icon: LinkIcon, color: 'text-purple-400', cat: 'Essentials' },
     
+    { id: 'aura-state', label: 'World Pulse', icon: Globe, color: 'text-indigo-400', cat: 'Intelligence' },
     { id: 'gen-z-lab', label: 'Gen Z Lab', icon: Ghost, color: 'text-pink-400', cat: 'Vibes' },
     { id: 'social-growth', label: 'Social Growth', icon: TrendingUp, color: 'text-blue-400', cat: 'Intelligence' },
     { id: 'notes', label: 'Smart Notes', icon: FileText, color: 'text-yellow-400', cat: 'Intelligence' },
@@ -67,13 +69,13 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
                       <div className="p-2 bg-[#292d3e] shadow-neu-pressed rounded-full text-blue-400"><QrCode size={18}/></div>
                       <span className="text-xs font-bold text-gray-300">Scan QR</span>
                   </button>
+                  <button onClick={() => setActiveTool('aura-state')} className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-4 rounded-2xl min-w-[140px] active:shadow-neu-pressed transition-all">
+                      <div className="p-2 bg-[#292d3e] shadow-neu-pressed rounded-full text-indigo-400"><Globe size={18}/></div>
+                      <span className="text-xs font-bold text-gray-300">AuraState</span>
+                  </button>
                   <button onClick={() => setActiveTool('gen-z-lab')} className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-4 rounded-2xl min-w-[140px] active:shadow-neu-pressed transition-all">
                       <div className="p-2 bg-[#292d3e] shadow-neu-pressed rounded-full text-pink-400"><Ghost size={18}/></div>
                       <span className="text-xs font-bold text-gray-300">Vibe Check</span>
-                  </button>
-                  <button onClick={() => setActiveTool('finance')} className="flex items-center gap-3 bg-[#292d3e] shadow-neu p-4 rounded-2xl min-w-[140px] active:shadow-neu-pressed transition-all">
-                      <div className="p-2 bg-[#292d3e] shadow-neu-pressed rounded-full text-yellow-400"><Bitcoin size={18}/></div>
-                      <span className="text-xs font-bold text-gray-300">Market</span>
                   </button>
               </div>
           </div>
@@ -159,6 +161,7 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
             {activeTool === 'league-central' && <LeagueCentral />}
             {activeTool === 'pdf-tools' && <PdfTools />}
             {activeTool === 'gen-z-lab' && <GenZLab />}
+            {activeTool === 'aura-state' && <AuraState />}
         </div>
     </div>
   );
