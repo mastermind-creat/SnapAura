@@ -288,6 +288,29 @@ export const getYesterdayAccuracy = async () => {
     return cleanAndParseJSON(response.text || "[]");
 };
 
+export const getLeagueData = async (league: string) => {
+    const ai = getAiClient();
+    const prompt = `${PromptEngine.getToolSystemInstruction()} 
+    Fetch the current top 15 standings and upcoming 5 fixtures for ${league}.
+    Use Google Search for real-time data.
+    JSON Output: 
+    { 
+      "standings": [
+        { "rank": 1, "team": "Team Name", "played": 10, "points": 25, "gd": "+15", "form": "W D W W L" }
+      ], 
+      "fixtures": [
+        { "home": "Team A", "away": "Team B", "date": "Oct 24", "time": "15:00" }
+      ] 
+    }`;
+    
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return cleanAndParseJSON(response.text || "{}");
+};
+
 // --- ENHANCED CRYPTO & FIAT SERVICE ---
 
 export const getCryptoMarketOverview = async () => {

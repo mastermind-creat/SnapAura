@@ -5,7 +5,7 @@ import {
   ImageIcon, Scissors, Palette, FileText, Smartphone,
   Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
   Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
-  Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle, BarChart, TrendingDown
+  Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle, BarChart, TrendingDown, Trophy
 } from './Icons';
 import SocialGrowth from './SocialGrowth';
 import SmartNotes from './SmartNotes';
@@ -13,6 +13,7 @@ import ProfileStudio from './ProfileStudio';
 import MoodboardGenerator from './MoodboardGenerator';
 import PdfTools from './PdfTools';
 import FootballHub from './FootballHub';
+import LeagueCentral from './LeagueCentral';
 import { getCryptoData, getCurrencyData, getCryptoMarketOverview } from '../services/geminiService';
 import { showToast } from './Toast';
 import SmartCard from './SmartCard';
@@ -38,7 +39,8 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
     
     { id: 'notes', label: 'Smart Notes', icon: FileText, color: 'text-yellow-400', cat: 'Intelligence' },
     { id: 'social-growth', label: 'Social Growth', icon: TrendingUp, color: 'text-blue-400', cat: 'Intelligence' },
-    { id: 'football-hub', label: 'Football Intel', icon: Zap, color: 'text-green-400', cat: 'Intelligence' },
+    { id: 'football-hub', label: 'Football Intel', icon: Zap, color: 'text-green-400', cat: 'Sports' },
+    { id: 'league-central', label: 'League Center', icon: Trophy, color: 'text-orange-400', cat: 'Sports' },
     
     { id: 'profile-studio', label: 'Profile Studio', icon: Smartphone, color: 'text-indigo-400', cat: 'Creative' },
     { id: 'moodboard', label: 'Moodboard', icon: Palette, color: 'text-pink-400', cat: 'Creative' },
@@ -146,6 +148,7 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
             {activeTool === 'profile-studio' && <ProfileStudio />}
             {activeTool === 'moodboard' && <MoodboardGenerator />}
             {activeTool === 'football-hub' && <FootballHub />}
+            {activeTool === 'league-central' && <LeagueCentral />}
             {activeTool === 'pdf-tools' && <PdfTools />}
         </div>
     </div>
