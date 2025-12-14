@@ -26,10 +26,22 @@ export const stopTTS = () => {
 export const playTTS = async (text: string, voiceId: string = 'Kimberly'): Promise<void> => {
     stopTTS(); // Stop any active playback
 
-    // Clean text: remove markdown, brackets, emojis for smoother speech
-    const cleanText = text
-        .replace(/[*_`#]/g, '') 
+    // Advanced Text Cleaning for Human-like Speech
+    let cleanText = text
+        // 1. Remove Markdown links [text](url) -> text
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // 2. Remove raw URLs
+        .replace(/(?:https?|ftp):\/\/[\n\S]+/g, '')
+        // 3. Remove Markdown formatting characters (*, _, `, ~, #, >, -)
+        .replace(/[*_`~#>]/g, '')
+        // 4. Remove block context like [Replying to...] or [Image attached]
         .replace(/\[.*?\]/g, '')
+        // 5. Remove Emojis (Modern Unicode Property Escape)
+        .replace(/\p{Extended_Pictographic}/gu, '')
+        // 6. Remove specific symbols often used in bot responses that shouldn't be read
+        .replace(/[|]/g, '') 
+        // 7. Collapse whitespace
+        .replace(/\s+/g, ' ')
         .trim();
         
     if (!cleanText) return;
