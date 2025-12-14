@@ -7,6 +7,7 @@ import { Logo } from './Logo';
 import { Tab } from '../types';
 import { useNeural } from './NeuralContext';
 import SmartCard from './SmartCard';
+import SystemConsole from './SystemConsole';
 
 interface StudioProps {
   image: string | null;
@@ -87,7 +88,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
   // --- DASHBOARD VIEW (NEW HOME) ---
   if (!image) {
     return (
-      <div className="relative h-full flex flex-col items-center justify-center bg-[#0f0f11] overflow-hidden pb-24">
+      <div className="relative h-full flex flex-col items-center justify-between bg-[#0f0f11] overflow-hidden pb-24">
         
         {/* === LAYER 1: CINEMATIC BACKGROUND === */}
         <div className="absolute inset-0 z-0 pointer-events-none">
@@ -112,46 +113,31 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0f0f11_90%)]"></div>
         </div>
 
-        {/* === LAYER 2: HUD ELEMENTS === */}
-        <div className="absolute inset-0 z-10 pointer-events-none px-6 py-8 flex flex-col justify-between">
-            {/* Top HUD */}
-            <div className="flex justify-between items-start opacity-60">
-                <div className="flex flex-col gap-1">
-                    <div className="h-1 w-12 bg-cyan-500 rounded-full animate-pulse"></div>
-                    <span className="text-[8px] font-mono text-cyan-400">SYS.ONLINE</span>
-                </div>
-                <div className="flex flex-col gap-1 items-end">
-                    <div className="h-1 w-12 bg-purple-500 rounded-full animate-pulse delay-75"></div>
-                    <span className="text-[8px] font-mono text-purple-400">NET.SECURE</span>
-                </div>
+        {/* === LAYER 2: TOP CONTROLS === */}
+        <div className="w-full flex justify-between items-center p-6 relative z-30">
+             <div className="flex flex-col gap-1">
+                <div className="h-1 w-12 bg-cyan-500 rounded-full animate-pulse"></div>
+                <span className="text-[8px] font-mono text-cyan-400">SYS.ONLINE</span>
             </div>
-            
-            {/* Corner Brackets */}
-            <div className="absolute top-6 left-6 w-8 h-8 border-t border-l border-white/20"></div>
-            <div className="absolute top-6 right-6 w-8 h-8 border-t border-r border-white/20"></div>
-            <div className="absolute bottom-24 left-6 w-8 h-8 border-b border-l border-white/20"></div>
-            <div className="absolute bottom-24 right-6 w-8 h-8 border-b border-r border-white/20"></div>
+             <div className="flex items-center gap-4">
+                <button onClick={onUserClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden hover:scale-105 transition-transform active:scale-95 group">
+                    {avatar ? <img src={avatar} className="w-full h-full object-cover"/> : <User size={18} className="text-gray-400 group-hover:text-white" />}
+                </button>
+                <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center text-gray-400 border border-white/10 hover:scale-105 transition-transform active:scale-95 hover:text-white hover:border-white/20">
+                    <Settings size={18} />
+                </button>
+             </div>
         </div>
 
-        {/* === LAYER 3: CONTROLS === */}
-        <div className="absolute top-6 right-6 z-30 flex items-center gap-4">
-             <button onClick={onUserClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden hover:scale-105 transition-transform active:scale-95 group">
-                 {avatar ? <img src={avatar} className="w-full h-full object-cover"/> : <User size={18} className="text-gray-400 group-hover:text-white" />}
-             </button>
-             <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center text-gray-400 border border-white/10 hover:scale-105 transition-transform active:scale-95 hover:text-white hover:border-white/20">
-                 <Settings size={18} />
-             </button>
-        </div>
-
-        {/* === LAYER 4: CENTER STAGE (THE CORE) === */}
-        <div className="z-20 flex flex-col items-center text-center space-y-12 max-w-xs w-full animate-fade-in-up">
+        {/* === LAYER 3: CENTER STAGE (THE CORE) === */}
+        <div className="z-20 flex flex-col items-center text-center space-y-8 max-w-xs w-full animate-fade-in-up flex-1 justify-center">
             
             {/* THE NEURAL CORE REACTOR */}
             <div className="relative group cursor-pointer" onClick={() => dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'aura-state' }})}>
                 {/* 1. Outer Glow Field */}
                 <div className="absolute -inset-10 bg-gradient-to-tr from-cyan-500/20 via-purple-500/10 to-blue-500/20 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-1000 animate-pulse-slow"></div>
                 
-                <div className="relative w-48 h-48 flex items-center justify-center">
+                <div className="relative w-40 h-40 flex items-center justify-center">
                     {/* 2. Outer Rotating Ring (Slow) */}
                     <div className="absolute inset-0 rounded-full border border-white/5 border-t-cyan-500/50 border-b-purple-500/50 animate-spin-slow"></div>
                     
@@ -162,7 +148,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
                     <div className="absolute inset-2 rounded-full border border-dashed border-white/10 animate-[spin_20s_linear_infinite]"></div>
 
                     {/* 5. The Core Orb */}
-                    <div className="w-28 h-28 rounded-full bg-[#151720] shadow-[inset_0_0_20px_rgba(0,0,0,1)] flex items-center justify-center relative overflow-hidden border border-white/10 group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-24 h-24 rounded-full bg-[#151720] shadow-[inset_0_0_20px_rgba(0,0,0,1)] flex items-center justify-center relative overflow-hidden border border-white/10 group-hover:scale-105 transition-transform duration-500">
                          
                          {/* Core Energy (Gradient Spin) */}
                          <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(0,243,255,0.4)_360deg)] animate-[spin_3s_linear_infinite]"></div>
@@ -171,7 +157,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
                          <div className="absolute inset-[2px] bg-[#0f0f11] rounded-full flex items-center justify-center">
                              {/* Central Icon */}
                              <div className="relative z-10 text-white drop-shadow-[0_0_10px_rgba(0,243,255,0.8)]">
-                                 <Aperture size={48} className="animate-[pulse_3s_ease-in-out_infinite]" />
+                                 <Aperture size={40} className="animate-[pulse_3s_ease-in-out_infinite]" />
                              </div>
                              
                              {/* Inner Grid */}
@@ -179,50 +165,39 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
                          </div>
                     </div>
                 </div>
-                
-                {/* Status Label (Floating) */}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                    <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                        <span className="text-[9px] font-mono text-cyan-400 tracking-widest">NEURAL ENGINE ACTIVE</span>
-                    </div>
-                </div>
             </div>
 
             {/* Typography */}
-            <div className="space-y-2 relative">
-                <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 tracking-tighter drop-shadow-2xl">
+            <div className="space-y-1 relative">
+                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 tracking-tighter drop-shadow-2xl">
                     SnapAura
                 </h1>
-                <div className="flex items-center justify-center gap-3">
-                    <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-cyan-500"></div>
-                    <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.3em] animate-pulse">
-                        Unified Creative System
-                    </p>
-                    <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-cyan-500"></div>
-                </div>
+                <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.3em] animate-pulse">
+                    Unified Creative System
+                </p>
             </div>
 
             {/* Primary Action Button */}
-            <div className="w-full pt-6">
+            <div className="w-full px-4">
                 <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="group relative w-full h-16 rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95"
+                    className="group relative w-full h-14 rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95"
                 >
                     {/* Glowing Background */}
                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 animate-shimmer bg-[length:200%_100%] opacity-80 group-hover:opacity-100 transition-opacity"></div>
                     
                     {/* Glass Overlay */}
                     <div className="absolute inset-[1px] bg-[#0f0f11]/90 backdrop-blur-sm rounded-[15px] flex items-center justify-center gap-3 z-10 group-hover:bg-[#0f0f11]/80 transition-colors">
-                        <Upload size={20} className="text-white group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-white text-sm tracking-widest uppercase">Initialize Upload</span>
+                        <Upload size={18} className="text-white group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-white text-xs tracking-widest uppercase">Initialize Upload</span>
                     </div>
-                    
-                    {/* Shine Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 z-20"></div>
                 </button>
             </div>
+        </div>
 
+        {/* === LAYER 4: SYSTEM CONSOLE (HUD) === */}
+        <div className="w-full px-4 mb-2 z-20">
+            <SystemConsole />
         </div>
 
         {/* Hidden Input */}

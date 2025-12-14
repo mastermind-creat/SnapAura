@@ -15,7 +15,7 @@ import {
   Image as ImageIcon,
   Zap,
   Trash2, 
-  Rocket,
+  Rocket, 
   Palette, 
   Brain,
   CheckCircle, 
@@ -130,7 +130,9 @@ import {
   Thermometer,
   Newspaper,
   Command,
-  Aperture
+  Aperture,
+  Cpu,
+  Database
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -277,5 +279,7 @@ export {
   Thermometer,
   Newspaper,
   Command,
-  Aperture
+  Aperture,
+  Cpu,
+  Database
 };
