@@ -10,12 +10,15 @@ interface NeuralContextType {
   incrementStat: (type: 'edits' | 'generated' | 'chats') => void;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
+  refreshKey: number;
+  resetSystem: (clearStorage?: boolean) => void;
 }
 
 const NeuralContext = createContext<NeuralContextType | undefined>(undefined);
 
 export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [state, setState] = useState<GlobalContextState>({
     activeImage: null,
     activeAnalysis: null,
@@ -24,38 +27,42 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     clipboard: null
   });
 
+  const initializeFromStorage = () => {
+    try {
+        const storedProfile = localStorage.getItem('SNAPAURA_PROFILE');
+        const storedActions = localStorage.getItem('SNAPAURA_ACTIONS');
+        
+        let profile = storedProfile ? JSON.parse(storedProfile) : null;
+        
+        // Create Default Local User if none exists
+        if (!profile) {
+            profile = {
+                name: "Local User",
+                email: "user@local.device",
+                joinDate: new Date().toLocaleDateString(),
+                stats: { edits: 0, generated: 0, chats: 0 },
+                username: "user_" + Math.floor(Math.random() * 1000),
+                bio: "Ready to create.",
+                interests: [],
+                hobbies: [],
+                skills: []
+            };
+            localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(profile));
+        }
+
+        setState(prev => ({
+            ...prev,
+            userProfile: profile,
+            recentActions: storedActions ? JSON.parse(storedActions) : []
+        }));
+    } catch (e) {
+        console.error("Failed to load neural state", e);
+    }
+  };
+
   // Load Persistence on Mount
   useEffect(() => {
-      try {
-          const storedProfile = localStorage.getItem('SNAPAURA_PROFILE');
-          const storedActions = localStorage.getItem('SNAPAURA_ACTIONS');
-          
-          let profile = storedProfile ? JSON.parse(storedProfile) : null;
-          
-          // Create Default Local User if none exists
-          if (!profile) {
-              profile = {
-                  name: "Local User",
-                  email: "user@local.device",
-                  joinDate: new Date().toLocaleDateString(),
-                  stats: { edits: 0, generated: 0, chats: 0 },
-                  username: "user_" + Math.floor(Math.random() * 1000),
-                  bio: "Ready to create.",
-                  interests: [],
-                  hobbies: [],
-                  skills: []
-              };
-              localStorage.setItem('SNAPAURA_PROFILE', JSON.stringify(profile));
-          }
-
-          setState(prev => ({
-              ...prev,
-              userProfile: profile,
-              recentActions: storedActions ? JSON.parse(storedActions) : []
-          }));
-      } catch (e) {
-          console.error("Failed to load neural state", e);
-      }
+      initializeFromStorage();
   }, []);
 
   // Save Persistence on Change
@@ -73,7 +80,6 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setState(prev => ({ ...prev, ...updates }));
   };
 
-  // Helper to increment stats and auto-save
   const incrementStat = (type: 'edits' | 'generated' | 'chats') => {
       setState(prev => {
           if (!prev.userProfile) return prev;
@@ -88,11 +94,31 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
   };
 
-  // THE INTENT ENGINE: Routes actions between tools
+  // System Reset Handler
+  const resetSystem = (clearStorage = false) => {
+      if (clearStorage) {
+          localStorage.clear();
+      }
+      
+      // Reset Internal State
+      setState({
+          activeImage: null,
+          activeAnalysis: null,
+          userProfile: null, 
+          recentActions: [],
+          clipboard: null
+      });
+      setActiveTab(Tab.HOME);
+      
+      // Re-initialize logic
+      initializeFromStorage();
+      
+      // Force UI Remount
+      setRefreshKey(prev => prev + 1);
+  };
+
   const dispatchIntent = (intent: AppIntent) => {
     console.log("Processing Intent:", intent.type);
-    
-    // Log action
     updateState({ recentActions: [intent.type, ...state.recentActions].slice(0, 10) });
 
     switch (intent.type) {
@@ -138,7 +164,6 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setActiveTab(Tab.CHAT);
         } else {
             setActiveTab(Tab.TOOLKIT);
-            // Delay to allow Toolkit mount
             setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('neural-tool-select', { detail: intent.payload.toolId }));
             }, 100);
@@ -152,7 +177,7 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   return (
-    <NeuralContext.Provider value={{ state, dispatchIntent, updateState, incrementStat, activeTab, setActiveTab }}>
+    <NeuralContext.Provider value={{ state, dispatchIntent, updateState, incrementStat, activeTab, setActiveTab, refreshKey, resetSystem }}>
       {children}
     </NeuralContext.Provider>
   );

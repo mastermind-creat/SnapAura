@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { X, Key, WhatsApp, RotateCcw, ChevronRight, Smartphone, ShieldCheck, RefreshCw, Zap, Power, Server } from './Icons';
+import React, { useState, useEffect } from 'react';
+import { X, Key, WhatsApp, RotateCcw, ChevronRight, Smartphone, ShieldCheck, RefreshCw, Zap, Power, Server, Activity, AlertCircle, Trash2, FileText, MessageCircle } from './Icons';
 import { showToast } from './Toast';
+import { useNeural } from './NeuralContext';
 
 interface SettingsModalProps {
   isVisible: boolean;
@@ -10,20 +11,179 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpenApiKey }) => {
+  const { resetSystem } = useNeural();
+  
+  // Animation States
+  const [isRebooting, setIsRebooting] = useState(false);
+  const [rebootMsg, setRebootMsg] = useState('');
+  const [rebootSub, setRebootSub] = useState('');
+  
+  // Reset Confirmation States
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [storageStats, setStorageStats] = useState<any>(null);
+
+  // Analyze storage for the warning screen
+  useEffect(() => {
+      if (isVisible) {
+          const stats = {
+              chats: 0,
+              notes: 0,
+              hasKey: false,
+              hasProfile: false,
+              hasAvatar: false
+          };
+          
+          try {
+              const chats = JSON.parse(localStorage.getItem('SNAPAURA_SAVED_SESSIONS') || '[]');
+              stats.chats = Array.isArray(chats) ? chats.length : 0;
+              
+              const notes = JSON.parse(localStorage.getItem('SNAPAURA_NOTES') || '[]');
+              stats.notes = Array.isArray(notes) ? notes.length : 0;
+              
+              stats.hasKey = !!localStorage.getItem('GEMINI_API_KEY');
+              stats.hasProfile = !!localStorage.getItem('SNAPAURA_PROFILE');
+              stats.hasAvatar = !!localStorage.getItem('SNAPAURA_AVATAR');
+          } catch (e) {}
+          
+          setStorageStats(stats);
+      }
+  }, [isVisible]);
+
+  // SAFE REBOOT: Uses React Key Reset (avoids white screen)
+  const handleSoftRefresh = () => {
+      setRebootMsg("SYSTEM REBOOT");
+      setRebootSub("Reloading Core Modules...");
+      setIsRebooting(true);
+      if (navigator.vibrate) navigator.vibrate([50, 100, 50]);
+      
+      // Sequence
+      setTimeout(() => setRebootSub("Syncing Neural Context..."), 1000);
+      setTimeout(() => setRebootSub("Re-mounting UI..."), 2000);
+      
+      setTimeout(() => {
+          resetSystem(false); // False = Keep storage, just reset state/UI
+          setIsRebooting(false);
+          onClose();
+          showToast("System Refreshed Successfully", "success");
+      }, 3000);
+  };
+
+  const initiateReset = () => {
+      setShowResetConfirm(true);
+  };
+
+  const confirmFactoryReset = () => {
+      setShowResetConfirm(false);
+      setRebootMsg("FACTORY RESET");
+      setRebootSub("Purging Local Database...");
+      setIsRebooting(true);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 500]);
+
+      setTimeout(() => {
+          resetSystem(true); // True = Clear Storage + Reset State
+          setIsRebooting(false);
+          onClose();
+          showToast("Device Wiped. Welcome to SnapAura.", "info");
+      }, 3000);
+  };
+
+  // --- REBOOT / LOADER ANIMATION OVERLAY ---
+  if (isRebooting) {
+      return (
+        <div className="fixed inset-0 z-[999] bg-[#050505] flex flex-col items-center justify-center overflow-hidden cursor-wait">
+            {/* 1. Moving 3D Grid Background */}
+            <div className="absolute inset-0 z-0 opacity-30">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.1)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(60deg)] animate-[gridMove_2s_linear_infinite]"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent"></div>
+            </div>
+
+            {/* 2. Central Reactor */}
+            <div className="relative z-10 scale-150 mb-12">
+                <div className="absolute inset-[-20px] rounded-full border-2 border-transparent border-t-cyan-500 border-b-cyan-500/30 animate-[spin_3s_linear_infinite]"></div>
+                <div className="absolute inset-[-10px] rounded-full border-2 border-transparent border-l-purple-500 border-r-purple-500/30 animate-[spin_2s_linear_infinite_reverse]"></div>
+                <div className="w-16 h-16 bg-[#1a1c29] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,243,255,0.4)] relative">
+                    <div className="absolute inset-0 rounded-full bg-cyan-400/20 animate-ping"></div>
+                    <Power size={24} className="text-white animate-pulse" />
+                </div>
+            </div>
+
+            {/* 3. Text Data */}
+            <div className="z-10 text-center space-y-2">
+                <h2 className="text-3xl font-black text-white tracking-[0.2em] animate-pulse glitch-text">
+                    {rebootMsg}
+                </h2>
+                <p className="text-xs font-mono text-cyan-400 uppercase tracking-widest opacity-80">
+                    [{rebootSub}]
+                </p>
+            </div>
+
+            {/* 4. Progress Bar */}
+            <div className="mt-8 w-64 h-1 bg-gray-900 rounded-full overflow-hidden relative z-10 border border-white/10">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-1/2 animate-[laserX_1.5s_linear_infinite]"></div>
+            </div>
+        </div>
+      );
+  }
+
   if (!isVisible) return null;
 
-  const handleSoftRefresh = () => {
-      showToast("Refreshing System...", "info");
-      setTimeout(() => window.location.reload(), 800);
-  };
+  // --- DATA DESTRUCTION WARNING SCREEN ---
+  if (showResetConfirm) {
+      return (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-fade-in-up" onClick={() => setShowResetConfirm(false)}></div>
+            <div className="relative w-full max-w-sm bg-[#1a1c29] rounded-3xl p-6 shadow-2xl border border-red-500/30 animate-fade-in-up overflow-hidden">
+                
+                {/* Warning Header */}
+                <div className="flex flex-col items-center text-center mb-6">
+                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                        <AlertCircle size={32} className="text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-black text-white uppercase tracking-wider">Destruction Protocol</h2>
+                    <p className="text-xs text-red-400 font-bold mt-2">All local data will be permanently erased.</p>
+                </div>
 
-  const handleReset = () => {
-      if(confirm("Are you sure you want to reset all app data? This will clear your API key, chat history, and preferences.")) {
-          localStorage.clear();
-          handleSoftRefresh();
-      }
-  };
+                {/* Data List */}
+                <div className="space-y-3 mb-8 bg-[#0f0f11] p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center justify-between text-sm text-gray-300">
+                        <span className="flex items-center gap-2"><Key size={14} className="text-gray-500"/> API Credentials</span>
+                        <span className={storageStats?.hasKey ? "text-red-400 font-bold" : "text-gray-600"}>{storageStats?.hasKey ? "DELETED" : "Empty"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-300">
+                        <span className="flex items-center gap-2"><Smartphone size={14} className="text-gray-500"/> User Profile</span>
+                        <span className={storageStats?.hasProfile ? "text-red-400 font-bold" : "text-gray-600"}>{storageStats?.hasProfile ? "DELETED" : "Empty"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-300">
+                        <span className="flex items-center gap-2"><MessageCircle size={14} className="text-gray-500"/> Chat History</span>
+                        <span className={storageStats?.chats > 0 ? "text-red-400 font-bold" : "text-gray-600"}>{storageStats?.chats} Sessions</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-300">
+                        <span className="flex items-center gap-2"><FileText size={14} className="text-gray-500"/> Smart Notes</span>
+                        <span className={storageStats?.notes > 0 ? "text-red-400 font-bold" : "text-gray-600"}>{storageStats?.notes} Notes</span>
+                    </div>
+                </div>
 
+                {/* Actions */}
+                <div className="space-y-3">
+                    <button 
+                        onClick={confirmFactoryReset}
+                        className="w-full bg-red-500 hover:bg-red-600 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Trash2 size={18} /> CONFIRM ERASE
+                    </button>
+                    <button 
+                        onClick={() => setShowResetConfirm(false)}
+                        className="w-full bg-[#292d3e] hover:bg-[#35394b] text-gray-300 font-bold py-3 rounded-xl transition-all"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+      );
+  }
+
+  // --- MAIN SETTINGS MENU ---
   const sections = [
       {
           title: "General",
@@ -51,17 +211,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpe
           items: [
             {
                 icon: RefreshCw,
-                label: "Quick Refresh",
-                desc: "Reload app resources",
+                label: "System Reboot",
+                desc: "Restart UI & Clear Cache",
                 action: handleSoftRefresh,
                 color: "text-purple-400",
                 bg: "bg-purple-400/10"
             },
             {
                 icon: RotateCcw,
-                label: "Reset Data",
-                desc: "Clear storage & cache",
-                action: handleReset,
+                label: "Factory Reset",
+                desc: "Wipe all data & Start fresh",
+                action: initiateReset,
                 color: "text-red-400",
                 bg: "bg-red-400/10"
             }
@@ -71,16 +231,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpe
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center sm:p-6">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-[#1a1c29]/90 backdrop-blur-md animate-fade-in-up" 
-        onClick={onClose}
-      ></div>
-      
-      {/* Modal Card */}
+      <div className="absolute inset-0 bg-[#1a1c29]/90 backdrop-blur-md animate-fade-in-up" onClick={onClose}></div>
       <div className="relative w-full max-w-sm bg-[#292d3e] sm:rounded-3xl rounded-t-3xl p-0 shadow-2xl animate-fade-in-up overflow-hidden border border-white/5 ring-1 ring-white/5">
         
-        {/* Cinematic Header */}
+        {/* Header */}
         <div className="relative bg-[#1e212d] p-6 pb-8 overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex justify-between items-center">
@@ -127,11 +281,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isVisible, onClose, onOpe
                 </div>
             ))}
 
-            {/* Footer Info */}
             <div className="pt-4 pb-2 text-center">
                  <div className="inline-flex items-center gap-3 bg-[#1e212d] rounded-full px-4 py-2 border border-white/5 shadow-inner">
                      <Smartphone size={14} className="text-gray-500"/>
-                     <span className="text-[10px] text-gray-400 font-mono font-bold">v1.2.0 • SnapAura OS</span>
+                     <span className="text-[10px] text-gray-400 font-mono font-bold">v1.3.0 • SnapAura OS</span>
                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                  </div>
             </div>

@@ -11,13 +11,13 @@ import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
-import OmniBar from './components/OmniBar'; // Import OmniBar
+import OmniBar from './components/OmniBar'; 
 import { Tab, UserProfile } from './types';
 import { Smartphone, Download } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
-  const { activeTab, setActiveTab, updateState, state } = useNeural();
+  const { activeTab, setActiveTab, updateState, state, refreshKey } = useNeural();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Navbar Visibility State
@@ -39,9 +39,7 @@ const App: React.FC = () => {
 
   // Sync Neural State with App State
   useEffect(() => {
-      if (state.activeImage && state.activeImage !== currentImage) {
-          setCurrentImage(state.activeImage);
-      }
+      setCurrentImage(state.activeImage);
   }, [state.activeImage]);
 
   // Auto-hide navbar when entering Chat tab
@@ -53,21 +51,23 @@ const App: React.FC = () => {
       }
   }, [activeTab]);
 
-  // Check for API Key on mount
+  // Check for API Key on mount (re-runs when refreshKey changes)
   useEffect(() => {
     const checkApiKey = () => {
-      // 1. Check LocalStorage
       const localKey = localStorage.getItem('GEMINI_API_KEY');
-      // 2. Check Env (fallback, though in browser strictly rely on local or injected env)
       const envKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
 
       if ((!localKey || localKey.trim() === '') && (!envKey || envKey.trim() === '')) {
         setIsKeyRequired(true);
         setShowKeyModal(true);
+      } else {
+        // If key exists, ensure modal is closed
+        setIsKeyRequired(false);
+        setShowKeyModal(false);
       }
     };
     checkApiKey();
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -127,7 +127,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
+    <div key={refreshKey} className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
       {/* Dynamic Alive Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -206,7 +206,7 @@ const App: React.FC = () => {
 
                 {activeTab === Tab.PROFILE && (
                     <Profile 
-                        onLogin={() => setShowAuthModal(true)} // Fix prop mismatch if any
+                        onLogin={() => setShowAuthModal(true)}
                         onLogout={handleLogout}
                         onOpenSettings={handleOpenSettings}
                     />
