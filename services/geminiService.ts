@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ImageSize, GlobalContextState } from "../types";
+import { ImageSize, GlobalContextState, AppIntent } from "../types";
 
 // --- CONFIGURATION ---
 const FALLBACK_KEYS = ["YOUR_API_KEY_HERE"];
@@ -81,6 +81,55 @@ const cleanAndParseJSON = (text: string) => {
     const cleaned = jsonCandidate.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) { return text.trim().startsWith('[') ? [] : {}; }
+};
+
+// --- OMNI ROUTER (THE BRAIN) ---
+export const processOmniCommand = async (input: string): Promise<{ intent: AppIntent | null, reply: string }> => {
+    const ai = getAiClient();
+    const prompt = `
+        You are the OS Controller for SnapAura. Map the user's natural language request to a specific App Intent.
+        
+        AVAILABLE TOOLS & ROUTING LOGIC:
+        - "Create", "Generate image", "Imagine": Route to GENERATE.
+        - "Edit this", "Fix photo", "Filter": Route to EDIT.
+        - "Crypto", "Bitcoin", "Price", "Market": Route to TOOLKIT -> finance.
+        - "Football", "Soccer", "Score", "Match": Route to TOOLKIT -> football-hub.
+        - "League", "Standings", "EPL table": Route to TOOLKIT -> league-central.
+        - "QR", "Scan code": Route to TOOLKIT -> qr-tools.
+        - "Notes", "Summarize", "Write": Route to TOOLKIT -> notes.
+        - "Vibe check", "Rizz", "Roast": Route to TOOLKIT -> gen-z-lab.
+        - "World mood", "Earth status": Route to TOOLKIT -> aura-state.
+        - "Social", "Hashtags", "Tweet": Route to TOOLKIT -> social-growth.
+        - "Chat", "Ask AI": Route to CHAT.
+
+        JSON OUTPUT FORMAT:
+        {
+            "reply": "Short confirmation message (e.g. 'Opening Market Data...')",
+            "intent": {
+                "type": "NAVIGATE_TOOL" | "SEND_TO_CHAT" | "SOCIAL_GROWTH",
+                "payload": { ...specifics based on tool... }
+            }
+        }
+
+        If the request is vague, default to SEND_TO_CHAT with the text.
+        If routing to TOOLKIT, payload must include { "toolId": "id-from-list-above", "context": "user query" }.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `User Input: "${input}"\n${prompt}`,
+            config: { responseMimeType: "application/json" }
+        });
+        
+        const data = cleanAndParseJSON(response.text || "{}");
+        return {
+            intent: data.intent || null,
+            reply: data.reply || "Processing..."
+        };
+    } catch (e) {
+        return { intent: null, reply: "I couldn't understand that command." };
+    }
 };
 
 // --- CORE AI FUNCTIONS ---

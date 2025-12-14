@@ -127,7 +127,9 @@ import {
   Gem,
   Smile as Happy,
   Thermometer,
-  Newspaper
+  Newspaper,
+  Command,
+  Aperture
 } from 'lucide-react';
 
 export const WhatsApp = ({ size = 24, className = "" }: { size?: number | string, className?: string }) => (
@@ -271,5 +273,7 @@ export {
   Gem,
   Happy,
   Thermometer,
-  Newspaper
+  Newspaper,
+  Command,
+  Aperture
 };

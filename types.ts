@@ -16,7 +16,8 @@ export type AppIntent =
   | { type: 'SMART_EDIT'; payload: { image: string; prompt: string } }
   | { type: 'SEND_TO_CHAT'; payload: { text?: string; image?: string; context?: string } }
   | { type: 'SEND_TO_NOTES'; payload: { text: string; title?: string } }
-  | { type: 'SOCIAL_GROWTH'; payload: { topic: string; context?: string } };
+  | { type: 'SOCIAL_GROWTH'; payload: { topic: string; context?: string } }
+  | { type: 'NAVIGATE_TOOL'; payload: { toolId: string; context?: string } };
 
 export interface GlobalContextState {
   activeImage: string | null;

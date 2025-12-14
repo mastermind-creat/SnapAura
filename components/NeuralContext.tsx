@@ -129,6 +129,23 @@ export const NeuralProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         showToast("Opened in Editor", "success");
         break;
         
+      case 'NAVIGATE_TOOL':
+        if (intent.payload.toolId.includes('edit') || intent.payload.toolId.includes('filter')) {
+            setActiveTab(Tab.EDIT);
+        } else if (intent.payload.toolId.includes('generate') || intent.payload.toolId.includes('create')) {
+            setActiveTab(Tab.GENERATE);
+        } else if (intent.payload.toolId.includes('chat')) {
+            setActiveTab(Tab.CHAT);
+        } else {
+            setActiveTab(Tab.TOOLKIT);
+            // Delay to allow Toolkit mount
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('neural-tool-select', { detail: intent.payload.toolId }));
+            }, 100);
+        }
+        showToast("Navigating via Neural Nexus...", "info");
+        break;
+        
       case 'GENERATE_CAPTION':
         break;
     }

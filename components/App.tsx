@@ -11,6 +11,7 @@ import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
+import OmniBar from './components/OmniBar'; // Import OmniBar
 import { Tab, UserProfile } from './types';
 import { Smartphone, Download } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
@@ -105,8 +106,11 @@ const App: React.FC = () => {
   };
 
   const handleUserIconClick = () => {
-      // Unconditionally open profile, bypassing auth modal check
-      setActiveTab(Tab.PROFILE);
+      if (isAuthenticated) {
+          setActiveTab(Tab.PROFILE);
+      } else {
+          setShowAuthModal(true);
+      }
   };
 
   const handleLogin = (userData: UserProfile) => {
@@ -163,6 +167,9 @@ const App: React.FC = () => {
           />
       )}
 
+      {/* NEURAL NEXUS OMNIBAR */}
+      <OmniBar />
+
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">
             <>
@@ -173,6 +180,7 @@ const App: React.FC = () => {
                     onOpenSettings={handleOpenSettings}
                     onUserClick={handleUserIconClick}
                     setActiveTab={setActiveTab}
+                    isAuthenticated={isAuthenticated}
                   />
                 )}
                 
@@ -198,7 +206,7 @@ const App: React.FC = () => {
 
                 {activeTab === Tab.PROFILE && (
                     <Profile 
-                        onLogin={() => setShowAuthModal(true)}
+                        onLogin={() => setShowAuthModal(true)} // Fix prop mismatch if any
                         onLogout={handleLogout}
                         onOpenSettings={handleOpenSettings}
                     />
