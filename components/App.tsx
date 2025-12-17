@@ -13,7 +13,7 @@ import Profile from './components/Profile';
 import Auth from './components/Auth';
 import OmniBar from './components/OmniBar'; 
 import { Tab, UserProfile } from './types';
-import { Smartphone, Download } from './components/Icons';
+import { Smartphone, Download, X, Star } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
@@ -51,7 +51,7 @@ const App: React.FC = () => {
       }
   }, [activeTab]);
 
-  // Check for API Key on mount (re-runs when refreshKey changes)
+  // Check for API Key on mount
   useEffect(() => {
     const checkApiKey = () => {
       const localKey = localStorage.getItem('GEMINI_API_KEY');
@@ -61,7 +61,6 @@ const App: React.FC = () => {
         setIsKeyRequired(true);
         setShowKeyModal(true);
       } else {
-        // If key exists, ensure modal is closed
         setIsKeyRequired(false);
         setShowKeyModal(false);
       }
@@ -73,7 +72,10 @@ const App: React.FC = () => {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstallBanner(true);
+      // Only show banner if we aren't already in standalone mode
+      if (!window.matchMedia('(display-mode: standalone)').matches) {
+          setTimeout(() => setShowInstallBanner(true), 3000);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -93,7 +95,7 @@ const App: React.FC = () => {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then((choiceResult: any) => {
         if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
+          console.log('Native app installation accepted');
         }
         setDeferredPrompt(null);
         setShowInstallBanner(false);
@@ -127,28 +129,26 @@ const App: React.FC = () => {
   };
 
   return (
-    <div key={refreshKey} className="fixed inset-0 w-full max-w-md mx-auto bg-[#292d3e] shadow-2xl shadow-black overflow-hidden flex flex-col">
+    <div key={refreshKey} className="fixed inset-0 w-full max-w-md mx-auto bg-[#0a0b10] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
-      {/* Dynamic Alive Background */}
+      {/* Festive Dynamic Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-          {/* Main Gradient Drift */}
-          <div className="absolute inset-0 alive-bg opacity-80"></div>
-          {/* Floating Blobs */}
-          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] animate-drift"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] animate-aurora"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2a1e] via-[#0a0b10] to-[#000000] opacity-80"></div>
+          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-festive-gold/5 rounded-full blur-[100px] animate-drift"></div>
+          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-festive-crimson/5 rounded-full blur-[100px] animate-aurora"></div>
       </div>
 
       {/* Toast System */}
       <ToastContainer />
       
-      {/* Settings Modal (Global) */}
+      {/* Settings Modal */}
       <SettingsModal 
         isVisible={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         onOpenApiKey={() => {
             setIsKeyRequired(false);
-            setShowSettingsModal(false); // Close settings
-            setShowKeyModal(true); // Open key modal
+            setShowSettingsModal(false);
+            setShowKeyModal(true);
         }}
       />
 
@@ -159,7 +159,7 @@ const App: React.FC = () => {
         canClose={!isKeyRequired} 
       />
 
-      {/* Auth Modal (Overlay) */}
+      {/* Auth Modal */}
       {showAuthModal && (
           <Auth 
             onLogin={handleLogin} 
@@ -170,82 +170,89 @@ const App: React.FC = () => {
       {/* NEURAL NEXUS OMNIBAR */}
       <OmniBar />
 
+      {/* TOP RIGHT FESTIVE INSTALL PROMPT */}
+      {showInstallBanner && (
+          <div className="absolute top-20 right-4 z-[150] animate-fade-in-up w-64">
+              <div className="holiday-blur bg-[#0f2a1e]/90 p-4 rounded-2xl border gold-rim shadow-[0_15px_35px_rgba(0,0,0,0.5)] flex flex-col gap-3 relative overflow-hidden">
+                  <div className="absolute -top-6 -left-6 w-16 h-16 bg-festive-gold/10 rounded-full blur-xl animate-pulse"></div>
+                  
+                  <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                          <div className="bg-festive-gold/20 p-2 rounded-xl border border-festive-gold/30">
+                              <Star size={18} className="text-festive-gold" />
+                          </div>
+                          <div>
+                              <h3 className="text-xs font-black text-white uppercase tracking-tighter">Native Mode</h3>
+                              <p className="text-[9px] text-festive-gold/70 font-bold uppercase tracking-widest">Holiday Engine</p>
+                          </div>
+                      </div>
+                      <button onClick={() => setShowInstallBanner(false)} className="text-gray-500 hover:text-white transition-colors">
+                          <X size={14} />
+                      </button>
+                  </div>
+
+                  <p className="text-[10px] text-gray-300 font-medium leading-tight">
+                      Install <span className="text-white font-bold">SnapAura</span> as a native app for the full seasonal experience.
+                  </p>
+
+                  <button 
+                      onClick={handleInstallClick}
+                      className="w-full bg-gradient-to-r from-festive-gold to-orange-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                      <Download size={12} strokeWidth={3} /> Install Now
+                  </button>
+              </div>
+          </div>
+      )}
+
       {/* Main Content Area */}
       <main className="relative z-10 flex-1 overflow-hidden">
-            <>
-                {activeTab === Tab.HOME && (
-                  <Studio 
-                    image={currentImage} 
-                    setImage={setCurrentImage} 
-                    onOpenSettings={handleOpenSettings}
-                    onUserClick={handleUserIconClick}
-                    setActiveTab={setActiveTab}
-                    isAuthenticated={isAuthenticated}
-                  />
-                )}
-                
-                {activeTab === Tab.EDIT && (
-                  <Editor 
-                    image={currentImage} 
-                    setImage={setCurrentImage} 
-                    onOpenSettings={handleOpenSettings}
-                  />
-                )}
+          {activeTab === Tab.HOME && (
+            <Studio 
+              image={currentImage} 
+              setImage={setCurrentImage} 
+              onOpenSettings={handleOpenSettings}
+              onUserClick={handleUserIconClick}
+              setActiveTab={setActiveTab}
+              isAuthenticated={isAuthenticated}
+            />
+          )}
+          
+          {activeTab === Tab.EDIT && (
+            <Editor 
+              image={currentImage} 
+              setImage={setCurrentImage} 
+              onOpenSettings={handleOpenSettings}
+            />
+          )}
 
-                {activeTab === Tab.GENERATE && (
-                  <Generator onOpenSettings={handleOpenSettings} />
-                )}
+          {activeTab === Tab.GENERATE && (
+            <Generator onOpenSettings={handleOpenSettings} />
+          )}
 
-                {activeTab === Tab.CHAT && (
-                  <Chat onOpenSettings={handleOpenSettings} />
-                )}
+          {activeTab === Tab.CHAT && (
+            <Chat onOpenSettings={handleOpenSettings} />
+          )}
 
-                {activeTab === Tab.TOOLKIT && (
-                  <Toolkit onOpenSettings={handleOpenSettings} />
-                )}
+          {activeTab === Tab.TOOLKIT && (
+            <Toolkit onOpenSettings={handleOpenSettings} />
+          )}
 
-                {activeTab === Tab.PROFILE && (
-                    <Profile 
-                        onLogin={() => setShowAuthModal(true)}
-                        onLogout={handleLogout}
-                        onOpenSettings={handleOpenSettings}
-                    />
-                )}
-            </>
+          {activeTab === Tab.PROFILE && (
+              <Profile 
+                  onLogin={() => setShowAuthModal(true)}
+                  onLogout={handleLogout}
+                  onOpenSettings={handleOpenSettings}
+              />
+          )}
       </main>
 
-      {/* Install Banner & Nav */}
-        <>
-            {showInstallBanner && (
-                <div className="absolute bottom-[80px] left-4 right-4 z-50 animate-fade-in-up">
-                <div className="glass-panel p-4 rounded-2xl flex items-center justify-between border-t border-white/20 bg-black/80 backdrop-blur-xl shadow-2xl">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-white/10 p-2 rounded-xl">
-                            <Smartphone size={24} className="text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-white">Install SnapAura</h3>
-                            <p className="text-xs text-gray-400">Add to home screen for full experience</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={handleInstallClick}
-                        className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-1"
-                    >
-                        <Download size={14} /> Install
-                    </button>
-                    <button onClick={() => setShowInstallBanner(false)} className="absolute -top-2 -right-2 bg-black/50 rounded-full p-1 text-white"><span className="sr-only">Close</span>&times;</button>
-                </div>
-                </div>
-            )}
-
-            <BottomNav 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
-              isVisible={isNavVisible}
-              onToggle={() => setIsNavVisible(!isNavVisible)}
-            />
-        </>
+      <BottomNav 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        isVisible={isNavVisible}
+        onToggle={() => setIsNavVisible(!isNavVisible)}
+      />
     </div>
   );
 };

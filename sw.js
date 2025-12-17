@@ -1,15 +1,18 @@
 
-const CACHE_NAME = 'snapaura-v1';
+const CACHE_NAME = 'snapaura-festive-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js'
 ];
 
-// Install Event: Cache core assets
+// Install Event: Aggressive caching for app-shell performance
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
+      console.log('Pre-caching app shell assets');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -23,6 +26,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Removing old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -32,38 +36,44 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event: Network first, fall back to cache
+// Fetch Event: Cache-First for static assets, Network-First for dynamic routes
 self.addEventListener('fetch', (event) => {
-  // Handle navigation requests (SPA support)
+  const url = new URL(event.request.url);
+
+  // Handle SPA navigation
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/index.html');
-      })
+      fetch(event.request).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
+  // Handle static assets
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Return valid response and cache it
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then((networkResponse) => {
+        // Cache external scripts and reliable resources
+        if (
+          networkResponse && 
+          networkResponse.status === 200 && 
+          (url.origin === self.location.origin || url.hostname.includes('cdn') || url.hostname.includes('cdnjs'))
+        ) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
-        
-        // Don't cache very large files or data URIs
-        if (event.request.url.startsWith('http')) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+        return networkResponse;
+      }).catch(() => {
+        // If everything fails, return offline fallback for certain types
+        if (event.request.destination === 'image') {
+          return caches.match('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMjIyIi8+PC9zdmc+');
         }
-        return response;
-      })
-      .catch(() => {
-        // If offline, try cache
-        return caches.match(event.request);
-      })
+      });
+    })
   );
 });
