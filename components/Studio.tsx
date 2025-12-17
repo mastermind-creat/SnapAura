@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Download, Type, Layers, Sliders, Film, Settings, User, TrendingUp, FileText, Globe, Activity, Aperture, Command } from './Icons';
+import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Download, Type, Layers, Sliders, Film, Settings, User, TrendingUp, FileText, Globe, Activity, Aperture, Command, Star } from './Icons';
 import { analyzeImageAndGenerateCaptions } from '../services/geminiService';
 import { showToast } from './Toast';
 import { Logo } from './Logo';
@@ -64,7 +64,7 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
       const result = await analyzeImageAndGenerateCaptions(image, state);
       setAnalysisResult(result);
       updateState({ activeAnalysis: result }); 
-      if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#ffd700', '#d42426'] });
     } catch (err) {
       showToast("Analysis failed", "error");
     } finally {
@@ -88,80 +88,61 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
   // --- DASHBOARD VIEW (NEW HOME) ---
   if (!image) {
     return (
-      <div className="relative h-full flex flex-col items-center justify-between bg-[#0f0f11] overflow-hidden pb-24">
+      <div className="relative h-full flex flex-col items-center justify-between bg-[#0a0b10] overflow-hidden pb-24">
         
         {/* === LAYER 1: CINEMATIC BACKGROUND === */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-            {/* Deep Base */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1a1c29] via-[#0f0f11] to-[#000000]"></div>
+            {/* Deep Festive Base */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0f2a1e] via-[#0a0b10] to-[#000000]"></div>
             
-            {/* Motion GIF Layer (Subtle Tech Background) */}
-            <div 
-                className="absolute inset-0 opacity-20 mix-blend-color-dodge"
-                style={{
-                    backgroundImage: `url('https://cdn.dribbble.com/users/124059/screenshots/15437877/media/e5a9c0d9c402636b0002d2953259929d.gif')`, // Fallback or use a reliable abstract tech GIF
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    filter: 'grayscale(100%) contrast(120%)'
-                }}
-            ></div>
-
             {/* Grid Floor */}
-            <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:50px_50px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom animate-grid-move opacity-30"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-[linear-gradient(rgba(255,215,0,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,215,0,0.05)_1px,transparent_1px)] bg-[size:50px_50px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom animate-grid-move opacity-30"></div>
             
             {/* Vignette */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0f0f11_90%)]"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0a0b10_90%)]"></div>
         </div>
 
         {/* === LAYER 2: TOP CONTROLS === */}
         <div className="w-full flex justify-between items-center p-6 relative z-30">
              <div className="flex flex-col gap-1">
-                <div className="h-1 w-12 bg-cyan-500 rounded-full animate-pulse"></div>
-                <span className="text-[8px] font-mono text-cyan-400">SYS.ONLINE</span>
+                <div className="h-1 w-12 bg-festive-gold rounded-full animate-pulse"></div>
+                <span className="text-[8px] font-mono text-festive-gold tracking-widest uppercase">Holiday OS.Online</span>
             </div>
              <div className="flex items-center gap-4">
-                <button onClick={onUserClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden hover:scale-105 transition-transform active:scale-95 group">
+                <button onClick={onUserClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 holiday-blur shadow-2xl border border-white/10 overflow-hidden hover:scale-105 transition-transform active:scale-95 group">
                     {avatar ? <img src={avatar} className="w-full h-full object-cover"/> : <User size={18} className="text-gray-400 group-hover:text-white" />}
                 </button>
-                <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] flex items-center justify-center text-gray-400 border border-white/10 hover:scale-105 transition-transform active:scale-95 hover:text-white hover:border-white/20">
+                <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white/5 holiday-blur shadow-2xl flex items-center justify-center text-gray-400 border border-white/10 hover:scale-105 transition-transform active:scale-95 hover:text-festive-gold hover:border-festive-gold/20">
                     <Settings size={18} />
                 </button>
              </div>
         </div>
 
-        {/* === LAYER 3: CENTER STAGE (THE CORE) === */}
+        {/* === LAYER 3: CENTER STAGE (THE FESTIVE CORE) === */}
         <div className="z-20 flex flex-col items-center text-center space-y-8 max-w-xs w-full animate-fade-in-up flex-1 justify-center">
             
-            {/* THE NEURAL CORE REACTOR */}
+            {/* THE HOLIDAY REACTOR */}
             <div className="relative group cursor-pointer" onClick={() => dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'aura-state' }})}>
                 {/* 1. Outer Glow Field */}
-                <div className="absolute -inset-10 bg-gradient-to-tr from-cyan-500/20 via-purple-500/10 to-blue-500/20 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-1000 animate-pulse-slow"></div>
+                <div className="absolute -inset-10 bg-gradient-to-tr from-festive-gold/20 via-festive-emerald/10 to-festive-crimson/10 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-1000 animate-pulse-slow"></div>
                 
                 <div className="relative w-40 h-40 flex items-center justify-center">
-                    {/* 2. Outer Rotating Ring (Slow) */}
-                    <div className="absolute inset-0 rounded-full border border-white/5 border-t-cyan-500/50 border-b-purple-500/50 animate-spin-slow"></div>
+                    {/* 2. Outer Rotating Ring */}
+                    <div className="absolute inset-0 rounded-full border border-white/5 border-t-festive-gold/50 border-b-festive-emerald/50 animate-spin-slow"></div>
                     
-                    {/* 3. Middle Counter-Rotating Ring (Fast) */}
+                    {/* 3. Middle Counter-Rotating Ring */}
                     <div className="absolute inset-4 rounded-full border-[1px] border-transparent border-l-white/20 border-r-white/20 animate-[spin_4s_linear_infinite_reverse]"></div>
-                    
-                    {/* 4. Dashed Data Ring */}
-                    <div className="absolute inset-2 rounded-full border border-dashed border-white/10 animate-[spin_20s_linear_infinite]"></div>
 
                     {/* 5. The Core Orb */}
                     <div className="w-24 h-24 rounded-full bg-[#151720] shadow-[inset_0_0_20px_rgba(0,0,0,1)] flex items-center justify-center relative overflow-hidden border border-white/10 group-hover:scale-105 transition-transform duration-500">
-                         
-                         {/* Core Energy (Gradient Spin) */}
-                         <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(0,243,255,0.4)_360deg)] animate-[spin_3s_linear_infinite]"></div>
+                         {/* Core Energy */}
+                         <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,215,0,0.4)_360deg)] animate-[spin_3s_linear_infinite]"></div>
                          
                          {/* Inner Lens */}
-                         <div className="absolute inset-[2px] bg-[#0f0f11] rounded-full flex items-center justify-center">
-                             {/* Central Icon */}
-                             <div className="relative z-10 text-white drop-shadow-[0_0_10px_rgba(0,243,255,0.8)]">
-                                 <Aperture size={40} className="animate-[pulse_3s_ease-in-out_infinite]" />
+                         <div className="absolute inset-[2px] bg-[#0a0b10] rounded-full flex items-center justify-center">
+                             <div className="relative z-10 text-white drop-shadow-[0_0_10px_#ffd700]">
+                                 <Star size={40} className="animate-[star-pulse_3s_ease-in-out_infinite]" />
                              </div>
-                             
-                             {/* Inner Grid */}
-                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(96,165,250,0.1)_1px,transparent_1px)] bg-[size:10px_10px] opacity-50"></div>
                          </div>
                     </div>
                 </div>
@@ -169,11 +150,11 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
 
             {/* Typography */}
             <div className="space-y-1 relative">
-                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 tracking-tighter drop-shadow-2xl">
+                <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-festive-snow via-festive-gold to-orange-800 tracking-tighter drop-shadow-2xl">
                     SnapAura
                 </h1>
-                <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.3em] animate-pulse">
-                    Unified Creative System
+                <p className="text-[10px] font-bold text-festive-emerald uppercase tracking-[0.3em] animate-pulse">
+                    Festive Intel Engine
                 </p>
             </div>
 
@@ -181,21 +162,21 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
             <div className="w-full px-4">
                 <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="group relative w-full h-14 rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95"
+                    className="group relative w-full h-14 rounded-3xl flex items-center justify-center overflow-hidden transition-all active:scale-95"
                 >
-                    {/* Glowing Background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 animate-shimmer bg-[length:200%_100%] opacity-80 group-hover:opacity-100 transition-opacity"></div>
+                    {/* Glowing Holiday Shimmer */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-festive-pine via-festive-emerald to-festive-gold animate-shimmer bg-[length:200%_100%] opacity-100"></div>
                     
                     {/* Glass Overlay */}
-                    <div className="absolute inset-[1px] bg-[#0f0f11]/90 backdrop-blur-sm rounded-[15px] flex items-center justify-center gap-3 z-10 group-hover:bg-[#0f0f11]/80 transition-colors">
-                        <Upload size={18} className="text-white group-hover:scale-110 transition-transform" />
-                        <span className="font-bold text-white text-xs tracking-widest uppercase">Initialize Upload</span>
+                    <div className="absolute inset-[1.5px] bg-[#0a0b10]/90 backdrop-blur-sm rounded-[22px] flex items-center justify-center gap-3 z-10 group-hover:bg-[#0a0b10]/80 transition-colors">
+                        <Upload size={18} className="text-festive-gold group-hover:scale-110 transition-transform" />
+                        <span className="font-black text-festive-gold text-xs tracking-widest uppercase">Start Holiday Edit</span>
                     </div>
                 </button>
             </div>
         </div>
 
-        {/* === LAYER 4: SYSTEM CONSOLE (HUD) === */}
+        {/* HUD Console */}
         <div className="w-full px-4 mb-2 z-20">
             <SystemConsole />
         </div>
@@ -205,33 +186,33 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
         
         {/* Upload Overlay */}
         {isUploading && (
-            <div className="absolute inset-0 z-50 bg-[#0f0f11]/90 flex flex-col items-center justify-center backdrop-blur-xl animate-fade-in-up">
+            <div className="absolute inset-0 z-50 bg-[#0a0b10]/90 flex flex-col items-center justify-center backdrop-blur-xl animate-fade-in-up">
                 <div className="relative">
-                    <div className="w-24 h-24 border-t-2 border-b-2 border-cyan-400 rounded-full animate-spin"></div>
+                    <div className="w-24 h-24 border-t-2 border-b-2 border-festive-gold rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <Zap size={32} className="text-white animate-pulse" />
+                        <Sparkles size={32} className="text-festive-gold animate-pulse" />
                     </div>
                 </div>
-                <p className="mt-8 text-xs font-bold text-cyan-400 uppercase tracking-[0.2em] animate-pulse">Syncing with Core...</p>
+                <p className="mt-8 text-xs font-bold text-festive-gold uppercase tracking-[0.2em] animate-pulse">Minting Seasonal Context...</p>
             </div>
         )}
       </div>
     );
   }
 
-  // STUDIO INTERFACE (When Image is Active)
+  // STUDIO INTERFACE (Active Session)
   return (
-    <div className="h-full overflow-y-auto hide-scrollbar bg-[#292d3e] p-4 pb-32">
+    <div className="h-full overflow-y-auto hide-scrollbar bg-[#0f1117] p-4 pb-32">
         <div className="flex justify-between items-center mb-4">
-            <h1 className="text-lg font-bold text-gray-200 flex items-center gap-2">
-                <Brain size={20} className="text-primary" /> Neural Studio
+            <h1 className="text-lg font-black text-festive-gold flex items-center gap-2">
+                <Star size={20} fill="currentColor" /> Holiday Studio
             </h1>
-            <button onClick={() => {setImage(''); updateState({activeImage: null, activeAnalysis: null});}} className="text-xs bg-[#292d3e] shadow-neu px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-colors">Close</button>
+            <button onClick={() => {setImage(''); updateState({activeImage: null, activeAnalysis: null});}} className="text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors">Abort</button>
         </div>
 
         {/* Image Preview */}
-        <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 mb-6 group">
-            <div className="relative w-full h-full rounded-2xl overflow-hidden">
+        <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden bg-[#0a0b10] shadow-2xl p-2 mb-6 border border-white/5 group">
+            <div className="relative w-full h-full rounded-[1.5rem] overflow-hidden">
                 <img src={image} alt="Active" className="w-full h-full object-cover" />
                 {selectedCaption && (
                     <div className="absolute inset-0 bg-black/40 flex items-end justify-center p-6 text-center">
@@ -239,68 +220,61 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
                     </div>
                 )}
                 
-                {/* SCANNING ANIMATION OVERLAY */}
                 {isAnalyzing && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md flex flex-col items-center justify-center z-20">
                         <div className="relative">
-                            <div className="absolute inset-0 bg-primary opacity-20 blur-xl rounded-full animate-pulse-slow"></div>
-                            <Brain size={48} className="text-primary animate-pulse relative z-10" />
+                            <div className="absolute inset-0 bg-festive-gold opacity-20 blur-2xl rounded-full animate-pulse-slow"></div>
+                            <Sparkles size={48} className="text-festive-gold animate-jingle relative z-10" />
                         </div>
-                        <p className="text-primary font-bold text-sm mt-4 animate-bounce">Analyzing Neural Patterns...</p>
-                        <div className="w-48 h-1 bg-gray-800 rounded-full mt-4 overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-primary to-secondary animate-[laserX_1s_infinite]"></div>
-                        </div>
+                        <p className="text-festive-gold font-black text-sm mt-6 animate-pulse tracking-widest uppercase">Reading Vibes...</p>
                     </div>
                 )}
             </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-[#292d3e] rounded-xl p-1 shadow-neu-pressed mb-6">
-            <button onClick={() => setInternalTab('analyze')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${internalTab === 'analyze' ? 'bg-[#292d3e] shadow-neu text-primary' : 'text-gray-500'}`}>Analysis</button>
-            <button onClick={() => setInternalTab('design')} className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${internalTab === 'design' ? 'bg-[#292d3e] shadow-neu text-secondary' : 'text-gray-500'}`}>Design</button>
+        {/* Internal Tabs */}
+        <div className="flex bg-[#0a0b10] rounded-2xl p-1 border border-white/5 mb-6">
+            <button onClick={() => setInternalTab('analyze')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${internalTab === 'analyze' ? 'bg-white/5 text-festive-gold shadow-lg' : 'text-gray-500'}`}>Analysis</button>
+            <button onClick={() => setInternalTab('design')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${internalTab === 'design' ? 'bg-white/5 text-festive-emerald shadow-lg' : 'text-gray-500'}`}>Filters</button>
         </div>
 
-        {/* ANALYSIS TAB */}
         {internalTab === 'analyze' && (
             <div className="space-y-6 animate-fade-in-up">
                 {!analysisResult ? (
-                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full py-5 bg-[#292d3e] text-primary rounded-2xl font-bold shadow-neu flex items-center justify-center gap-2 hover:brightness-110 transition-all">
-                        {isAnalyzing ? <RefreshCw className="animate-spin" /> : <Sparkles />} Run Neural Analysis
+                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full py-5 bg-gradient-to-r from-[#0f2a1e] to-[#0a0b10] text-festive-gold border border-festive-gold/30 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:brightness-125 transition-all">
+                        {isAnalyzing ? <RefreshCw className="animate-spin" /> : <Star size={16} fill="currentColor" />} Run Intelligence
                     </button>
                 ) : (
                     <div className="space-y-4">
-                        {/* 1. Contextual Suggestions (The "Living System" part) */}
-                        <div className="bg-[#292d3e] shadow-neu p-4 rounded-2xl border border-primary/20">
-                            <h3 className="text-[10px] font-bold text-primary uppercase mb-3 flex items-center gap-2"><Zap size={12}/> Suggested Actions</h3>
+                        <div className="bg-[#0f2a1e]/40 holiday-blur p-5 rounded-[2rem] border border-festive-emerald/20">
+                            <h3 className="text-[10px] font-black text-festive-emerald uppercase tracking-widest mb-4 flex items-center gap-2"><Zap size={12}/> Auto-Actions</h3>
                             <div className="grid grid-cols-2 gap-3">
-                                <button onClick={handleAutoSocial} className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex items-center gap-2 text-xs font-bold text-gray-300 hover:text-blue-400 transition-colors">
-                                    <TrendingUp size={16} className="text-blue-400"/> Create Post
+                                <button onClick={handleAutoSocial} className="bg-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-300 hover:text-festive-gold border border-white/5 transition-all">
+                                    <TrendingUp size={20} className="text-festive-gold"/> Post Idea
                                 </button>
-                                <button onClick={handleAutoNote} className="bg-[#292d3e] shadow-neu-pressed p-3 rounded-xl flex items-center gap-2 text-xs font-bold text-gray-300 hover:text-yellow-400 transition-colors">
-                                    <FileText size={16} className="text-yellow-400"/> Save Report
+                                <button onClick={handleAutoNote} className="bg-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-300 hover:text-festive-gold border border-white/5 transition-all">
+                                    <FileText size={20} className="text-festive-emerald"/> Save Log
                                 </button>
                             </div>
                         </div>
 
-                        {/* 2. Analysis Result using SmartCard */}
                         <SmartCard 
-                            title="Visual Intelligence" 
-                            icon={Brain}
+                            title="Festive Intelligence" 
+                            icon={Sparkles}
                             content={analysisResult.analysis} 
                             rawText={analysisResult.analysis}
+                            className="border border-white/5"
                         />
 
-                        {/* 3. Captions */}
                         <div>
-                            <h3 className="text-sm font-bold text-gray-400 mb-3">AI Captions</h3>
-                            <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 ml-2">Creative Captions</h3>
+                            <div className="space-y-5">
                                 {analysisResult.captions?.map((cat: any, i: number) => (
-                                    <div key={i} className="space-y-2">
-                                        <h4 className="text-[10px] font-bold text-secondary uppercase">{cat.category}</h4>
-                                        <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
+                                    <div key={i} className="space-y-3">
+                                        <h4 className="text-[9px] font-black text-festive-gold/60 uppercase ml-2">{cat.category}</h4>
+                                        <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar px-1">
                                             {cat.options.map((opt: string, j: number) => (
-                                                <button key={j} onClick={() => setSelectedCaption(opt)} className="flex-shrink-0 bg-[#292d3e] shadow-neu p-3 rounded-xl text-xs text-gray-300 w-64 text-left active:shadow-neu-pressed hover:text-white transition-colors">
+                                                <button key={j} onClick={() => setSelectedCaption(opt)} className="flex-shrink-0 bg-white/5 p-4 rounded-[1.5rem] text-xs font-medium text-gray-300 w-64 text-left border border-white/5 hover:text-white transition-colors">
                                                     "{opt}"
                                                 </button>
                                             ))}
@@ -314,11 +288,10 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onUser
             </div>
         )}
 
-        {/* DESIGN TAB (Simplified for brevity) */}
         {internalTab === 'design' && (
-            <div className="text-center text-gray-500 py-10">
-                <Sliders size={48} className="mx-auto mb-4 opacity-20" />
-                <p>Design tools active for current session.</p>
+            <div className="text-center text-gray-500 py-16 holiday-blur bg-white/5 rounded-[2rem] border border-white/5 animate-fade-in-up">
+                <Sparkles size={48} className="mx-auto mb-4 text-festive-gold animate-star-pulse" />
+                <p className="text-xs font-black uppercase tracking-[0.2em]">Festive Filter Kit Active</p>
             </div>
         )}
     </div>

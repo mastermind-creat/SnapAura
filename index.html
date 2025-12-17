@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjUxMiIgeTI9IjUxMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzYwQTVGQSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0MwODRGQyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjU2IiBmaWxsPSJ1cmwoI2cpIi8+PGcgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTI1NiAyNTYgUSAzNjAgMTIwIDQ4MCAyNTYiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoNDUgMjU2IDI1NikiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgMjU2IDI1NikiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoMTM1IDI1NiAyNTYpIi8+PHBhdGggZD0iTTI1NiAyNTYgUSAzNjAgMTIwIDQ4MCAyNTYiIHRyYW5zZm9ybT0icm90YXRlKDE4MCAyNTYgMjU2KSIvPjxwYXRoIGQ9Ik0yNTYgMjU2IFEgMzYwIDEyMCA0ODAgMjU2IiB0cmFuc2Zvcm09InJvdGF0ZSgyMjUgMjU2IDI1NikiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoMjcwIDI1NiAyNTYpIi8+PHBhdGggZD0iTTI1NiAyNTYgUSAzNjAgMTIwIDQ4MCAyNTYiIHRyYW5zZm9ybT0icm90YXRlKDMxNSAyNTYgMjU2KSIvPjwvZz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjYwIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45Ii8+PC9zdmc+" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjUxMiIgeTI9IjUxMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzYwQTVGQSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0MwODRGQyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjU2IiBmaWxsPSJ1cmwoI2cpIi8+PGcgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTI1NiAyNTYgUSAzNjAgMTIwIDQ4MCAyNTYiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoNDUgMjU2IDI1NikiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoOTAgMjU2IDI1NikiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoMTM1IDI1NiAyNTYpIi8+PHBhdGggZD0iTTI1NiAyNTYgUSAzNjAgMTIwIDQ4MCAyNTYiLz48cGF0aCBkPSJNMjU2IDI1NiBRIDM2MCAxMjAgNDgwIDI1NiIgdHJhbnNmb3JtPSJyb3RhdGUoMjI1IDI1NiAyNTYpIi8+PHBhdGggZD0iTTI1NiAyNTYgUSAzNjAgMTIwIDQ4MCAyNTYiIHRyYW5zZm9ybT0icm90YXRlKDI3MCAyNTYgMjU2KSIvPjxwYXRoIGQ9Ik0yNTYgMjU2IFEgMzYwIDEyMCA0ODAgMjU2IiB0cmFuc2Zvcm09InJvdGF0ZSgzMTUgMjU2IDI1NikiLz48L2c+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSI2MCIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#292d3e" />
+    <meta name="theme-color" content="#0f2a1e" />
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,11 +13,10 @@
     <meta name="apple-mobile-web-app-title" content="SnapAura">
     <link rel="manifest" href="/manifest.json" />
 
-    <meta name="description" content="SnapAura AI - Enhance, Edit, and Generate with AI" />
-    <title>SnapAura AI</title>
+    <meta name="description" content="SnapAura AI - Festive Edition" />
+    <title>SnapAura AI | Holiday Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Use cdnjs for reliability -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -28,135 +28,88 @@
         theme: {
           extend: {
             colors: {
-              neu: {
-                base: "#292d3e",
-                light: "#35394b",
-                dark: "#1e212d",
+              festive: {
+                pine: "#0f2a1e",
+                crimson: "#d42426",
+                gold: "#ffd700",
+                snow: "#f8faff",
+                emerald: "#00c853"
               },
-              electric: {
-                pink: "#ff0099",
-                green: "#39ff14",
-                blue: "#00f3ff",
-                purple: "#bc13fe",
-              },
-              glass: "rgba(255, 255, 255, 0.1)",
-              glassBorder: "rgba(255, 255, 255, 0.2)",
-              primary: "#8b5cf6",
-              secondary: "#ec4899",
-            },
-            boxShadow: {
-              'neu': '8px 8px 16px #1e212d, -8px -8px 16px #35394b',
-              'neu-sm': '4px 4px 8px #1e212d, -4px -4px 8px #35394b',
-              'neu-pressed': 'inset 6px 6px 12px #1e212d, inset -6px -6px 12px #35394b',
-              'neu-pressed-sm': 'inset 3px 3px 6px #1e212d, inset -3px -3px 6px #35394b',
-              'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
-              'neon-blue': '0 0 10px #00f3ff, 0 0 20px #00f3ff',
-              'neon-pink': '0 0 10px #ff0099, 0 0 20px #ff0099',
-              'neon-green': '0 0 10px #39ff14, 0 0 20px #39ff14',
+              primary: "#ffd700", // Shifted to Gold for Xmas
+              secondary: "#d42426",
             },
             animation: {
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'float': 'float 6s ease-in-out infinite',
-              'float-delayed': 'float 7s ease-in-out 2s infinite',
-              'float-slow': 'float 8s ease-in-out infinite',
-              'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
-              'aurora': 'aurora 10s infinite alternate',
-              'spin-slow': 'spin 12s linear infinite',
-              'shimmer': 'shimmer 2.5s linear infinite',
-              'drift': 'drift 20s linear infinite',
-              'breathe': 'breathe 5s ease-in-out infinite',
-              'laser-x': 'laserX 4s linear infinite',
-              'laser-y': 'laserY 6s linear infinite',
-              'grid-move': 'gridMove 20s linear infinite',
-              'rotate-glow': 'rotateGlow 4s linear infinite',
+              'jingle': 'jingle 0.6s ease-in-out',
+              'snow-drift': 'snowDrift 10s linear infinite',
+              'light-pulse': 'lightPulse 2s infinite alternate',
+              'shimmer-gold': 'shimmerGold 3s linear infinite',
+              'star-pulse': 'starPulse 3s ease-in-out infinite',
             },
             keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-15px)' },
+              jingle: {
+                '0%, 100%': { transform: 'rotate(0deg)' },
+                '20%': { transform: 'rotate(-15deg)' },
+                '40%': { transform: 'rotate(12deg)' },
+                '60%': { transform: 'rotate(-8deg)' },
+                '80%': { transform: 'rotate(5deg)' },
               },
-              fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(30px) scale(0.95)' },
-                '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+              snowDrift: {
+                '0%': { transform: 'translateY(-20px) translateX(0)', opacity: 0 },
+                '10%': { opacity: 0.8 },
+                '90%': { opacity: 0.8 },
+                '100%': { transform: 'translateY(120px) translateX(20px)', opacity: 0 }
               },
-              aurora: {
-                '0%': { transform: 'translate(0, 0) scale(1) rotate(0deg)' },
-                '100%': { transform: 'translate(30px, -20px) scale(1.1) rotate(5deg)' },
+              lightPulse: {
+                '0%': { opacity: 0.3, filter: 'brightness(0.5) blur(1px)' },
+                '100%': { opacity: 1, filter: 'brightness(1.5) blur(2px)' }
               },
-              shimmer: {
+              shimmerGold: {
                 '0%': { backgroundPosition: '-200% 0' },
-                '100%': { backgroundPosition: '200% 0' },
+                '100%': { backgroundPosition: '200% 0' }
               },
-              drift: {
-                '0%': { transform: 'translate(0, 0)' },
-                '100%': { transform: 'translate(-50%, -50%)' },
-              },
-              breathe: {
-                '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
-                '50%': { opacity: '0.7', transform: 'scale(1.05)' },
-              },
-              laserX: {
-                '0%': { left: '-100%', opacity: '0' },
-                '50%': { opacity: '1' },
-                '100%': { left: '200%', opacity: '0' }
-              },
-              laserY: {
-                '0%': { top: '-100%', opacity: '0' },
-                '50%': { opacity: '1' },
-                '100%': { top: '200%', opacity: '0' }
-              },
-              gridMove: {
-                '0%': { transform: 'perspective(500px) rotateX(60deg) translateY(0)' },
-                '100%': { transform: 'perspective(500px) rotateX(60deg) translateY(50px)' }
-              },
-              rotateGlow: {
-                '0%': { transform: 'rotate(0deg)', filter: 'hue-rotate(0deg)' },
-                '100%': { transform: 'rotate(360deg)', filter: 'hue-rotate(360deg)' }
+              starPulse: {
+                '0%, 100%': { transform: 'scale(1) rotate(0deg)', filter: 'drop-shadow(0 0 5px #ffd700)' },
+                '50%': { transform: 'scale(1.2) rotate(45deg)', filter: 'drop-shadow(0 0 20px #ffd700)' }
               }
             }
-          },
-        },
+          }
+        }
       }
     </script>
     <style>
       body {
-        background-color: #292d3e;
+        background-color: #0a0b10;
         color: #e2e8f0;
         font-family: 'Inter', sans-serif;
-        overscroll-behavior-y: none;
+        overflow: hidden;
       }
-      .glass-panel {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+      .holiday-blur {
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
       }
-      .hide-scrollbar::-webkit-scrollbar { display: none; }
-      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-      
-      /* Cinematic Grain */
-      .grain-overlay {
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+      .gold-rim {
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.1);
       }
-      
-      /* Alive Background */
-      .alive-bg {
-        background: radial-gradient(circle at 50% 50%, #292d3e 0%, #1a1c29 100%);
+      /* Global Snow Overlay */
+      .snow-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        z-index: 1000;
+        overflow: hidden;
       }
-      
-      /* Staggered Animation Utilities */
-      .delay-100 { animation-delay: 100ms; }
-      .delay-200 { animation-delay: 200ms; }
-      .delay-300 { animation-delay: 300ms; }
-      .delay-500 { animation-delay: 500ms; }
-      
-      .prose p { margin-bottom: 0.5em; }
-      .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
-      .prose ol { list-style-type: decimal; padding-left: 1.2em; margin-bottom: 0.5em; }
-      .prose strong { color: #ec4899; font-weight: 700; }
-      .prose code { background: rgba(255,255,255,0.1); padding: 2px 4px; rounded: 4px; font-family: monospace; font-size: 0.9em; }
-      .prose pre { background: rgba(0,0,0,0.3); padding: 1em; rounded: 8px; overflow-x: auto; margin-bottom: 0.5em; }
+      .snowflake {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        opacity: 0.5;
+        animation: snow-fall linear infinite;
+      }
+      @keyframes snow-fall {
+        0% { transform: translateY(-10vh) rotate(0deg); }
+        100% { transform: translateY(110vh) rotate(360deg); }
+      }
     </style>
   <script type="importmap">
 {
@@ -171,20 +124,22 @@
 </script>
 </head>
   <body>
+    <div class="snow-overlay" id="snow"></div>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            })
-            .catch(err => {
-              console.log('ServiceWorker registration failed: ', err);
-            });
-        });
+      // Generate some background snow
+      const snowContainer = document.getElementById('snow');
+      for(let i=0; i<30; i++) {
+        const flake = document.createElement('div');
+        flake.className = 'snowflake';
+        flake.style.width = Math.random() * 4 + 'px';
+        flake.style.height = flake.style.width;
+        flake.style.left = Math.random() * 100 + 'vw';
+        flake.style.animationDuration = Math.random() * 5 + 5 + 's';
+        flake.style.animationDelay = Math.random() * 5 + 's';
+        snowContainer.appendChild(flake);
       }
     </script>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>
