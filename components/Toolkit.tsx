@@ -58,11 +58,11 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   const categories = Array.from(new Set(filteredTools.map(t => t.cat)));
 
   const renderMenu = () => (
-      <div className="space-y-8 animate-fade-in-up pb-20 pr-4">
+      <div className="space-y-8 animate-fade-in-up pb-20">
           {/* Quick Shortcuts */}
-          <div className="space-y-3">
+          <div className="space-y-4">
               <h3 className="text-[10px] font-black text-festive-gold/60 uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
-                  <Star size={10} className="text-festive-gold animate-pulse" /> Top Systems
+                  <Star size={10} className="text-festive-gold animate-pulse" /> Core Uplinks
               </h3>
               <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
                   <button onClick={() => setActiveTool('qr-tools')} className="flex items-center gap-3 bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-5 rounded-3xl min-w-[160px] active:shadow-inner transition-all border border-white/5">
@@ -73,15 +73,11 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
                       <div className="p-3 bg-[#0a0b10] shadow-inner rounded-2xl text-indigo-400"><Globe size={20}/></div>
                       <span className="text-xs font-black text-gray-300 uppercase tracking-tighter">AuraState</span>
                   </button>
-                  <button onClick={() => setActiveTool('gen-z-lab')} className="flex items-center gap-3 bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-5 rounded-3xl min-w-[160px] active:shadow-inner transition-all border border-white/5">
-                      <div className="p-3 bg-[#0a0b10] shadow-inner rounded-2xl text-pink-400"><Ghost size={20}/></div>
-                      <span className="text-xs font-black text-gray-300 uppercase tracking-tighter">Rizz Lab</span>
-                  </button>
               </div>
           </div>
 
           {/* Search */}
-          <div className="relative group">
+          <div className="relative group px-1">
               <div className="absolute inset-0 bg-[#0a0b10] rounded-3xl shadow-inner border border-white/5"></div>
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 z-10" size={20} />
               <input 
@@ -94,20 +90,19 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
 
           {/* Grid */}
           {categories.map((cat, catIdx) => (
-              <div key={cat} className="space-y-4">
+              <div key={cat} className="space-y-5 px-1">
                   <h3 className="text-[10px] font-black text-festive-emerald uppercase tracking-[0.3em] ml-2 border-l-2 border-festive-emerald pl-3">{cat}</h3>
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-2 gap-6">
                       {filteredTools.filter(t => t.cat === cat).map((tool, idx) => (
                           <div 
                             key={tool.id} 
                             onClick={() => setActiveTool(tool.id)}
-                            className={`bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer active:shadow-inner transition-all active:scale-95 group relative border border-white/5 animate-fade-in-up overflow-hidden`}
-                            style={{ animationDelay: `${(catIdx * 100) + (idx * 50)}ms` }}
+                            className={`bg-[#0a0b10] shadow-[10px_10px_20px_#050508,-10px_-10px_20px_#12141c] p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer active:shadow-inner transition-all active:scale-95 group relative border border-white/5 animate-fade-in-up`}
                           >
-                              <div className={`p-5 bg-[#0a0b10] shadow-inner rounded-3xl ${tool.color} group-hover:scale-110 transition-all relative z-10 border border-white/5`}>
+                              <div className={`p-5 bg-[#0a0b10] shadow-inner rounded-3xl ${tool.color} group-hover:scale-110 transition-all border border-white/5`}>
                                   <tool.icon size={28} />
                               </div>
-                              <span className="font-black text-gray-300 text-[10px] uppercase tracking-widest relative z-10">{tool.label}</span>
+                              <span className="font-black text-gray-400 text-[10px] uppercase tracking-widest">{tool.label}</span>
                           </div>
                       ))}
                   </div>
@@ -117,15 +112,8 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   );
 
   return (
-    <div className="h-full overflow-y-auto hide-scrollbar bg-[#0a0b10] p-6 pb-40 relative pr-20">
-        {/* Cinematic Background */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,215,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,215,0,0.03)_1px,transparent_1px)] bg-[size:60px:60px] transform perspective-500 rotateX-60 animate-grid-move"></div>
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-festive-gold/5 rounded-full blur-[120px] animate-pulse-slow"></div>
-        </div>
-
-        {/* Header */}
-        <header className="flex items-center justify-between sticky top-0 bg-[#0a0b10]/90 backdrop-blur-xl py-4 z-30 mb-8 border-b border-white/5">
+    <div className="h-full overflow-y-auto hide-scrollbar bg-[#0a0b10] p-6 pb-40">
+        <header className="flex items-center justify-between sticky top-0 bg-[#0a0b10]/95 backdrop-blur-xl py-4 z-30 mb-8 border-b border-white/5">
             <div className="flex items-center gap-4">
                 {activeTool !== 'menu' && (
                     <button onClick={() => setActiveTool('menu')} className="p-3 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] rounded-2xl text-gray-400 hover:text-white active:shadow-inner transition-all border border-white/5">
@@ -139,53 +127,44 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
                     </h1>
                 </div>
             </div>
-            <button onClick={onOpenSettings} className="p-3 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] rounded-2xl text-gray-500 border border-white/5">
+            <button onClick={onOpenSettings} className="p-3 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] rounded-2xl text-gray-500 border border-white/5 hover:text-white transition-all">
                 <Settings size={18} />
             </button>
         </header>
 
         <div className="relative z-10">
-            {activeTool === 'menu' && renderMenu()}
-            <div className="toolkit-content">
-                {activeTool === 'qr-tools' && <QrTools />}
-                {activeTool === 'finance' && <FinancialTools />}
-                {activeTool === 'units' && <UnitConverter />}
-                {activeTool === 'links' && <LinkShortener />}
-                {activeTool === 'photo-utils' && <PhotoUtils />}
-                {activeTool === 'notes' && <SmartNotes />}
-                {activeTool === 'social-growth' && <SocialGrowth />}
-                {activeTool === 'profile-studio' && <ProfileStudio />}
-                {activeTool === 'moodboard' && <MoodboardGenerator />}
-                {activeTool === 'football-hub' && <FootballHub />}
-                {activeTool === 'league-central' && <LeagueCentral />}
-                {activeTool === 'pdf-tools' && <PdfTools />}
-                {activeTool === 'gen-z-lab' && <GenZLab />}
-                {activeTool === 'aura-state' && <AuraState />}
-            </div>
+            {activeTool === 'menu' ? renderMenu() : (
+                <div className="toolkit-content">
+                    {activeTool === 'qr-tools' && <QrTools />}
+                    {activeTool === 'finance' && <FinancialTools />}
+                    {activeTool === 'units' && <UnitConverter />}
+                    {activeTool === 'links' && <LinkShortener />}
+                    {activeTool === 'photo-utils' && <PhotoUtils />}
+                    {activeTool === 'notes' && <SmartNotes />}
+                    {activeTool === 'social-growth' && <SocialGrowth />}
+                    {activeTool === 'profile-studio' && <ProfileStudio />}
+                    {activeTool === 'moodboard' && <MoodboardGenerator />}
+                    {activeTool === 'football-hub' && <FootballHub />}
+                    {activeTool === 'league-central' && <LeagueCentral />}
+                    {activeTool === 'pdf-tools' && <PdfTools />}
+                    {activeTool === 'gen-z-lab' && <GenZLab />}
+                    {activeTool === 'aura-state' && <AuraState />}
+                </div>
+            )}
         </div>
     </div>
   );
 };
 
-// Internal Sub-components updated with Neumorphic styles
 const QrTools = () => {
     const [mode, setMode] = useState<'scan' | 'gen'>('scan');
-    const [genText, setGenText] = useState('');
-    const [qrCode, setQrCode] = useState('');
     const [scanResult, setScanResult] = useState<string | null>(null);
-    const [scanType, setScanType] = useState<'url'|'text'|'wifi'|null>(null);
-    const [wifiData, setWifiData] = useState<any>(null);
     const [isScanning, setIsScanning] = useState(false);
-    
     const scannerRef = useRef<any>(null);
-    const fileRef = useRef<HTMLInputElement>(null);
 
     const handleScan = (decodedText: string) => {
         setScanResult(decodedText);
         stopScanning();
-        if (decodedText.startsWith('WIFI:')) setScanType('wifi');
-        else if (decodedText.startsWith('http')) setScanType('url');
-        else setScanType('text');
         showToast("Code detected!", "success");
     };
 
@@ -208,18 +187,19 @@ const QrTools = () => {
     return (
         <div className="space-y-8 animate-fade-in-up">
             <div className="flex bg-[#0a0b10] shadow-inner p-1.5 rounded-2xl border border-white/5">
-                <button onClick={() => setMode('scan')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${mode === 'scan' ? 'bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400' : 'text-gray-500'}`}>Scan</button>
+                <button onClick={() => setMode('scan')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${mode === 'scan' ? 'bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400' : 'text-gray-500'}`}>Scan Code</button>
                 <button onClick={() => setMode('gen')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${mode === 'gen' ? 'bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400' : 'text-gray-500'}`}>Generate</button>
             </div>
 
             {mode === 'scan' && (
                 <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-6 rounded-[2.5rem] relative overflow-hidden min-h-[450px] border border-white/5">
                     <div id="reader" className="w-full bg-black rounded-3xl overflow-hidden min-h-[300px] shadow-inner"></div>
-                    {!scanResult && <button onClick={startScanning} className="mt-6 w-full py-5 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400 font-black uppercase tracking-widest rounded-2xl active:shadow-inner transition-all">Start Camera</button>}
-                    {scanResult && (
+                    {!scanResult ? (
+                        <button onClick={startScanning} className="mt-6 w-full py-5 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400 font-black uppercase tracking-widest rounded-2xl active:shadow-inner transition-all">Connect Sensor</button>
+                    ) : (
                         <div className="mt-6 space-y-4">
-                            <SmartCard title="Data Extract" content={scanResult} icon={QrCode} className="shadow-inner bg-[#0a0b10] border border-white/5" />
-                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-4 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-gray-400 font-black rounded-2xl">Reset</button>
+                            <SmartCard title="Data Extraction" content={scanResult} icon={QrCode} className="shadow-inner bg-[#0a0b10] border border-white/5" />
+                            <button onClick={() => {setScanResult(null); startScanning();}} className="w-full py-4 bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-gray-400 font-black rounded-2xl">Reset Scanner</button>
                         </div>
                     )}
                 </div>
@@ -228,17 +208,9 @@ const QrTools = () => {
     );
 };
 
-const UnitConverter = () => (
-    <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Converter Core Offline</div>
-);
-const LinkShortener = () => (
-    <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Link Shunt Offline</div>
-);
-const PhotoUtils = () => (
-    <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Photo Lab Locked</div>
-);
-const FinancialTools = () => (
-    <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Finance Matrix Encrypted</div>
-);
+const UnitConverter = () => <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Logic Decoupled</div>;
+const LinkShortener = () => <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">URL Shunt Offline</div>;
+const PhotoUtils = () => <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Lab Access Denied</div>;
+const FinancialTools = () => <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-10 rounded-[2.5rem] text-center text-gray-600 border border-white/5 font-black uppercase tracking-widest">Finance Core Locked</div>;
 
 export default Toolkit;
