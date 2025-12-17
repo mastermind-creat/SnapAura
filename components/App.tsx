@@ -42,7 +42,7 @@ const App: React.FC = () => {
       setCurrentImage(state.activeImage);
   }, [state.activeImage]);
 
-  // Auto-hide navbar when entering Chat tab
+  // Auto-hide/show navbar logic
   useEffect(() => {
       if (activeTab === Tab.CHAT) {
           setIsNavVisible(false);
@@ -72,61 +72,31 @@ const App: React.FC = () => {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Only show banner if we aren't already in standalone mode
       if (!window.matchMedia('(display-mode: standalone)').matches) {
           setTimeout(() => setShowInstallBanner(true), 3000);
       }
     };
-
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  // Check for Join Link
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('join')) {
-      setActiveTab(Tab.CHAT);
-    }
   }, []);
 
   const handleInstallClick = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('Native app installation accepted');
-        }
         setDeferredPrompt(null);
         setShowInstallBanner(false);
       });
     }
   };
 
-  const handleOpenSettings = () => {
-      setShowSettingsModal(true);
-  };
-
+  const handleOpenSettings = () => setShowSettingsModal(true);
   const handleUserIconClick = () => {
-      if (isAuthenticated) {
-          setActiveTab(Tab.PROFILE);
-      } else {
-          setShowAuthModal(true);
-      }
+      if (isAuthenticated) setActiveTab(Tab.PROFILE);
+      else setShowAuthModal(true);
   };
-
-  const handleLogin = (userData: UserProfile) => {
-      setUser(userData);
-      setIsAuthenticated(true);
-      setShowAuthModal(false);
-  };
-
-  const handleLogout = () => {
-      setUser(null);
-      setIsAuthenticated(false);
-      setActiveTab(Tab.HOME);
-      setShowSettingsModal(false);
-  };
+  const handleLogin = (userData: UserProfile) => { setUser(userData); setIsAuthenticated(true); setShowAuthModal(false); };
+  const handleLogout = () => { setUser(null); setIsAuthenticated(false); setActiveTab(Tab.HOME); setShowSettingsModal(false); };
 
   return (
     <div key={refreshKey} className="fixed inset-0 w-full max-w-md mx-auto bg-[#0a0b10] shadow-2xl shadow-black overflow-hidden flex flex-col">
@@ -138,44 +108,16 @@ const App: React.FC = () => {
           <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-festive-crimson/5 rounded-full blur-[100px] animate-aurora"></div>
       </div>
 
-      {/* Toast System */}
       <ToastContainer />
-      
-      {/* Settings Modal */}
-      <SettingsModal 
-        isVisible={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        onOpenApiKey={() => {
-            setIsKeyRequired(false);
-            setShowSettingsModal(false);
-            setShowKeyModal(true);
-        }}
-      />
+      <SettingsModal isVisible={showSettingsModal} onClose={() => setShowSettingsModal(false)} onOpenApiKey={() => { setIsKeyRequired(false); setShowSettingsModal(false); setShowKeyModal(true); }} />
+      <ApiKeyModal isVisible={showKeyModal} onClose={() => setShowKeyModal(false)} canClose={!isKeyRequired} />
+      {showAuthModal && <Auth onLogin={handleLogin} onClose={() => setShowAuthModal(false)} />}
 
-      {/* API Key Modal */}
-      <ApiKeyModal 
-        isVisible={showKeyModal} 
-        onClose={() => setShowKeyModal(false)}
-        canClose={!isKeyRequired} 
-      />
-
-      {/* Auth Modal */}
-      {showAuthModal && (
-          <Auth 
-            onLogin={handleLogin} 
-            onClose={() => setShowAuthModal(false)} 
-          />
-      )}
-
-      {/* NEURAL NEXUS OMNIBAR */}
       <OmniBar />
 
-      {/* TOP RIGHT FESTIVE INSTALL PROMPT */}
       {showInstallBanner && (
           <div className="absolute top-20 right-4 z-[150] animate-fade-in-up w-64">
-              <div className="holiday-blur bg-[#0f2a1e]/90 p-4 rounded-2xl border gold-rim shadow-[0_15px_35px_rgba(0,0,0,0.5)] flex flex-col gap-3 relative overflow-hidden">
-                  <div className="absolute -top-6 -left-6 w-16 h-16 bg-festive-gold/10 rounded-full blur-xl animate-pulse"></div>
-                  
+              <div className="holiday-blur bg-[#0f2a1e]/90 p-4 rounded-2xl border gold-rim shadow-2xl flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
                           <div className="bg-festive-gold/20 p-2 rounded-xl border border-festive-gold/30">
@@ -186,65 +128,25 @@ const App: React.FC = () => {
                               <p className="text-[9px] text-festive-gold/70 font-bold uppercase tracking-widest">Holiday Engine</p>
                           </div>
                       </div>
-                      <button onClick={() => setShowInstallBanner(false)} className="text-gray-500 hover:text-white transition-colors">
+                      <button onClick={() => setShowInstallBanner(false)} className="text-gray-500 hover:text-white">
                           <X size={14} />
                       </button>
                   </div>
-
-                  <p className="text-[10px] text-gray-300 font-medium leading-tight">
-                      Install <span className="text-white font-bold">SnapAura</span> as a native app for the full seasonal experience.
-                  </p>
-
-                  <button 
-                      onClick={handleInstallClick}
-                      className="w-full bg-gradient-to-r from-festive-gold to-orange-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
+                  <button onClick={handleInstallClick} className="w-full bg-gradient-to-r from-festive-gold to-orange-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2">
                       <Download size={12} strokeWidth={3} /> Install Now
                   </button>
               </div>
           </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="relative z-10 flex-1 overflow-hidden">
-          {activeTab === Tab.HOME && (
-            <Studio 
-              image={currentImage} 
-              setImage={setCurrentImage} 
-              onOpenSettings={handleOpenSettings}
-              onUserClick={handleUserIconClick}
-              setActiveTab={setActiveTab}
-              isAuthenticated={isAuthenticated}
-            />
-          )}
-          
-          {activeTab === Tab.EDIT && (
-            <Editor 
-              image={currentImage} 
-              setImage={setCurrentImage} 
-              onOpenSettings={handleOpenSettings}
-            />
-          )}
-
-          {activeTab === Tab.GENERATE && (
-            <Generator onOpenSettings={handleOpenSettings} />
-          )}
-
-          {activeTab === Tab.CHAT && (
-            <Chat onOpenSettings={handleOpenSettings} />
-          )}
-
-          {activeTab === Tab.TOOLKIT && (
-            <Toolkit onOpenSettings={handleOpenSettings} />
-          )}
-
-          {activeTab === Tab.PROFILE && (
-              <Profile 
-                  onLogin={() => setShowAuthModal(true)}
-                  onLogout={handleLogout}
-                  onOpenSettings={handleOpenSettings}
-              />
-          )}
+      {/* Main Content Area - Note: Padding Right to avoid Rail overlap on mobile */}
+      <main className={`relative z-10 flex-1 overflow-hidden transition-all duration-500 ${isNavVisible ? 'pr-20' : ''}`}>
+          {activeTab === Tab.HOME && <Studio image={currentImage} setImage={setCurrentImage} onOpenSettings={handleOpenSettings} onUserClick={handleUserIconClick} setActiveTab={setActiveTab} isAuthenticated={isAuthenticated} />}
+          {activeTab === Tab.EDIT && <Editor image={currentImage} setImage={setCurrentImage} onOpenSettings={handleOpenSettings} />}
+          {activeTab === Tab.GENERATE && <Generator onOpenSettings={handleOpenSettings} />}
+          {activeTab === Tab.CHAT && <Chat onOpenSettings={handleOpenSettings} />}
+          {activeTab === Tab.TOOLKIT && <Toolkit onOpenSettings={handleOpenSettings} />}
+          {activeTab === Tab.PROFILE && <Profile onLogin={() => setShowAuthModal(true)} onLogout={handleLogout} onOpenSettings={handleOpenSettings} />}
       </main>
 
       <BottomNav 
