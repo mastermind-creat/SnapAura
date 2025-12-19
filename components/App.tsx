@@ -9,7 +9,6 @@ import Toolkit from './components/Toolkit';
 import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
-import DonationModal from './components/DonationModal';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
 import OmniBar from './components/OmniBar'; 
@@ -18,14 +17,13 @@ import { Smartphone, Download, X, Star } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
-  const { activeTab, setActiveTab, updateState, state, refreshKey } = useNeural();
+  const { activeTab, setActiveTab, updateState, state, refreshKey, dispatchIntent } = useNeural();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Modal States
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showDonationModal, setShowDonationModal] = useState(false);
   const [isKeyRequired, setIsKeyRequired] = useState(false);
 
   // Auth State
@@ -81,7 +79,11 @@ const App: React.FC = () => {
   };
 
   const handleOpenSettings = () => setShowSettingsModal(true);
-  const handleOpenDonation = () => setShowDonationModal(true);
+  
+  // Navigate to Toolkit Support Tool instead of opening a modal
+  const handleOpenDonation = () => {
+      dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'support' } });
+  };
 
   const handleUserIconClick = () => {
       if (isAuthenticated) setActiveTab(Tab.PROFILE);
@@ -178,7 +180,7 @@ const App: React.FC = () => {
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} isVisible={isNavVisible} onToggle={() => setIsNavVisible(!isNavVisible)} />
 
-      {/* Modals rendered at the end to guarantee stacking on top */}
+      {/* Modals */}
       <SettingsModal 
         isVisible={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
@@ -190,11 +192,6 @@ const App: React.FC = () => {
         isVisible={showKeyModal} 
         onClose={() => setShowKeyModal(false)}
         canClose={!isKeyRequired} 
-      />
-
-      <DonationModal 
-        isVisible={showDonationModal}
-        onClose={() => setShowDonationModal(false)}
       />
 
       {showAuthModal && (

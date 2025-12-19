@@ -6,7 +6,7 @@ import {
   Link as LinkIcon, RefreshCw, Copy, CheckCircle, ExternalLink,
   Wifi, Search, Download, Upload, Zap, Lock, Unlock, TrendingUp, DollarSign,
   Activity, Star, Eye, EyeOff, ImagePlus, Wand2, MessageCircle, BarChart, TrendingDown, Trophy,
-  Ghost, Flame, Gem, Globe
+  Ghost, Flame, Gem, Globe, Gift, Heart, CreditCard, ArrowRight
 } from './Icons';
 import SocialGrowth from './SocialGrowth';
 import SmartNotes from './SmartNotes';
@@ -17,7 +17,6 @@ import FootballHub from './FootballHub';
 import LeagueCentral from './LeagueCentral';
 import GenZLab from './GenZLab';
 import AuraState from './AuraState';
-import { getCryptoData, getCurrencyData, getCryptoMarketOverview } from '../services/geminiService';
 import { showToast } from './Toast';
 import SmartCard from './SmartCard';
 import { useNeural } from './NeuralContext';
@@ -35,6 +34,7 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
   }, []);
 
   const tools = [
+    { id: 'support', label: 'Holiday Support', icon: Gift, color: 'text-festive-gold', cat: 'Ecosystem' },
     { id: 'qr-tools', label: 'QR Master', icon: QrCode, color: 'text-blue-400', cat: 'Essentials' },
     { id: 'finance', label: 'Crypto & Fiat', icon: Bitcoin, color: 'text-yellow-400', cat: 'Essentials' },
     { id: 'units', label: 'Converter', icon: Ruler, color: 'text-green-400', cat: 'Essentials' },
@@ -59,24 +59,25 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
 
   const renderMenu = () => (
       <div className="space-y-8 animate-fade-in-up pb-20">
-          {/* Quick Shortcuts */}
           <div className="space-y-4">
               <h3 className="text-[10px] font-black text-festive-gold/60 uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
-                  <Star size={10} className="text-festive-gold animate-pulse" /> Core Uplinks
+                  <Star size={10} className="text-festive-gold animate-pulse" /> Seasonal Uplinks
               </h3>
               <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
+                  <button onClick={() => setActiveTool('support')} className="flex items-center gap-3 bg-[#0f2a1e]/40 shadow-lg p-5 rounded-3xl min-w-[200px] border border-festive-gold/20 active:scale-95 transition-all">
+                      <div className="p-3 bg-festive-gold/10 rounded-2xl text-festive-gold"><Gift size={24} className="animate-jingle"/></div>
+                      <div className="text-left">
+                          <span className="text-xs font-black text-white uppercase tracking-tighter block">Gift SnapAura</span>
+                          <span className="text-[8px] text-festive-gold font-bold uppercase tracking-widest">Support the Dev</span>
+                      </div>
+                  </button>
                   <button onClick={() => setActiveTool('qr-tools')} className="flex items-center gap-3 bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-5 rounded-3xl min-w-[160px] active:shadow-inner transition-all border border-white/5">
                       <div className="p-3 bg-[#0a0b10] shadow-inner rounded-2xl text-blue-400"><QrCode size={20}/></div>
                       <span className="text-xs font-black text-gray-300 uppercase tracking-tighter">Scan QR</span>
                   </button>
-                  <button onClick={() => setActiveTool('aura-state')} className="flex items-center gap-3 bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-5 rounded-3xl min-w-[160px] active:shadow-inner transition-all border border-white/5">
-                      <div className="p-3 bg-[#0a0b10] shadow-inner rounded-2xl text-indigo-400"><Globe size={20}/></div>
-                      <span className="text-xs font-black text-gray-300 uppercase tracking-tighter">AuraState</span>
-                  </button>
               </div>
           </div>
 
-          {/* Search */}
           <div className="relative group px-1">
               <div className="absolute inset-0 bg-[#0a0b10] rounded-3xl shadow-inner border border-white/5"></div>
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 z-10" size={20} />
@@ -88,7 +89,6 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
               />
           </div>
 
-          {/* Grid */}
           {categories.map((cat, catIdx) => (
               <div key={cat} className="space-y-5 px-1">
                   <h3 className="text-[10px] font-black text-festive-emerald uppercase tracking-[0.3em] ml-2 border-l-2 border-festive-emerald pl-3">{cat}</h3>
@@ -135,6 +135,7 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
         <div className="relative z-10">
             {activeTool === 'menu' ? renderMenu() : (
                 <div className="toolkit-content">
+                    {activeTool === 'support' && <SupportTool />}
                     {activeTool === 'qr-tools' && <QrTools />}
                     {activeTool === 'finance' && <FinancialTools />}
                     {activeTool === 'units' && <UnitConverter />}
@@ -154,6 +155,77 @@ const Toolkit: React.FC<any> = ({ onOpenSettings }) => {
         </div>
     </div>
   );
+};
+
+const SupportTool = () => {
+    const [amount, setAmount] = useState<number>(500);
+    const [phone, setPhone] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+    
+    const LIPAFARE_API_KEY = "lip_pk_live_0f0324935d1113b7ee60de32af9992eb9ebf346498b7da0f14636cfe670ff7b8";
+
+    const handleDonate = async () => {
+        if (!phone || phone.length < 10) { showToast("Invalid M-Pesa Number", "error"); return; }
+        setIsLoading(true);
+        try {
+            await fetch('https://api.lipa.me/v1/stk/push', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${LIPAFARE_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, phone, reference: "SnapAura", description: "Holiday Gift" })
+            });
+            setTimeout(() => {
+                setIsLoading(false);
+                setIsSuccess(true);
+                if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                showToast("STK Prompt Sent!", "success");
+            }, 1500);
+        } catch (e) {
+            setIsLoading(false);
+            showToast("Gateway Error", "error");
+        }
+    };
+
+    if (isSuccess) return (
+        <div className="bg-[#0f2a1e]/40 p-10 rounded-[3rem] text-center space-y-6 border border-festive-gold/20 animate-fade-in">
+             <div className="w-20 h-20 bg-festive-gold/10 rounded-full flex items-center justify-center mx-auto border border-festive-gold/30">
+                <CheckCircle size={40} className="text-festive-gold animate-bounce" />
+             </div>
+             <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Gift Received!</h2>
+             <p className="text-xs text-gray-400 leading-relaxed font-medium">Your support keeps SnapAura AI evolving. Happy Holidays!</p>
+             <button onClick={() => setIsSuccess(false)} className="w-full bg-festive-gold/10 text-festive-gold border border-festive-gold/20 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest">Send Another Gift</button>
+        </div>
+    );
+
+    return (
+        <div className="space-y-6 animate-fade-in-up">
+            <div className="bg-[#0f2a1e]/40 shadow-lg p-8 rounded-[3rem] border border-festive-gold/10">
+                <div className="text-center mb-8">
+                    <Heart size={40} className="text-festive-crimson mx-auto mb-4 animate-pulse" />
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Holiday Support</h2>
+                    <p className="text-[10px] text-festive-gold font-black uppercase tracking-[0.3em] mt-1">M-Pesa Integrated</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                    {[100, 500, 1000, 5000].map(amt => (
+                        <button key={amt} onClick={() => setAmount(amt)} className={`py-4 rounded-2xl font-mono text-sm font-bold border transition-all ${amount === amt ? 'bg-festive-gold text-black border-festive-gold shadow-lg scale-[1.02]' : 'bg-black/20 text-gray-500 border-white/5'}`}>
+                            {amt.toLocaleString()}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="relative group mb-6">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-festive-gold"><CreditCard size={18} /></div>
+                    <input type="tel" placeholder="07XX XXX XXX" value={phone} onChange={e => setPhone(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-2xl pl-12 pr-4 py-5 text-white font-mono text-sm outline-none focus:border-festive-gold/50 transition-all placeholder:text-gray-700" />
+                </div>
+
+                <button onClick={handleDonate} disabled={isLoading} className="w-full bg-gradient-to-r from-festive-emerald to-green-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all">
+                    {isLoading ? <RefreshCw size={18} className="animate-spin" /> : <><Gift size={16}/> Gift KES {amount.toLocaleString()} <ArrowRight size={14} /></>}
+                </button>
+            </div>
+            <p className="text-[8px] text-gray-600 text-center font-bold uppercase tracking-widest">Secured by LipaFare Ecosystem</p>
+        </div>
+    );
 };
 
 const QrTools = () => {
@@ -190,7 +262,6 @@ const QrTools = () => {
                 <button onClick={() => setMode('scan')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${mode === 'scan' ? 'bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400' : 'text-gray-500'}`}>Scan Code</button>
                 <button onClick={() => setMode('gen')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${mode === 'gen' ? 'bg-[#0a0b10] shadow-[4px_4px_8px_#050508,-4px_-4px_8px_#12141c] text-blue-400' : 'text-gray-500'}`}>Generate</button>
             </div>
-
             {mode === 'scan' && (
                 <div className="bg-[#0a0b10] shadow-[8px_8px_16px_#050508,-8px_-8px_16px_#12141c] p-6 rounded-[2.5rem] relative overflow-hidden min-h-[450px] border border-white/5">
                     <div id="reader" className="w-full bg-black rounded-3xl overflow-hidden min-h-[300px] shadow-inner"></div>

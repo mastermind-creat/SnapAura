@@ -91,7 +91,7 @@ const OmniBar: React.FC<OmniBarProps> = ({ onOpenDonation }) => {
                             <div className="px-4 pb-4 border-t border-white/5 bg-[#1a1c29]/50">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest py-3">Neural Shortcuts</p>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => { setIsOpen(false); onOpenDonation(); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
+                                    <button onClick={() => { setIsOpen(false); dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'support' } }); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
                                         <Heart size={12} className="text-festive-gold animate-pulse"/> Support SnapAura
                                     </button>
                                     <button onClick={() => { setInput("Check Bitcoin price"); handleSubmit(); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
