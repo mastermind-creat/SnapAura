@@ -9,6 +9,7 @@ import Toolkit from './components/Toolkit';
 import ToastContainer from './components/Toast';
 import ApiKeyModal from './components/ApiKeyModal';
 import SettingsModal from './components/SettingsModal';
+import DonationModal from './components/DonationModal';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
 import OmniBar from './components/OmniBar'; 
@@ -20,24 +21,23 @@ const App: React.FC = () => {
   const { activeTab, setActiveTab, updateState, state, refreshKey } = useNeural();
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
-  // Navbar Visibility State - Hidden by default as requested
+  // Modal States
   const [isNavVisible, setIsNavVisible] = useState(false);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showDonationModal, setShowDonationModal] = useState(false);
+  const [isKeyRequired, setIsKeyRequired] = useState(false);
 
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Modal States
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [isKeyRequired, setIsKeyRequired] = useState(false);
-
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
-  // Sync Neural State with App State
+  // Sync Neural State
   useEffect(() => {
       setCurrentImage(state.activeImage);
   }, [state.activeImage]);
@@ -47,7 +47,6 @@ const App: React.FC = () => {
     const checkApiKey = () => {
       const localKey = localStorage.getItem('GEMINI_API_KEY');
       const envKey = (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : null;
-
       if ((!localKey || localKey.trim() === '') && (!envKey || envKey.trim() === '')) {
         setIsKeyRequired(true);
         setShowKeyModal(true);
@@ -63,12 +62,10 @@ const App: React.FC = () => {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Only show banner if we aren't already in standalone mode
       if (!window.matchMedia('(display-mode: standalone)').matches) {
           setTimeout(() => setShowInstallBanner(true), 4000);
       }
     };
-
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
@@ -76,23 +73,19 @@ const App: React.FC = () => {
   const handleInstallClick = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult: any) => {
+      deferredPrompt.userChoice.then(() => {
         setDeferredPrompt(null);
         setShowInstallBanner(false);
       });
     }
   };
 
-  const handleOpenSettings = () => {
-      setShowSettingsModal(true);
-  };
+  const handleOpenSettings = () => setShowSettingsModal(true);
+  const handleOpenDonation = () => setShowDonationModal(true);
 
   const handleUserIconClick = () => {
-      if (isAuthenticated) {
-          setActiveTab(Tab.PROFILE);
-      } else {
-          setShowAuthModal(true);
-      }
+      if (isAuthenticated) setActiveTab(Tab.PROFILE);
+      else setShowAuthModal(true);
   };
 
   const handleLogin = (userData: UserProfile) => {
@@ -118,44 +111,13 @@ const App: React.FC = () => {
           <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-festive-crimson/5 rounded-full blur-[100px] animate-aurora"></div>
       </div>
 
-      {/* Toast System */}
       <ToastContainer />
-      
-      {/* Settings Modal */}
-      <SettingsModal 
-        isVisible={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        onOpenApiKey={() => {
-            setIsKeyRequired(false);
-            setShowSettingsModal(false);
-            setShowKeyModal(true);
-        }}
-      />
-
-      {/* API Key Modal */}
-      <ApiKeyModal 
-        isVisible={showKeyModal} 
-        onClose={() => setShowKeyModal(false)}
-        canClose={!isKeyRequired} 
-      />
-
-      {/* Auth Modal */}
-      {showAuthModal && (
-          <Auth 
-            onLogin={handleLogin} 
-            onClose={() => setShowAuthModal(false)} 
-          />
-      )}
-
-      {/* NEURAL NEXUS OMNIBAR */}
-      <OmniBar />
+      <OmniBar onOpenDonation={handleOpenDonation} />
 
       {/* TOP RIGHT NATIVE INSTALL PROMPT */}
       {showInstallBanner && (
           <div className="absolute top-20 right-4 z-[150] animate-fade-in-up w-64">
               <div className="holiday-blur bg-[#0f2a1e]/90 p-4 rounded-2xl border gold-rim shadow-[0_15px_35px_rgba(0,0,0,0.5)] flex flex-col gap-3 relative overflow-hidden">
-                  <div className="absolute -top-6 -left-6 w-16 h-16 bg-festive-gold/10 rounded-full blur-xl animate-pulse"></div>
-                  
                   <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
                           <div className="bg-festive-gold/20 p-2 rounded-xl border border-festive-gold/30">
@@ -170,11 +132,6 @@ const App: React.FC = () => {
                           <X size={14} />
                       </button>
                   </div>
-
-                  <p className="text-[10px] text-gray-300 font-medium leading-tight">
-                      Install <span className="text-white font-bold">SnapAura</span> as a native app for a browser-free experience.
-                  </p>
-
                   <button 
                       onClick={handleInstallClick}
                       className="w-full bg-gradient-to-r from-festive-gold to-orange-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
@@ -185,13 +142,13 @@ const App: React.FC = () => {
           </div>
       )}
 
-      {/* Main Content Area - Full height since nav is hidden by default */}
       <main className="relative z-10 flex-1 overflow-hidden">
           {activeTab === Tab.HOME && (
             <Studio 
               image={currentImage} 
               setImage={setCurrentImage} 
               onOpenSettings={handleOpenSettings}
+              onOpenDonation={handleOpenDonation}
               onUserClick={handleUserIconClick}
               setActiveTab={setActiveTab}
               isAuthenticated={isAuthenticated}
@@ -199,11 +156,7 @@ const App: React.FC = () => {
           )}
           
           {activeTab === Tab.EDIT && (
-            <Editor 
-              image={currentImage} 
-              setImage={setCurrentImage} 
-              onOpenSettings={handleOpenSettings}
-            />
+            <Editor image={currentImage} setImage={setCurrentImage} onOpenSettings={handleOpenSettings} />
           )}
 
           {activeTab === Tab.GENERATE && (
@@ -219,21 +172,34 @@ const App: React.FC = () => {
           )}
 
           {activeTab === Tab.PROFILE && (
-              <Profile 
-                  onLogin={() => setShowAuthModal(true)}
-                  onLogout={handleLogout}
-                  onOpenSettings={handleOpenSettings}
-              />
+              <Profile onLogin={() => setShowAuthModal(true)} onLogout={handleLogout} onOpenSettings={handleOpenSettings} />
           )}
       </main>
 
-      {/* Bottom Nav Controller */}
-      <BottomNav 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        isVisible={isNavVisible}
-        onToggle={() => setIsNavVisible(!isNavVisible)}
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} isVisible={isNavVisible} onToggle={() => setIsNavVisible(!isNavVisible)} />
+
+      {/* Modals rendered at the end to guarantee stacking on top */}
+      <SettingsModal 
+        isVisible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onOpenDonation={handleOpenDonation}
+        onOpenApiKey={() => { setIsKeyRequired(false); setShowSettingsModal(false); setShowKeyModal(true); }}
       />
+
+      <ApiKeyModal 
+        isVisible={showKeyModal} 
+        onClose={() => setShowKeyModal(false)}
+        canClose={!isKeyRequired} 
+      />
+
+      <DonationModal 
+        isVisible={showDonationModal}
+        onClose={() => setShowDonationModal(false)}
+      />
+
+      {showAuthModal && (
+          <Auth onLogin={handleLogin} onClose={() => setShowAuthModal(false)} />
+      )}
     </div>
   );
 };
