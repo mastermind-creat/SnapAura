@@ -121,8 +121,8 @@ const fetchIntelligence = async () => {
     if (!apiKey || apiKey === "YOUR_API_KEY_HERE") return { newsStress: 50, spaceStress: 10, summary: "API Key Missing" };
 
     try {
-        const ai = new GoogleGenAI({ apiKey });
-        const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash', tools: [{ googleSearch: {} }] });
+        // Fix: Initialization with named parameter
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || apiKey });
         
         const prompt = `
             Analyze current global news headlines and space weather (solar flares, asteroids). 
@@ -135,11 +135,18 @@ const fetchIntelligence = async () => {
             }
         `;
         
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        // Fix: Use ai.models.generateContent instead of deprecated getGenerativeModel
+        const result = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] }
+        });
+        
+        // Fix: Access .text property directly (not a method)
+        const text = result.text;
         
         // Extract JSON
-        const jsonStr = text.match(/\{[\s\S]*\}/)?.[0] || "{}";
+        const jsonStr = text?.match(/\{[\s\S]*\}/)?.[0] || "{}";
         const data = JSON.parse(jsonStr);
         
         const output = {

@@ -49,8 +49,9 @@ const DonationModal: React.FC<DonationModalProps> = ({ isVisible, onClose }) => 
       setTimeout(() => {
         setIsLoading(false);
         setIsSuccess(true);
-        if (window.confetti) {
-            window.confetti({
+        // Fix: Cast window to any to access confetti function from CDN-loaded script
+        if ((window as any).confetti) {
+            (window as any).confetti({
                 particleCount: 150,
                 spread: 70,
                 origin: { y: 0.6 },

@@ -1,9 +1,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, Wand2, Copy, RefreshCw, Zap, Rocket, Palette, Brain, Camera, Sparkles, MessageCircle, Download, Type, Layers, Sliders, Film, Settings, User, TrendingUp, FileText, Globe, Activity, Aperture, Command, Star, Gift } from './Icons';
+import { Upload, RefreshCw, Zap, Camera, Sparkles, Settings, User, TrendingUp, FileText, Star, Heart } from './Icons';
 import { analyzeImageAndGenerateCaptions } from '../services/geminiService';
 import { showToast } from './Toast';
-import { Logo } from './Logo';
 import { Tab } from '../types';
 import { useNeural } from './NeuralContext';
 import SmartCard from './SmartCard';
@@ -18,8 +17,6 @@ interface StudioProps {
   setActiveTab: (tab: Tab) => void;
   isAuthenticated: boolean;
 }
-
-declare global { interface Window { confetti: any; } }
 
 const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onOpenDonation, onUserClick, setActiveTab, isAuthenticated }) => {
   const { state, updateState, dispatchIntent } = useNeural(); 
@@ -63,7 +60,8 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onOpen
       const result = await analyzeImageAndGenerateCaptions(image, state);
       setAnalysisResult(result);
       updateState({ activeAnalysis: result }); 
-      if (window.confetti) window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#ffd700', '#d42426'] });
+      // Fix: cast window to any to access confetti loaded from CDN
+      if ((window as any).confetti) (window as any).confetti({ particleCount: 50, spread: 60, colors: ['#60A5FA', '#C084FC'] });
     } catch (err) {
       showToast("Analysis failed", "error");
     } finally {
@@ -85,72 +83,60 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onOpen
 
   if (!image) {
     return (
-      <div className="relative h-full flex flex-col bg-[#0a0b10] overflow-hidden">
-        <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0f2a1e] via-[#0a0b10] to-[#000000]"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-[40vh] bg-[linear-gradient(rgba(255,215,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,215,0,0.03)_1px,transparent_1px)] bg-[size:60px_60px] [transform:perspective(800px)_rotateX(60deg)] origin-bottom animate-grid-move opacity-40"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,transparent_0%,#0a0b10_80%)]"></div>
-        </div>
-
+      <div className="relative h-full flex flex-col bg-dark-900 overflow-hidden">
         <header className="w-full flex justify-between items-center p-6 relative z-30">
              <div className="flex flex-col">
-                <div className="h-0.5 w-10 bg-festive-gold/50 rounded-full mb-1"></div>
-                <span className="text-[9px] font-black text-festive-gold tracking-[0.3em] uppercase">Holiday OS.V2</span>
+                <div className="h-0.5 w-10 bg-primary/50 rounded-full mb-1"></div>
+                <span className="text-[9px] font-black text-primary tracking-[0.3em] uppercase">SnapAura OS</span>
             </div>
              <div className="flex items-center gap-3">
-                <button onClick={onOpenDonation} className="w-10 h-10 rounded-full bg-festive-gold/10 border border-festive-gold/20 flex items-center justify-center text-festive-gold animate-jingle group hover:bg-festive-gold/20 transition-all shadow-xl">
-                    <Gift size={20} />
+                <button onClick={onOpenDonation} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-accent hover:text-white transition-all shadow-xl group">
+                    <Heart size={20} className="group-hover:fill-current transition-all" />
                 </button>
                 <button onClick={onUserClick} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 overflow-hidden shadow-2xl hover:scale-105 transition-all">
                     {avatar ? <img src={avatar} className="w-full h-full object-cover" alt="User Avatar" /> : <User size={18} className="text-gray-500" />}
                 </button>
-                <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 border border-white/10 hover:text-festive-gold transition-all">
+                <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-500 border border-white/10 hover:text-primary transition-all">
                     <Settings size={18} />
                 </button>
              </div>
         </header>
 
         <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-6 -mt-12">
-            <div className="relative mb-12 animate-float-slow">
-                <div className="absolute -inset-20 bg-festive-gold/5 rounded-full blur-[100px] animate-pulse"></div>
+            <div className="relative mb-12 animate-float">
+                <div className="absolute -inset-20 bg-primary/10 rounded-full blur-[100px] animate-pulse"></div>
                 <div className="relative w-48 h-48 flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-full border border-white/5 border-t-festive-gold/40 border-b-festive-emerald/40 animate-spin-slow"></div>
-                    <div className="absolute inset-4 rounded-full border border-white/5 border-l-white/10 border-r-white/10 animate-[spin_8s_linear_infinite_reverse]"></div>
-                    <div className="w-28 h-28 rounded-full bg-[#12141c] shadow-[inset_0_0_30px_rgba(0,0,0,1)] flex items-center justify-center relative overflow-hidden border border-white/10 group cursor-pointer hover:scale-105 transition-all duration-500">
-                         <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,215,0,0.3)_360deg)] animate-[spin_4s_linear_infinite]"></div>
-                         <div className="absolute inset-1 bg-[#0a0b10] rounded-full flex items-center justify-center">
-                             <Star size={44} fill="currentColor" className="text-festive-gold animate-star-pulse drop-shadow-[0_0_15px_#ffd700]" />
+                    <div className="absolute inset-0 rounded-full border border-white/5 border-t-primary/40 border-b-secondary/40 animate-spin-slow"></div>
+                    <div className="w-28 h-28 rounded-full bg-dark-800 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden border border-white/10 group">
+                         <div className="absolute inset-1 bg-dark-900 rounded-full flex items-center justify-center">
+                             <Sparkles size={44} className="text-primary animate-pulse" />
                          </div>
                     </div>
                 </div>
             </div>
 
             <div className="text-center space-y-2 mb-10">
-                <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-festive-gold to-orange-900 tracking-tighter drop-shadow-2xl">SnapAura</h1>
-                <div className="flex items-center justify-center gap-3">
-                    <div className="h-px w-6 bg-festive-emerald/30"></div>
-                    <p className="text-[10px] font-black text-festive-emerald uppercase tracking-[0.4em]">Intelligence Engine</p>
-                    <div className="h-px w-6 bg-festive-emerald/30"></div>
-                </div>
+                <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500 tracking-tighter drop-shadow-2xl">SnapAura</h1>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em]">Intelligence Studio</p>
             </div>
 
             <div className="w-full max-w-sm">
-                <button onClick={() => fileInputRef.current?.click()} className="group relative w-full h-16 rounded-[2rem] flex items-center justify-center overflow-hidden transition-all active:scale-95 shadow-[0_20px_40px_rgba(0,0,0,0.6)]">
-                    <div className="absolute inset-0 bg-gradient-to-r from-festive-pine via-festive-emerald to-festive-gold animate-shimmer bg-[length:200%_100%]"></div>
-                    <div className="absolute inset-[1.5px] bg-[#0a0b10]/90 backdrop-blur-md rounded-[1.9rem] flex items-center justify-center gap-4 z-10 group-hover:bg-[#0a0b10]/80 transition-all">
-                        <Upload size={20} className="text-festive-gold group-hover:-translate-y-1 transition-transform" />
-                        <span className="font-black text-festive-gold text-xs tracking-[0.2em] uppercase">Start Holiday Edit</span>
+                <button onClick={() => fileInputRef.current?.click()} className="group relative w-full h-16 rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95 shadow-xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary via-secondary to-accent animate-shimmer bg-[length:200%_100%]"></div>
+                    <div className="absolute inset-[1.5px] bg-dark-900 rounded-[0.9rem] flex items-center justify-center gap-4 z-10 group-hover:bg-dark-900/80 transition-all">
+                        <Upload size={20} className="text-primary group-hover:-translate-y-1 transition-transform" />
+                        <span className="font-black text-white text-xs tracking-[0.2em] uppercase">Initialize Project</span>
                     </div>
                 </button>
             </div>
         </main>
 
-        <div className="w-full mt-auto relative z-30 pb-20"><SystemConsole /></div>
+        <div className="w-full mt-auto relative z-30 pb-24"><SystemConsole /></div>
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
         {isUploading && (
-            <div className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center backdrop-blur-2xl animate-fade-in-up">
-                <div className="w-20 h-20 border-t-2 border-festive-gold rounded-full animate-spin"></div>
-                <p className="mt-8 text-[10px] font-black text-festive-gold uppercase tracking-[0.3em] animate-pulse">Initializing Seasonal Context...</p>
+            <div className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center backdrop-blur-2xl animate-fade-in">
+                <div className="w-16 h-16 border-t-2 border-primary rounded-full animate-spin"></div>
+                <p className="mt-8 text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-pulse">Syncing Neural Context...</p>
             </div>
         )}
       </div>
@@ -158,71 +144,62 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onOpen
   }
 
   return (
-    <div className="h-full overflow-y-auto hide-scrollbar bg-[#0a0b10] p-4 pb-40">
+    <div className="h-full overflow-y-auto hide-scrollbar bg-dark-900 p-4 pb-40">
         <div className="flex justify-between items-center mb-6 px-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-black text-festive-gold flex items-center gap-3">
-                  <div className="w-2 h-2 bg-festive-gold rounded-full animate-pulse"></div> 
-                  Holiday Studio
-              </h1>
-              <button onClick={onOpenDonation} className="p-2 bg-festive-gold/10 border border-festive-gold/20 rounded-full text-festive-gold animate-jingle">
-                  <Gift size={16} />
-              </button>
-            </div>
-            <button onClick={() => {setImage(''); updateState({activeImage: null, activeAnalysis: null});}} className="text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-gray-500 hover:text-white transition-all">Term Session</button>
+            <h1 className="text-lg font-black text-white flex items-center gap-3">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div> 
+                Active Session
+            </h1>
+            <button onClick={() => {setImage(''); updateState({activeImage: null, activeAnalysis: null});}} className="text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-gray-500 hover:text-white transition-all">Close Project</button>
         </div>
 
-        <div className="relative w-full aspect-square rounded-[2.5rem] overflow-hidden bg-[#0a0b10] shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-2 mb-8 border border-white/5">
-            <div className="relative w-full h-full rounded-[2rem] overflow-hidden bg-black/40">
+        <div className="relative w-full aspect-square rounded-3xl overflow-hidden bg-dark-800 shadow-neu p-2 mb-8 border border-white/5">
+            <div className="relative w-full h-full rounded-2xl overflow-hidden bg-black/40">
                 <img src={image} alt="Active" className="w-full h-full object-cover" />
                 {selectedCaption && (
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/60 to-transparent p-8 text-center">
-                        <p className="text-white font-bold text-lg leading-snug">{selectedCaption}</p>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/60 to-transparent p-6 text-center">
+                        <p className="text-white font-bold text-sm leading-snug">{selectedCaption}</p>
                     </div>
                 )}
                 {isAnalyzing && (
-                    <div className="absolute inset-0 bg-[#0a0b10]/80 backdrop-blur-xl flex flex-col items-center justify-center z-20">
-                        <div className="relative w-24 h-24 mb-6">
-                            <div className="absolute inset-0 border-2 border-festive-gold/20 rounded-full animate-ping"></div>
-                            <div className="absolute inset-0 border-2 border-festive-gold/40 rounded-full animate-[ping_2s_linear_infinite_0.5s]"></div>
-                            <div className="absolute inset-0 flex items-center justify-center"><Sparkles size={40} className="text-festive-gold animate-jingle" /></div>
-                        </div>
-                        <p className="text-festive-gold font-black text-[10px] tracking-[0.4em] uppercase animate-pulse">Extracting Aura Data...</p>
+                    <div className="absolute inset-0 bg-dark-900/80 backdrop-blur-xl flex flex-col items-center justify-center z-20">
+                        <RefreshCw className="animate-spin text-primary" size={40} />
+                        <p className="text-primary font-black text-[10px] tracking-[0.4em] uppercase animate-pulse">Analyzing Visual Data...</p>
                     </div>
                 )}
             </div>
         </div>
 
-        <div className="flex bg-black/40 backdrop-blur-md rounded-2xl p-1 border border-white/5 mb-8">
-            <button onClick={() => setInternalTab('analyze')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${internalTab === 'analyze' ? 'bg-festive-gold/10 text-festive-gold shadow-2xl' : 'text-gray-500'}`}>Visual Intel</button>
-            <button onClick={() => setInternalTab('design')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${internalTab === 'design' ? 'bg-festive-emerald/10 text-festive-emerald shadow-2xl' : 'text-gray-500'}`}>Aesthetic FX</button>
+        <div className="flex bg-dark-800 rounded-2xl p-1 border border-white/5 mb-8 shadow-neu-pressed">
+            <button onClick={() => setInternalTab('analyze')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${internalTab === 'analyze' ? 'bg-dark-600 text-primary shadow-neu' : 'text-gray-500'}`}>Visual Intel</button>
+            <button onClick={() => setInternalTab('design')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${internalTab === 'design' ? 'bg-dark-600 text-secondary shadow-neu' : 'text-gray-500'}`}>Aesthetics</button>
         </div>
 
         {internalTab === 'analyze' && (
             <div className="space-y-6 animate-fade-in-up">
                 {!analysisResult ? (
-                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full py-6 bg-gradient-to-br from-[#0f2a1e] to-[#0a0b10] text-festive-gold border border-festive-gold/30 rounded-3xl font-black uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 hover:brightness-125 transition-all">
-                        {isAnalyzing ? <RefreshCw className="animate-spin" /> : <Star size={18} fill="currentColor" />} Run Intelligence
+                    <button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full py-6 bg-dark-800 text-primary border border-white/5 rounded-3xl font-black uppercase tracking-[0.2em] shadow-neu flex items-center justify-center gap-3 active:shadow-neu-pressed hover:brightness-110 transition-all">
+                        {isAnalyzing ? <RefreshCw className="animate-spin" /> : <Star size={18} />} Run Analysis
                     </button>
                 ) : (
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
-                            <button onClick={handleAutoSocial} className="bg-white/5 p-5 rounded-3xl flex flex-col items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-festive-gold border border-white/5 transition-all group">
-                                <div className="p-3 bg-festive-gold/10 rounded-2xl group-hover:scale-110 transition-transform"><TrendingUp size={24} className="text-festive-gold"/></div>Viral Strategy
+                            <button onClick={handleAutoSocial} className="bg-dark-800 p-5 rounded-3xl flex flex-col items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary border border-white/5 transition-all group">
+                                <TrendingUp size={24} className="text-primary group-hover:scale-110 transition-transform"/>Strategy
                             </button>
-                            <button onClick={handleAutoNote} className="bg-white/5 p-5 rounded-3xl flex flex-col items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-festive-emerald border border-white/5 transition-all group">
-                                <div className="p-3 bg-festive-emerald/10 rounded-2xl group-hover:scale-110 transition-transform"><FileText size={24} className="text-festive-emerald"/></div>Secure Logs
+                            <button onClick={handleAutoNote} className="bg-dark-800 p-5 rounded-3xl flex flex-col items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-secondary border border-white/5 transition-all group">
+                                <FileText size={24} className="text-secondary group-hover:scale-110 transition-transform"/>Vault
                             </button>
                         </div>
-                        <SmartCard title="Aura Decoding" icon={Sparkles} content={analysisResult.analysis} rawText={analysisResult.analysis} className="border border-white/5 bg-[#0f2a1e]/20 rounded-[2.5rem]" />
+                        <SmartCard title="Aura Breakdown" icon={Sparkles} content={analysisResult.analysis} rawText={analysisResult.analysis} className="border border-white/5 bg-dark-800/50 rounded-3xl" />
                         <div className="space-y-6">
-                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Suggestive Captions</h3>
+                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-4">Generated Captions</h3>
                             {analysisResult.captions?.map((cat: any, i: number) => (
                                 <div key={i} className="space-y-4">
-                                    <h4 className="text-[9px] font-black text-festive-gold/60 uppercase ml-4 border-l border-festive-gold/20 pl-3">{cat.category}</h4>
+                                    <h4 className="text-[9px] font-black text-primary/60 uppercase ml-4 border-l border-primary/20 pl-3">{cat.category}</h4>
                                     <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar px-2">
                                         {cat.options.map((opt: string, j: number) => (
-                                            <button key={j} onClick={() => setSelectedCaption(opt)} className="flex-shrink-0 bg-white/5 p-6 rounded-[2rem] text-xs font-bold text-gray-300 w-72 text-left border border-white/5 hover:border-festive-gold/30 hover:text-white transition-all shadow-xl">"{opt}"</button>
+                                            <button key={j} onClick={() => setSelectedCaption(opt)} className="flex-shrink-0 bg-dark-800 p-6 rounded-2xl text-xs font-bold text-gray-300 w-72 text-left border border-white/5 hover:border-primary/30 hover:text-white transition-all shadow-xl">"{opt}"</button>
                                         ))}
                                     </div>
                                 </div>
@@ -233,9 +210,9 @@ const Studio: React.FC<StudioProps> = ({ image, setImage, onOpenSettings, onOpen
             </div>
         )}
         {internalTab === 'design' && (
-            <div className="text-center py-20 bg-white/5 rounded-[3rem] border border-white/5 animate-fade-in-up">
-                <Sparkles size={56} className="mx-auto mb-6 text-festive-gold animate-star-pulse" />
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em]">FX Processor Online</p>
+            <div className="text-center py-20 bg-dark-800 rounded-3xl border border-white/5 animate-fade-in-up">
+                <Sparkles size={48} className="mx-auto mb-6 text-primary animate-pulse" />
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.5em]">Creative FX Ready</p>
             </div>
         )}
     </div>

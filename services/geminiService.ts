@@ -2,9 +2,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { ImageSize, GlobalContextState, AppIntent } from "../types";
 
-// --- CONFIGURATION ---
-const FALLBACK_KEYS = ["YOUR_API_KEY_HERE"];
-
 // --- PROMPT ENGINE ---
 class PromptEngine {
   static getToolSystemInstruction(): string {
@@ -40,22 +37,20 @@ class PromptEngine {
 
 // --- CLIENT MANAGEMENT ---
 const getApiKey = (): string => {
-  if (typeof window !== 'undefined') {
-    const localKey = localStorage.getItem('GEMINI_API_KEY');
-    if (localKey && localKey.trim() !== "") return localKey;
-  }
-  try {
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) return process.env.API_KEY;
-  } catch (e) {}
-  return FALLBACK_KEYS[0];
+  // Always prioritize the environment-injected API key as per guidelines.
+  return process.env.API_KEY || "";
 };
 
-const getAiClient = () => new GoogleGenAI({ apiKey: getApiKey() });
+// Removed global 'ai' instance to comply with "create right before making an API call" guideline.
 
 export const validateApiKey = async (apiKey: string): Promise<boolean> => {
     try {
         const ai = new GoogleGenAI({ apiKey });
-        await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: { parts: [{ text: 'ping' }] } });
+        // Use recommended gemini-3-flash-preview for basic text tasks.
+        await ai.models.generateContent({ 
+          model: 'gemini-3-flash-preview', 
+          contents: 'ping' 
+        });
         return true;
     } catch (error) { return false; }
 };
@@ -85,7 +80,7 @@ const cleanAndParseJSON = (text: string) => {
 
 // --- OMNI ROUTER (THE BRAIN) ---
 export const processOmniCommand = async (input: string): Promise<{ intent: AppIntent | null, reply: string }> => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `
         You are the OS Controller for SnapAura. Map the user's natural language request to a specific App Intent.
         
@@ -117,7 +112,7 @@ export const processOmniCommand = async (input: string): Promise<{ intent: AppIn
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: `User Input: "${input}"\n${prompt}`,
             config: { responseMimeType: "application/json" }
         });
@@ -135,11 +130,11 @@ export const processOmniCommand = async (input: string): Promise<{ intent: AppIn
 // --- CORE AI FUNCTIONS ---
 
 export const analyzeImageAndGenerateCaptions = async (base64Image: string, context?: GlobalContextState): Promise<any> => {
-  const ai = getAiClient();
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const { mimeType, data } = processBase64Image(base64Image);
   const prompt = PromptEngine.injectContext(`${PromptEngine.getToolSystemInstruction()} Analyze visual. Return JSON: {analysis, captions:[{category, options[]}], hashtags[]}`, context);
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
     contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
     config: { responseMimeType: "application/json" }
   });
@@ -147,14 +142,14 @@ export const analyzeImageAndGenerateCaptions = async (base64Image: string, conte
 };
 
 export const sendChatMessage = async (history: any[], newMessage: string, personaPrompt?: string, imageAttachment?: string, globalContext?: GlobalContextState) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     
     // Choose specific instruction set
     const systemPrompt = PromptEngine.getChatSystemInstruction(personaPrompt) + 
                          (globalContext?.activeAnalysis ? `\n[CONTEXT]: User is looking at an image analyzed as: ${JSON.stringify(globalContext.activeAnalysis).slice(0,300)}` : '');
 
-    // Use standard Flash model for best reliability with chat sessions
-    const model = 'gemini-2.5-flash';
+    // Standard Gemini 3 model for robust conversational performance
+    const model = 'gemini-3-flash-preview';
 
     const chatSession = ai.chats.create({ 
         model: model, 
@@ -170,8 +165,9 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
                 { inlineData: { mimeType, data } }, 
                 { text: newMessage || "Analyze this." }
             ];
-            // Fix: Wrap in { message: { parts: ... } } for ContentUnion compliance
-            result = await chatSession.sendMessage({ message: { parts: messageParts } });
+            // Fix: Removed nested { parts: ... } wrapper. 'message' property in sendMessage 
+            // expects ContentUnion (string | Part | Part[]).
+            result = await chatSession.sendMessage({ message: messageParts });
         } else if (globalContext?.activeImage && !history.length) {
             // First message context injection
             const { mimeType, data } = processBase64Image(globalContext.activeImage);
@@ -179,10 +175,10 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
                 { inlineData: { mimeType, data } }, 
                 { text: `[Context Image attached] ${newMessage}` }
             ];
-            // Fix: Wrap in { message: { parts: ... } }
-            result = await chatSession.sendMessage({ message: { parts: messageParts } });
+            // Fix: Corrected sendMessage parameters by providing the parts array directly to 'message'.
+            result = await chatSession.sendMessage({ message: messageParts });
         } else {
-            // Text only - Wrap in { message: ... }
+            // Text only message passed as string
             result = await chatSession.sendMessage({ message: newMessage });
         }
         
@@ -194,7 +190,7 @@ export const sendChatMessage = async (history: any[], newMessage: string, person
 }
 
 export const editImageWithPrompt = async (base64Image: string, prompt: string): Promise<string> => {
-  const ai = getAiClient();
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const { mimeType, data } = processBase64Image(base64Image);
   try {
       const response = await ai.models.generateContent({
@@ -202,18 +198,18 @@ export const editImageWithPrompt = async (base64Image: string, prompt: string): 
           contents: { parts: [{ inlineData: { data, mimeType } }, { text: prompt }] },
       });
       for (const part of response.candidates?.[0]?.content?.parts || []) {
+          // Iterate through all parts to find the generated image data.
           if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
       }
       throw new Error("No image returned");
   } catch(e: any) {
-      // Fallback for permissions
       if (e.message?.includes('403')) throw new Error("Permission Denied: Billing required for Image Edit.");
       throw e;
   }
 };
 
 export const generateImageFromPrompt = async (prompt: string, size: ImageSize): Promise<string> => {
-  const ai = getAiClient();
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
@@ -240,11 +236,11 @@ export const generateImageFromPrompt = async (prompt: string, size: ImageSize): 
 };
 
 export const analyzeMoodboard = async (images: string[]) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const { mimeType, data } = processBase64Image(images[0]);
     const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze aesthetics. JSON Output: {theme, keywords[], colors[], caption}`;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
         config: { responseMimeType: "application/json" }
     });
@@ -252,19 +248,19 @@ export const analyzeMoodboard = async (images: string[]) => {
 }
 
 export const rewriteCaption = async (text: string, tone: string = 'engaging'): Promise<string> => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: `Rewrite this caption to be more ${tone}: "${text}"`,
     });
     return response.text || text;
 };
 
 export const getSoccerPredictions = async () => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `${PromptEngine.getToolSystemInstruction()} Analyze top 5 soccer matches today. JSON Array: [{id, league, homeTeam, awayTeam, time, probabilities:{home,draw,away}, metrics:{over2_5,btts}, confidenceScore, analysis}]. Use Google Search.`;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { tools: [{ googleSearch: {} }] }
     });
@@ -272,7 +268,7 @@ export const getSoccerPredictions = async () => {
 };
 
 export const generateSmartNote = async (text: string, mode: string, extra?: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     let prompt = "";
     const style = PromptEngine.getToolSystemInstruction();
     if (mode === 'summarize') prompt = `${style} Summarize: "${text}"`;
@@ -280,7 +276,6 @@ export const generateSmartNote = async (text: string, mode: string, extra?: stri
     else if (mode === 'expand') prompt = `${style} Expand: "${text}"`;
     else if (mode === 'translate') prompt = `${style} Translate to ${extra}: "${text}"`;
     
-    // Use Pro with Thinking for complex expansion/reasoning
     if (mode === 'expand') {
         try {
             const response = await ai.models.generateContent({ 
@@ -289,15 +284,18 @@ export const generateSmartNote = async (text: string, mode: string, extra?: stri
                 config: { thinkingConfig: { thinkingBudget: 16000 } } 
             });
             return response.text || "";
-        } catch(e) {} // Fallback to flash if pro/thinking fails
+        } catch(e) {} 
     }
 
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+    const response = await ai.models.generateContent({ 
+      model: 'gemini-3-flash-preview', 
+      contents: prompt 
+    });
     return response.text || "";
 };
 
 export const generateSocialContent = async (topic: string, type: string, context?: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     let prompt = "";
     if (type === 'hashtag') prompt = `30 hashtags for: "${topic}". Space separated.`;
     else if (type === 'idea') prompt = `3 viral ideas for "${topic}". Markdown.`;
@@ -305,40 +303,59 @@ export const generateSocialContent = async (topic: string, type: string, context
     else if (type === 'timing') prompt = `Best posting times for "${topic}". Markdown.`;
     else if (type === 'bio') prompt = `Generate a professional yet creative social media bio for: "${topic}". Include emojis. Max 150 chars. Return only the bio.`;
     
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-lite', contents: prompt });
+    const response = await ai.models.generateContent({ 
+      model: 'gemini-flash-lite-latest', 
+      contents: prompt 
+    });
     return response.text || "";
 };
 
 export const getLiveMatchDetails = async () => {
-     const ai = getAiClient();
+     const ai = new GoogleGenAI({ apiKey: getApiKey() });
      const prompt = `Live/Recent soccer matches. JSON: [{status, league, home, away, score, commentary(string), events}]. Google Search.`;
-     const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+     const response = await ai.models.generateContent({ 
+       model: 'gemini-3-flash-preview', 
+       contents: prompt, 
+       config: { tools: [{ googleSearch: {} }] } 
+     });
     return cleanAndParseJSON(response.text || "[]");
 };
 
 export const analyzePlayerPerformance = async (player: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `Analyze player ${player}. JSON: {name, team, position, impactScore(0-10), availability, form, stats:{goals,assists,mins}, analysis:{strengths[], style}}. Google Search.`;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+    const response = await ai.models.generateContent({ 
+      model: 'gemini-3-flash-preview', 
+      contents: prompt, 
+      config: { tools: [{ googleSearch: {} }] } 
+    });
     return cleanAndParseJSON(response.text || "{}");
 };
 
 export const getFantasyTips = async () => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `FPL tips next gameweek. JSON: {gameweek, captain:{name,reason}, topPicks:[{name,team,expectedPoints}], valuePicks:[{name,cost,valueRating}], differentials:[{name,ownership,riskLevel}]}. Google Search.`;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+    const response = await ai.models.generateContent({ 
+      model: 'gemini-3-flash-preview', 
+      contents: prompt, 
+      config: { tools: [{ googleSearch: {} }] } 
+    });
     return cleanAndParseJSON(response.text || "{}");
 };
 
 export const getYesterdayAccuracy = async () => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `Review yesterday's soccer predictions. JSON: [{match, prediction, result, accuracyScore, reasoning}]. Google Search.`;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { tools: [{ googleSearch: {} }] } });
+    const response = await ai.models.generateContent({ 
+      model: 'gemini-3-flash-preview', 
+      contents: prompt, 
+      config: { tools: [{ googleSearch: {} }] } 
+    });
     return cleanAndParseJSON(response.text || "[]");
 };
 
 export const getLeagueData = async (league: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `${PromptEngine.getToolSystemInstruction()} 
     Fetch the current top 15 standings and upcoming 5 fixtures for ${league}.
     Use Google Search for real-time data.
@@ -353,7 +370,7 @@ export const getLeagueData = async (league: string) => {
     }`;
     
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { tools: [{ googleSearch: {} }] }
     });
@@ -363,7 +380,7 @@ export const getLeagueData = async (league: string) => {
 // --- GEN Z FEATURES ---
 
 export const analyzeAura = async (base64Image: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const { mimeType, data } = processBase64Image(base64Image);
     const prompt = `
       Analyze the vibe/aura of this person.
@@ -376,7 +393,7 @@ export const analyzeAura = async (base64Image: string) => {
       }
     `;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
         config: { responseMimeType: "application/json" }
     });
@@ -384,14 +401,14 @@ export const analyzeAura = async (base64Image: string) => {
 };
 
 export const generateRizz = async (context: string, tone: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `
       You are a Rizz God. Generate 3 replies to this text: "${context}".
       Tone: ${tone} (e.g. Flirty, Unhinged, Nonchalant).
       Return JSON Array of strings. Use Gen Z slang (no cap, bet, fr).
     `;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { responseMimeType: "application/json" }
     });
@@ -399,7 +416,7 @@ export const generateRizz = async (context: string, tone: string) => {
 };
 
 export const rateAesthetic = async (base64Image: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const { mimeType, data } = processBase64Image(base64Image);
     const prompt = `
       Rate the 'Fit Check' / Aesthetic of this photo out of 10.
@@ -407,7 +424,7 @@ export const rateAesthetic = async (base64Image: string) => {
       Return JSON: { "rating": number, "verdict": "string", "advice": "string" }
     `;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: { parts: [{ inlineData: { mimeType, data } }, { text: prompt }] },
         config: { responseMimeType: "application/json" }
     });
@@ -417,7 +434,7 @@ export const rateAesthetic = async (base64Image: string) => {
 // --- ENHANCED CRYPTO & FIAT SERVICE ---
 
 export const getCryptoMarketOverview = async () => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `
       ${PromptEngine.getToolSystemInstruction()}
       Analyze the current crypto market (Top 10 coins by market cap + trending).
@@ -436,7 +453,7 @@ export const getCryptoMarketOverview = async () => {
       ]
     `;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { tools: [{ googleSearch: {} }] }
     });
@@ -444,7 +461,7 @@ export const getCryptoMarketOverview = async () => {
 };
 
 export const getCryptoData = async (coin: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `
       ${PromptEngine.getToolSystemInstruction()}
       Perform a deep technical analysis for ${coin}.
@@ -466,7 +483,7 @@ export const getCryptoData = async (coin: string) => {
       }
     `;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { tools: [{ googleSearch: {} }] }
     });
@@ -474,10 +491,10 @@ export const getCryptoData = async (coin: string) => {
 };
 
 export const getCurrencyData = async (amount: string, from: string, to: string) => {
-    const ai = getAiClient();
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const prompt = `${PromptEngine.getToolSystemInstruction()} Convert ${amount} ${from} to ${to} using real-time rates. JSON Output: {result (e.g. "KES 10,000"), rate (e.g. "1 USD = 130 KES")}. Use Google Search.`;
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: { tools: [{ googleSearch: {} }] }
     });

@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
-import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings, Grid, RotateCcw } from './Icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { Wand2, Download, RefreshCw, Zap, Sparkles, Settings, Grid, RotateCcw, Upload } from './Icons';
 import { editImageWithPrompt } from '../services/geminiService';
 import { showToast } from './Toast';
+import { useNeural } from './NeuralContext';
 
 interface EditorProps {
   image: string | null;
@@ -11,17 +12,36 @@ interface EditorProps {
 }
 
 const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
+  const { updateState } = useNeural();
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [sliderPos, setSliderPos] = useState(50);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Store original image when first loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (image && !originalImage) {
         setOriginalImage(image);
     }
   }, [image]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setImage(result);
+        setOriginalImage(result);
+        updateState({ activeImage: result, activeAnalysis: null }); 
+        setTimeout(() => setIsUploading(false), 800);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const filters = [
     { 
@@ -60,9 +80,6 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
     const promptToUse = customPrompt || prompt;
     if (!image || !promptToUse) return;
     
-    // Lock original if this is the first edit
-    if(!originalImage) setOriginalImage(image);
-
     if (navigator.vibrate) navigator.vibrate(50);
     setIsProcessing(true);
     showToast("Applying magic...", "info");
@@ -116,11 +133,40 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
                  <Settings size={20} />
              </button>
         </div>
-        <div className="w-20 h-20 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center mb-6 animate-float">
-            <Wand2 size={32} className="text-gray-400" />
+        
+        <div className="relative mb-8 animate-float">
+            <div className="absolute -inset-10 bg-primary/10 rounded-full blur-3xl"></div>
+            <div className="w-24 h-24 rounded-full bg-[#292d3e] shadow-neu flex items-center justify-center relative border border-white/5">
+                <Wand2 size={40} className="text-gray-400" />
+            </div>
         </div>
-        <h2 className="text-xl font-bold text-gray-200">No Image Selected</h2>
-        <p className="text-gray-500 mt-2 text-sm">Go to the Studio tab to upload a photo first.</p>
+
+        <h2 className="text-2xl font-black text-gray-200 tracking-tight">Magic Editor</h2>
+        <p className="text-gray-500 mt-2 mb-10 text-sm max-w-[200px] mx-auto">Select a photo to start applying neural filters.</p>
+        
+        <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="group relative w-full max-w-xs h-16 rounded-2xl flex items-center justify-center overflow-hidden transition-all active:scale-95 shadow-neu"
+        >
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-80 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex items-center gap-3 relative z-10 text-white font-black uppercase tracking-widest text-xs">
+                {isUploading ? <RefreshCw size={18} className="animate-spin" /> : <Upload size={20} />}
+                <span>{isUploading ? 'Initializing...' : 'Select Photo'}</span>
+            </div>
+        </button>
+        
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept="image/*" 
+            className="hidden" 
+        />
+        
+        <div className="mt-8">
+            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Powered by Gemini Visual Engine</p>
+        </div>
       </div>
     );
   }
@@ -138,15 +184,32 @@ const Editor: React.FC<EditorProps> = ({ image, setImage, onOpenSettings }) => {
          <h1 className="text-xl font-bold text-gray-200 flex items-center gap-2">
             <Wand2 className="text-primary" /> Magic Editor
          </h1>
-         <button 
-             onClick={onOpenSettings}
-             className="text-gray-400 hover:text-white p-3 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all"
-             title="Settings"
-         >
-             <Settings size={20} />
-         </button>
+         <div className="flex gap-2">
+             <button 
+                 onClick={() => fileInputRef.current?.click()}
+                 className="text-gray-400 hover:text-white p-3 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all"
+                 title="Change Image"
+             >
+                 <Upload size={20} />
+             </button>
+             <button 
+                 onClick={onOpenSettings}
+                 className="text-gray-400 hover:text-white p-3 rounded-full bg-[#292d3e] shadow-neu active:shadow-neu-pressed transition-all"
+                 title="Settings"
+             >
+                 <Settings size={20} />
+             </button>
+         </div>
       </div>
       
+      <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleFileChange} 
+          accept="image/*" 
+          className="hidden" 
+      />
+
       {/* Image Preview & Comparison Slider */}
       <div className="relative rounded-2xl overflow-hidden bg-[#292d3e] shadow-neu-pressed p-2 select-none group z-10">
          {/* If we have original image and it differs from current, show slider UI */}

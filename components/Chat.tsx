@@ -411,11 +411,18 @@ const Chat: React.FC<any> = () => {
           case 'reply': setReplyingTo(msg); textareaRef.current?.focus(); break;
           case 'save': dispatchIntent({ type: 'SEND_TO_NOTES', payload: { text: msg.text, title: `Chat with ${activePersona.name}` } }); break;
           case 'regenerate':
-              const lastUserIndex = messages.findLastIndex(m => m.role === 'user');
-              if (lastUserIndex !== -1) {
-                  const newHistory = messages.slice(0, lastUserIndex + 1);
+              // Fix: Replaced findLastIndex with manual backward loop for broader compatibility
+              let lastUserIdx = -1;
+              for (let i = messages.length - 1; i >= 0; i--) {
+                  if (messages[i].role === 'user') {
+                      lastUserIdx = i;
+                      break;
+                  }
+              }
+              if (lastUserIdx !== -1) {
+                  const newHistory = messages.slice(0, lastUserIdx + 1);
                   setMessages(newHistory);
-                  processAiResponse(newHistory, messages[lastUserIndex].text, activePersona);
+                  processAiResponse(newHistory, messages[lastUserIdx].text, activePersona);
               }
               break;
           case 'delete':

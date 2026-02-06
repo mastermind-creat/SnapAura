@@ -13,7 +13,7 @@ import Profile from './components/Profile';
 import Auth from './components/Auth';
 import OmniBar from './components/OmniBar'; 
 import { Tab, UserProfile } from './types';
-import { Smartphone, Download, X, Star } from './components/Icons';
+import { Download, X, Star } from './components/Icons';
 import { useNeural } from './components/NeuralContext';
 
 const App: React.FC = () => {
@@ -21,7 +21,6 @@ const App: React.FC = () => {
   const [currentImage, setCurrentImage] = useState<string | null>(null);
 
   // Modal States
-  const [isNavVisible, setIsNavVisible] = useState(false);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isKeyRequired, setIsKeyRequired] = useState(false);
@@ -80,7 +79,6 @@ const App: React.FC = () => {
 
   const handleOpenSettings = () => setShowSettingsModal(true);
   
-  // Navigation Handler: Move to Toolkit -> Support
   const handleOpenDonation = () => {
       dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'support' } });
   };
@@ -106,11 +104,10 @@ const App: React.FC = () => {
   return (
     <div key={refreshKey} className="fixed inset-0 w-full max-w-md mx-auto bg-[#0a0b10] shadow-2xl shadow-black overflow-hidden flex flex-col">
       
-      {/* Festive Dynamic Background */}
+      {/* Dynamic Background FX */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2a1e] via-[#0a0b10] to-[#000000] opacity-80"></div>
-          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-festive-gold/5 rounded-full blur-[100px] animate-drift"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-festive-crimson/5 rounded-full blur-[100px] animate-aurora"></div>
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-blue-900/10 via-transparent to-purple-900/10 animate-pulse-slow"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] animate-float"></div>
       </div>
 
       <ToastContainer />
@@ -119,15 +116,15 @@ const App: React.FC = () => {
       {/* TOP RIGHT NATIVE INSTALL PROMPT */}
       {showInstallBanner && (
           <div className="absolute top-20 right-4 z-[150] animate-fade-in-up w-64">
-              <div className="holiday-blur bg-[#0f2a1e]/90 p-4 rounded-2xl border gold-rim shadow-[0_15px_35px_rgba(0,0,0,0.5)] flex flex-col gap-3 relative overflow-hidden">
+              <div className="glass-panel bg-dark-800/90 p-4 rounded-2xl shadow-xl flex flex-col gap-3 relative overflow-hidden border border-white/10">
                   <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                          <div className="bg-festive-gold/20 p-2 rounded-xl border border-festive-gold/30">
-                              <Star size={18} className="text-festive-gold" />
+                          <div className="bg-primary/20 p-2 rounded-xl border border-primary/30">
+                              <Star size={18} className="text-primary" />
                           </div>
                           <div>
                               <h3 className="text-xs font-black text-white uppercase tracking-tighter">Native Mode</h3>
-                              <p className="text-[9px] text-festive-gold/70 font-bold uppercase tracking-widest">SnapAura OS</p>
+                              <p className="text-[9px] text-primary/70 font-bold uppercase tracking-widest">SnapAura OS</p>
                           </div>
                       </div>
                       <button onClick={() => setShowInstallBanner(false)} className="text-gray-500 hover:text-white transition-colors">
@@ -136,7 +133,7 @@ const App: React.FC = () => {
                   </div>
                   <button 
                       onClick={handleInstallClick}
-                      className="w-full bg-gradient-to-r from-festive-gold to-orange-500 text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-primary to-secondary text-white py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                       <Download size={12} strokeWidth={3} /> Install Native
                   </button>
@@ -178,7 +175,7 @@ const App: React.FC = () => {
           )}
       </main>
 
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} isVisible={isNavVisible} onToggle={() => setIsNavVisible(!isNavVisible)} />
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Modals */}
       <SettingsModal 

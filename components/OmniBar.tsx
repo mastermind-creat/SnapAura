@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Sparkles, Command, Mic, ArrowRight, Heart } from './Icons';
+import { Search, Sparkles, Mic, ArrowRight, Heart, Zap, Globe, MessageCircle, RefreshCw } from './Icons';
 import { processOmniCommand } from '../services/geminiService';
 import { useNeural } from './NeuralContext';
 import { showToast } from './Toast';
@@ -49,7 +49,7 @@ const OmniBar: React.FC<OmniBarProps> = ({ onOpenDonation }) => {
                 setInput('');
             }
         } catch (e) {
-            showToast("Neural Link Failed", "error");
+            showToast("Neural Connection Error", "error");
         } finally {
             setIsProcessing(false);
         }
@@ -59,49 +59,49 @@ const OmniBar: React.FC<OmniBarProps> = ({ onOpenDonation }) => {
         <>
             <button 
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-24 right-4 z-40 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white shadow-neu active:scale-95 transition-all group"
+                className="fixed bottom-24 right-4 z-40 w-12 h-12 bg-dark-800/80 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-primary shadow-neu active:scale-95 transition-all group"
             >
-                <Sparkles size={20} className="group-hover:animate-spin-slow text-primary" />
+                <Sparkles size={20} className="group-hover:animate-spin-slow" />
             </button>
 
             {isOpen && (
                 <div className="fixed inset-0 z-[150] flex items-start justify-center pt-24 px-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsOpen(false)}></div>
-                    <div className="relative w-full max-w-xl bg-[#1e212d]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 animate-shimmer bg-[length:200%_100%]"></div>
+                    <div className="relative w-full max-w-xl bg-dark-800/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-accent animate-shimmer bg-[length:200%_100%]"></div>
                         <form onSubmit={handleSubmit} className="flex items-center px-4 py-4 gap-3">
                             <Search className="text-gray-500" size={20} />
                             <input 
                                 ref={inputRef}
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
-                                placeholder="Tell SnapAura what to do..."
-                                className="flex-1 bg-transparent text-lg text-white placeholder-gray-500 outline-none"
+                                placeholder="Neural Command Input..."
+                                className="flex-1 bg-transparent text-lg text-white placeholder-gray-600 outline-none font-medium"
                             />
                             {isProcessing ? (
-                                <Sparkles className="animate-spin text-primary" size={20} />
+                                <RefreshCw className="animate-spin text-primary" size={20} />
                             ) : (
                                 <div className="flex gap-2">
                                     <button type="button" className="text-gray-500 hover:text-white transition-colors"><Mic size={20} /></button>
-                                    <button type="submit" disabled={!input.trim()} className="bg-white/10 p-2 rounded-lg text-white hover:bg-white/20 transition-colors"><ArrowRight size={16} /></button>
+                                    <button type="submit" disabled={!input.trim()} className="bg-primary/20 p-2 rounded-lg text-primary hover:bg-primary/30 transition-colors"><ArrowRight size={16} /></button>
                                 </div>
                             )}
                         </form>
                         {!input && (
-                            <div className="px-4 pb-4 border-t border-white/5 bg-[#1a1c29]/50">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest py-3">Neural Shortcuts</p>
+                            <div className="px-4 pb-4 border-t border-white/5 bg-dark-900/50">
+                                <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] py-3">Quick Uplinks</p>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => { setIsOpen(false); dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'support' } }); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
-                                        <Heart size={12} className="text-festive-gold animate-pulse"/> Support SnapAura
+                                    <button onClick={() => { setIsOpen(false); dispatchIntent({ type: 'NAVIGATE_TOOL', payload: { toolId: 'support' } }); }} className="text-left text-[10px] font-bold text-gray-400 hover:text-accent p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wider">
+                                        <Heart size={12} className="text-accent animate-pulse"/> Support Creator
                                     </button>
-                                    <button onClick={() => { setInput("Check Bitcoin price"); handleSubmit(); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
-                                        <Sparkles size={12} className="text-yellow-400"/> Check Crypto Price
+                                    <button onClick={() => { setInput("Analyze global vibe"); handleSubmit(); }} className="text-left text-[10px] font-bold text-gray-400 hover:text-primary p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wider">
+                                        <Globe size={12} className="text-primary"/> Vibe Check
                                     </button>
-                                    <button onClick={() => { setInput("Create a cyber-punk landscape"); handleSubmit(); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
-                                        <Sparkles size={12} className="text-blue-400"/> Generate Image
+                                    <button onClick={() => { setInput("Create a cyber-portrait"); handleSubmit(); }} className="text-left text-[10px] font-bold text-gray-400 hover:text-secondary p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wider">
+                                        <Zap size={12} className="text-secondary"/> AI Imagine
                                     </button>
-                                    <button onClick={() => { setInput("World mood status"); handleSubmit(); }} className="text-left text-xs text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2">
-                                        <Sparkles size={12} className="text-green-400"/> World Vibe Check
+                                    <button onClick={() => { setInput("New Chat"); handleSubmit(); }} className="text-left text-[10px] font-bold text-gray-400 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wider">
+                                        <MessageCircle size={12} className="text-white"/> Open Nexus
                                     </button>
                                 </div>
                             </div>
