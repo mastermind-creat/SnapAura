@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tab } from '../types';
-import { Camera, Sparkles, MessageCircle, ImageIcon, Briefcase } from './Icons';
+import { Camera, Sparkles, MessageCircle, ImageIcon, Briefcase, ChevronDown } from './Icons';
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -18,33 +18,35 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-white/5 pb-safe rounded-t-3xl">
-      <div className="flex justify-around items-center p-4">
-        {navItems.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                if (navigator.vibrate) navigator.vibrate(10);
-              }}
-              className={`flex flex-col items-center space-y-1 transition-all duration-300 w-12 group ${
-                isActive ? 'text-primary' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <div className={`transition-transform duration-300 ${isActive ? 'scale-110 -translate-y-1' : ''}`}>
-                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              </div>
-              <span className={`text-[9px] font-black uppercase tracking-widest transition-opacity ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-                {item.label}
-              </span>
-              {isActive && (
-                <div className="w-1 h-1 bg-primary rounded-full mt-0.5 animate-pulse"></div>
-              )}
-            </button>
-          );
-        })}
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col items-center pb-safe pointer-events-none">
+      {/* Visual Indicator of Scroll/OS feel */}
+      <div className="mb-4 text-gray-600 opacity-30 animate-pulse">
+        <ChevronDown size={28} />
+      </div>
+      
+      <div className="w-full px-8 pb-8 pointer-events-auto">
+          <div className="glass-panel border border-white/10 rounded-[2.8rem] shadow-[0_20px_50px_rgba(0,0,0,0.6)] px-4 py-2 flex justify-around items-center">
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    if (navigator.vibrate) navigator.vibrate(15);
+                  }}
+                  className={`flex flex-col items-center justify-center transition-all duration-300 w-16 h-16 rounded-[1.8rem] relative ${
+                    isActive ? 'bg-dark-900/50 shadow-neu-pressed text-primary border border-white/5' : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} className={`transition-transform duration-500 ${isActive ? 'scale-110' : 'hover:scale-110'}`} />
+                  {isActive && (
+                    <div className="absolute -bottom-1.5 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_10px_#4FD1C5]"></div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
       </div>
     </div>
   );
